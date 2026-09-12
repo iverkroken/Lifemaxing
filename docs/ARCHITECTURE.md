@@ -1,0 +1,64 @@
+# ARCHITECTURE.md
+
+## Arkitekturbeslutning
+
+Én React SPA i JavaScript og JSX, ett ASP.NET Core 10 Web API i C#, én PostgreSQL database. Backend er en modular monolith i én kjørbar prosess og normalt ett applikasjonsprosjekt. EF Core og Npgsql er datatilgangen; eksisterende DbContext er allerede en nyttig Unit of Work. React Router brukes i deklarativ rutemodus, TanStack Query for serverdata, React Hook Form med Zod og @hookform/resolvers for formularer, CSS Modules for lokale stiler og globale CSS variabler for designsystemet. Vitest og React Testing Library brukes der brukeratferd må verifiseres. xUnit og EF integrasjonstester dekker serverregler. Valg av majorversjoner for EF Core og Npgsql skal passe .NET 10 og låses i prosjektfil og låsefiler.
+
+Begrunnelse for .NET 10 er støttet LTS drift til november 2028. [Microsofts støtteoversikt](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core) bekrefter dette. [React Router dokumenterer deklarativ installasjon](https://reactrouter.com/start/declarative/installation), [TanStack Query beskriver servertilstand](https://tanstack.com/query/latest/docs/framework/react/overview), og [Npgsql er EF leverandøren for PostgreSQL](https://www.npgsql.org/efcore/). Bruk React Router til navigasjon og TanStack Query til API data; ikke la begge eie samme innhenting.
+
+## Anbefalt repoform
+
+    client/
+      src/
+        app/                 ruting, QueryClient, auth bootstrap
+        features/            today, tasks, habits, goals, focus, progress og områdemoduler
+        shared/
+          api/               fetch klient og feilformat
+          ui/                knapper, felt, dialog, kort, layout
+          styles/            tokens, reset, typografi
+          lib/               dato og rene formateringsfunksjoner
+      public/
+    server/
+      Lifemaxing.Api/
+        Features/            Auth, Areas, Tasks, Habits, Goals, Today, Focus, Progression, Activity, Metrics, Fitness og videre
+        Data/                AppDbContext, migrasjoner og EF konfigurering
+        Common/              auth, feil, eieroppslag, tid, idempotens
+        Program.cs
+    tests/
+      Lifemaxing.Api.Tests/
+    docs/
+      PROJECT_SPEC.md ... RISKS_AND_DECISIONS.md
+    Dockerfile
+    compose.yaml
+    LIFEMAXING.sln
+    README.md
+
+Hver feature eier sine endepunkter, forespørsels og svarmodeller, regler og EF konfigurering. Delt DbContext er akseptabelt så lenge moduler ikke lager tilfeldige avhengigheter. Opprett egen tjeneste når regelen brukes på flere steder eller krever en transaksjon. Del ikke alt i Controller → Interface → Service → Repository uten faktisk behov. Frontend bruker samme mønster: egne skjermbilder, API funksjoner, Query hooks og skjemaer i hver feature; gjenbrukbare visuelle primitiver bor i shared/ui.
+
+## Datavei og API kontrakt
+
+I utvikling åpner nettleseren Vite på localhost. Relative kall til /api/v1 og /health går via Vites proxy til ASP.NET Core. Vite dokumenterer denne [proxyfunksjonen](https://vite.dev/config/server-options#server-proxy). I produksjon bygger Vite statiske filer som ASP.NET Core serverer fra wwwroot på samme origin; /api/v1 og /health håndteres før SPA fallback. En ukjent API rute må returnere 404 JSON, aldri index.html. Et gyldig refresh av /today må returnere appen.
+
+Sekvensen er: React visning → feature hook → felles fetch klient → API endpoint → eierkontroll og validering → domeneregel → DbContext transaksjon → PostgreSQL → DTO → Query invalidation → visning. Kun serveren beregner XP, level, rank og Life Score. Klienten kan vise estimert XP før lagring, men serverresponsen er fasit. Ikke send EF entities direkte i JSON. Bruk ISO 8601 UTC tidsstempel for hendelser, YYYY-MM-DD for kalenderdato og eksplisitt valutakode eller måleenhet når dette kreves.
+
+API prefiks er /api/v1. V1 og V2 bruker samme API major når kontrakten bare utvides. Ressurser bruker GET liste, GET per id, POST, PATCH og DELETE når handlingen passer. Handlinger som fullføring bruker POST /{id}/complete og POST /{id}/reopen; GET endrer aldri tilstand. Lister bruker pageSize, cursor eller page og filtrering; begrens standard og maksimal pageSize. Feil bruker Problem Details med stabile maskinlesbare feilkoder, gyldige HTTP statuser og feltfeil for validering. 401 er uinnlogget, 403 avvist handling, 404 også for fremmede eller manglende eierressurser, 409 ved konflikt, 400 for ugyldig input. Klientens Query keys inkluderer bruker og filter, og tømmes helt ved utlogging.
+
+## Autentisering og sikkerhet
+
+Bruk ASP.NET Core Identity med IdentityUser<Guid> og SignInManager. Lag kun egne login, logout, me og CSRF endepunkter; ingen offentlig register rute. MapIdentityApi registrerer også /register og passer derfor ikke uten særskilt sperring. [Microsofts Identity API dokumentasjon](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-api-authorization?view=aspnetcore-10.0) viser endepunktene. Eieren opprettes én gang av en dokumentert lokal eller administrativ engangskommando med hemmelighet utenfor Git, ikke gjennom et internettvendt standardpassord. Identity håndterer passordhash, lockout og sesjoner; login får rate limit. Alle private endepunkter krever autentisering og slår opp eier fra innlogget identitet, aldri fra body. Ved hver referanse til en annen ressurs må begge tilhøre samme eier.
+
+Autentiseringscookie er HttpOnly, Secure i produksjon og SameSite=Lax eller Strict når samme origin fungerer. Bruk CSRF beskyttelse på alle tilstandsendrende cookieautentiserte endepunkter, inkludert login og logout: GET /api/v1/auth/csrf gir et request token fra IAntiforgery; klienten sender token i X-CSRF-TOKEN header, og serveren validerer det. Oppbevar token bare i minnet, forny etter login og ved utløpt sesjon. Test ekte kryssoriginforsøk. Samme origin og SameSite erstatter ikke bevisst CSRF kontroll. [Microsofts CSRF veiledning](https://learn.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-10.0) beskriver cookie risikoen og tokentilnærmingen. Sett sikre headers, HTTPS, begrens CORS til nødvendig lokalt oppsett, og logg ikke passord, tokens, helsedata eller transaksjonsbeskrivelser.
+
+I container må ASP.NET Data Protection nøkler overleve restart, ellers kan alle cookies bli ugyldige. Bruk persistent beskyttet volum for én replika eller egnet ekstern nøkkellagring ved flere; ikke legg nøklene i image eller Git. [Microsofts dokumentasjon](https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/configuration/overview?view=aspnetcore-10.0) beskriver dette.
+
+## Docker, migrasjoner og drift
+
+Lokalt kjører Compose bare PostgreSQL med vedvarende volum og healthcheck; API startes i Rider, Vite separat. Valgfri full Compose profil kan legges til når den har praktisk verdi. Produksjon bruker multi stage Dockerfile: Node bygger client, .NET SDK bygger API, ASP.NET runtime image inneholder server og wwwroot. Ingen Node runtime behøves i ferdig image. Database er en egen vedvarende tjeneste og eksponeres ikke offentlig uten særskilt grunn.
+
+EF migrasjoner opprettes og granskes med endringen. Kjør produksjonsmigrasjoner kontrollert én gang med migrasjonsbundle eller gjennomgått SQL før ny applikasjonsversjon, ikke med Migrate() ved hver oppstart. [EFs driftsveiledning](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/applying) støtter eksplisitt migrasjon og separat tilgang. Unngå destruktiv migrasjon uten backup og restore plan.
+
+Første aktuelle driftskandidat er Railway med én app container og PostgreSQL, siden prosjektet prioriterer enkel oppstart. Dette er en beslutning ved fase 8, ikke et bibliotek eller arkitekturkrav. [Railway beskriver PostgreSQL](https://docs.railway.com/databases/postgresql), [pris og ressursbruk](https://docs.railway.com/pricing/plans), [regioner](https://docs.railway.com/deployments/regions) og [volumkopier](https://docs.railway.com/volumes/backups). Verifiser EU region, datalagring, løpende pris og konkret backupoppsett når hosting velges. Volumkopier alene er utilstrekkelige for varig personlig historikk; lag kryptert, gjenopprettbar kopi utenfor leverandøren.
+
+## Framtidige koblinger
+
+V3 kan legge til Integrations feature med separat adapter per leverandør, brukerforbindelse, tokenlagring, kildeidentitet, importjobb og konfliktstatus. Domenet mottar validerte normaliserte data gjennom en vanlig service; frontend kjenner ikke leverandørens tokens. Automatisering som må være pålitelig lagres som jobbtilstand og kan kjøres med BackgroundService når behovet oppstår. Ingen tabeller, OAuth klienter, køer eller generelle plugin grensesnitt for dette i V1.

@@ -1,0 +1,26 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+
+# JetBrains
+.idea/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Frontend
+node_modules/
+dist/
+
+# .NET
+bin/
+obj/
+
+# Local files
+*.log
+*.user
+*.suo
