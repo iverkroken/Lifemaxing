@@ -1,0 +1,6 @@
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: var(--color-canvas); color: var(--color-text); font-family: var(--font-sans); font-size: var(--text-base); line-height: 1.5; }
+button, input, textarea, select { font: inherit; }
+a { color: var(--color-accent); }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
+button, input, a { -webkit-tap-highlight-color: transparent; }
