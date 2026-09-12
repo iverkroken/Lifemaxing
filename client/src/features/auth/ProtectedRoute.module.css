@@ -1,0 +1,1 @@
+.centered { min-height: 100dvh; display: grid; place-items: center; color: var(--color-text-muted); padding: var(--space-6); }
