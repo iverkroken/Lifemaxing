@@ -1,0 +1,9 @@
+.page { min-height: 100dvh; display: grid; place-items: center; padding: var(--space-6); }
+.login { width: min(100%, 28rem); }
+.brand { color: var(--color-accent); font-size: var(--text-lg); font-weight: 600; text-decoration: none; }
+.eyebrow { color: var(--color-accent); font-size: var(--text-sm); font-weight: 500; margin: var(--space-12) 0 var(--space-3); }
+.login h1 { font-size: var(--text-2xl); line-height: 1.15; margin: 0; }
+.intro { color: var(--color-text-muted); margin: var(--space-3) 0 var(--space-8); }
+.form { display: grid; gap: var(--space-6); }
+.error { color: var(--color-danger); margin: 0; }
+.notice { background: var(--color-surface-muted); border-radius: var(--radius-control); padding: var(--space-3); margin: 0 0 var(--space-6); }
