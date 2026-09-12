@@ -1,0 +1,14 @@
+.git
+.idea
+**/node_modules
+**/bin
+**/obj
+**/dist
+**/wwwroot
+.env
+.env.*
+**/*.log
+tests
+docs
+**/TestResults
+artifacts

@@ -24,3 +24,11 @@ obj/
 *.log
 *.user
 *.suo
+
+# Generated publish and verification output
+server/Lifemaxing.Api/wwwroot/
+artifacts/
+TestResults/
+coverage/
+playwright-report/
+test-results/
