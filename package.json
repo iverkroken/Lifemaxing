@@ -1,0 +1,21 @@
+{
+  "name": "lifemaxing",
+  "private": true,
+  "workspaces": [
+    "client"
+  ],
+  "engines": {
+    "node": ">=24.13.0 <25",
+    "npm": ">=11 <12"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace client",
+    "build": "npm run build --workspace client",
+    "lint": "npm run lint --workspace client",
+    "test": "npm run test --workspace client --",
+    "test:smoke": "playwright test --config tests/browser/playwright.config.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

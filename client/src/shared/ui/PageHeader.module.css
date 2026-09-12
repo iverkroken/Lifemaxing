@@ -1,0 +1,5 @@
+.header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: start; gap: var(--space-6); margin-bottom: var(--space-8); }
+.header h1 { font-size: var(--text-2xl); line-height: 1.15; font-weight: 600; margin: 0; text-wrap: balance; }
+.eyebrow { color: var(--color-accent); font-size: var(--text-sm); font-weight: 500; margin: 0 0 var(--space-4); }
+.description { color: var(--color-text-muted); max-width: 60ch; margin: var(--space-4) 0 0; }
+@media (min-width: 1200px) { .header h1 { font-size: var(--text-3xl); } }
