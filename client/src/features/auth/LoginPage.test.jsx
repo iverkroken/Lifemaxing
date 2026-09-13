@@ -16,7 +16,7 @@ test('validates the login form before sending credentials', async () => {
   await screen.findByRole('heading', { name: 'Sign in' })
   await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
   expect(await screen.findByText('Enter a valid email address.')).toBeInTheDocument()
-  expect(screen.getByText('Enter your password.')).toBeInTheDocument()
+  expect(screen.getByText('Enter a valid value in this field.')).toBeInTheDocument()
   expect(fetch).toHaveBeenCalledTimes(1)
   expect(fetch).toHaveBeenCalledWith('/api/v1/auth/me', expect.anything())
 })
