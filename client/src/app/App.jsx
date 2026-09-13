@@ -1,39 +1,62 @@
-import { FocusPage } from '../features/focus/FocusPage.jsx'
-import { ProgressPage, ActivityPage } from '../features/progress/ProgressPage.jsx'
-import { RewardsPage } from '../features/progress/RewardsPage.jsx'
-import { Link, Navigate, Route, Routes } from 'react-router'
-import { AreaPage } from '../features/areas/AreaPage.jsx'
+import { useLanguage } from '../features/settings/language.js'
+
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router'
+import { lazy, Suspense, useEffect, useState } from 'react'
+
 import { AuthenticatedShell } from '../features/auth/AuthenticatedShell.jsx'
 import { LoginPage } from '../features/auth/LoginPage.jsx'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute.jsx'
-import { SettingsPage } from '../features/settings/SettingsPage.jsx'
-import { StartPage } from '../features/system/StartPage.jsx'
+
 import { PageHeader } from '../shared/ui/PageHeader.jsx'
 import styles from './App.module.css'
-import { TodayPage } from '../features/today/TodayPage.jsx'
-import { TasksPage } from '../features/tasks/TasksPage.jsx'
-import { NewTaskPage, TaskDetailPage } from '../features/tasks/TaskDetailPage.jsx'
-import { HabitsPage, HabitDetailPage } from '../features/habits/HabitsPage.jsx'
-import { GoalsPage, GoalDetailPage } from '../features/goals/GoalsPage.jsx'
+
+const FocusPage = lazy(() => import('../features/focus/FocusPage.jsx').then(module => ({ default: module.FocusPage })))
+const ProgressPage = lazy(() => import('../features/progress/ProgressPage.jsx').then(module => ({ default: module.ProgressPage })))
+const ActivityPage = lazy(() => import('../features/progress/ProgressPage.jsx').then(module => ({ default: module.ActivityPage })))
+const RewardsPage = lazy(() => import('../features/progress/RewardsPage.jsx').then(module => ({ default: module.RewardsPage })))
+const AreaPage = lazy(() => import('../features/areas/AreaPage.jsx').then(module => ({ default: module.AreaPage })))
+const SettingsPage = lazy(() => import('../features/settings/SettingsPage.jsx').then(module => ({ default: module.SettingsPage })))
+const StartPage = lazy(() => import('../features/system/StartPage.jsx').then(module => ({ default: module.StartPage })))
+const TodayPage = lazy(() => import('../features/today/TodayPage.jsx').then(module => ({ default: module.TodayPage })))
+const TasksPage = lazy(() => import('../features/tasks/TasksPage.jsx').then(module => ({ default: module.TasksPage })))
+const NewTaskPage = lazy(() => import('../features/tasks/TaskDetailPage.jsx').then(module => ({ default: module.NewTaskPage })))
+const TaskDetailPage = lazy(() => import('../features/tasks/TaskDetailPage.jsx').then(module => ({ default: module.TaskDetailPage })))
+const HabitsPage = lazy(() => import('../features/habits/HabitsPage.jsx').then(module => ({ default: module.HabitsPage })))
+const HabitDetailPage = lazy(() => import('../features/habits/HabitsPage.jsx').then(module => ({ default: module.HabitDetailPage })))
+const GoalsPage = lazy(() => import('../features/goals/GoalsPage.jsx').then(module => ({ default: module.GoalsPage })))
+const GoalDetailPage = lazy(() => import('../features/goals/GoalsPage.jsx').then(module => ({ default: module.GoalDetailPage })))
 
 function HomeRoute() {
   return <Navigate to="/today" replace />
 }
 
 function NotFoundPage() {
+  const { t } = useLanguage()
   return <main className={styles.publicPage}>
-    <PageHeader title="Page not found" description="This page is not available." />
-    <Link to="/">Back to LIFEMAXING</Link>
+    <PageHeader title={t("Page not found")} description={t("This page is not available.")} />
+    <Link to="/">{t("Back to LIFEMAXING")}</Link>
   </main>
 }
 
 export function App() {
-  return <Routes>
+  const { t } = useLanguage()
+  const location = useLocation()
+  const [initialKey] = useState(location.key)
+  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 1200px)').matches)
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1200px)')
+    const update = () => setWide(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+  const background = wide && location.key !== initialKey && /^\/tasks\/[^/]+$/.test(location.pathname) && location.pathname !== '/tasks/new'
+    ? location.state?.backgroundLocation : null
+  return <Suspense fallback={<p role="status">{t("Loading…")}</p>}><Routes location={background || location}>
       <Route index element={<HomeRoute />} />
       <Route path="start" element={<main className={styles.publicPage}><StartPage /></main>} />
       <Route path="login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
-        <Route element={<AuthenticatedShell />}>
+        <Route element={<AuthenticatedShell panelTaskId={background ? location.pathname.split('/')[2] : null} />}>
           <Route path="focus" element={<FocusPage />} />
           <Route path="progress" element={<ProgressPage />} />
           <Route path="activity" element={<ActivityPage />} />
@@ -52,5 +75,5 @@ export function App() {
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    </Routes></Suspense>
 }
