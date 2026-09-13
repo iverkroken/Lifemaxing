@@ -11,6 +11,7 @@ afterEach(() => { clearCsrfToken(); vi.unstubAllGlobals() })
 test('uses server local day, displays mission and habit state, and sends completion to the API', async () => {
   let completed = false
   const fetchMock = vi.fn(async (path) => {
+    if (path.endsWith('/areas')) return Response.json([])
     if (path.endsWith('/csrf')) return Response.json({ requestToken: 'test-token' })
     if (path.endsWith('/tasks/task-1/complete')) { completed = true; return Response.json({}) }
     if (path.startsWith('/api/v1/tasks?')) return Response.json({ items: [], total: 0, page: 1, pageSize: 30 })
@@ -49,7 +50,19 @@ test('separates intentional work from earlier tasks and keeps changed plans avai
   expect(screen.getAllByRole('link', { name: 'First thing' })).toHaveLength(1)
   expect(within(screen.getByRole('region', { name: 'Daily commitments' })).getByText('Intentional work')).toBeVisible()
   expect(within(screen.getByRole('region', { name: 'Needs attention' })).getByText('Earlier deadline')).toBeVisible()
-  expect(screen.getByRole('button', { name: 'Log completion' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Log completion: Read tomorrow' })).toBeDisabled()
   await userEvent.click(screen.getByText('Completed & changed plans · 1'))
   expect(screen.getByText('Changed plan')).toBeVisible()
+})
+
+test('recognizes a completed habit-only day without inventing task completions', async () => {
+  vi.stubGlobal('fetch', vi.fn(async path => Response.json(path.endsWith('/areas') ? [] : {
+    localDate: '2026-03-29', currentLocalDate: '2026-03-29', timeZoneId: 'Europe/Oslo', inboxCount: 0,
+    tasks: [], commitments: [], habits: [{ id: 'habit', title: 'Read', pattern: 'Daily', activeLogId: 'log' }],
+  })))
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(<QueryClientProvider client={client}><MemoryRouter><Routes><Route element={<Outlet context={{ user: { id: 'owner' } }} />}>
+    <Route index element={<TodayPage />} /></Route></Routes></MemoryRouter></QueryClientProvider>)
+  expect(await screen.findByText('Your planned work and habits are complete for this day.')).toBeVisible()
+  expect(screen.queryByText('Start with one task')).not.toBeInTheDocument()
 })

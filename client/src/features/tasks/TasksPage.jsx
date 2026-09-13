@@ -1,16 +1,17 @@
 ﻿import { useState } from 'react'
-import { Link, NavLink, useSearchParams } from 'react-router'
+import { Link, NavLink, useSearchParams, useOutletContext } from 'react-router'
 import { queryString, useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Input } from '../../shared/ui/Input.jsx'
 import { Select } from '../../shared/ui/Select.jsx'
 import { EmptyState } from '../../shared/ui/EmptyState.jsx'
 import { PageHeader } from '../../shared/ui/PageHeader.jsx'
 import { ActionFeedback, Pagination, QueryFeedback } from '../../shared/ui/ProductivityFeedback.jsx'
-import { QuickAdd } from './QuickAdd.jsx'
+import { Button } from '../../shared/ui/Button.jsx'
 import { TaskRow } from './TaskRow.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
 
 export function TasksPage({ inbox = false }) {
+  const { openCapture } = useOutletContext()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('active')
   const [search, setSearch] = useState('')
@@ -43,7 +44,7 @@ export function TasksPage({ inbox = false }) {
           date={inbox ? today.data?.currentLocalDate : undefined} areaName={areas.data?.find(area => area.id === task.lifeAreaId)?.displayName} />)}</ul>
         <Pagination data={tasks.data} setPage={setPage} />
       </section>
-      <aside className={styles.section} aria-label="Capture a task"><QuickAdd />{inbox && <p className={styles.meta}>Open a task to add details, a Life Area or a due date. It leaves Inbox when you choose a planned date.</p>}</aside>
+      <aside className={styles.section} aria-label="Capture a task"><Button onClick={() => openCapture({ date: null })}>Capture a task</Button>{inbox && <p className={styles.meta}>Open a task to add details, a Life Area or a due date. It leaves Inbox when you choose a planned date.</p>}</aside>
     </div>
   </div>
 }
