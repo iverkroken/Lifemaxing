@@ -1,3 +1,4 @@
+param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '')
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 Set-Location -LiteralPath $repoRoot
@@ -8,7 +9,7 @@ $viteProcess = $null
 $created = $false
 $variables = @('ConnectionStrings__Database', 'ASPNETCORE_ENVIRONMENT', 'ASPNETCORE_URLS', 'ASPNETCORE_CONTENTROOT',
   'OwnerProvisioning__Email', 'OwnerProvisioning__Password', 'SMOKE_EMAIL', 'SMOKE_PASSWORD', 'SMOKE_BASE_URL',
-  'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default')
+  'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default', 'REFERENCE_STAGE')
 $previous = @{}
 foreach ($name in $variables) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 function Wait-Ready([string] $url) {
@@ -52,8 +53,16 @@ try {
   $viteProcess = Start-Process node -ArgumentList 'node_modules/vite/bin/vite.js client --config client/vite.config.js --port 5174' -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-vite.log -RedirectStandardError artifacts/browser-vite-error.log
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   Wait-Ready 'http://127.0.0.1:5174/start'
+  if ($ReferenceStage) {
+    $env:REFERENCE_STAGE = $ReferenceStage
+    npm run test:smoke -- reference.spec.js
+    if ($LASTEXITCODE -ne 0) { throw 'Reference page checks failed.' }
+    return
+  }
   npm run test:smoke -- foundation.spec.js phase1.spec.js phase2.spec.js ux.spec.js phase3.spec.js
   if ($LASTEXITCODE -ne 0) { throw 'Browser checks failed.' }
+  npm run test:smoke -- auth.spec.js
+  if ($LASTEXITCODE -ne 0) { throw 'Authentication browser checks failed.' }
   Stop-Process -Id $apiProcess.Id
   $apiProcess.WaitForExit()
   $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-api-restart.log -RedirectStandardError artifacts/browser-api-restart-error.log
@@ -61,6 +70,8 @@ try {
   $env:SMOKE_RESTART = '1'
   npm run test:smoke -- phase2-restart.spec.js phase3-restart.spec.js
   if ($LASTEXITCODE -ne 0) { throw 'Persistence checks after restart failed.' }
+  npm run test:smoke -- auth-restart.spec.js
+  if ($LASTEXITCODE -ne 0) { throw 'Remembered session after restart failed.' }
 } finally {
   if ($apiProcess -and !$apiProcess.HasExited) { Stop-Process -Id $apiProcess.Id }
   if ($viteProcess -and !$viteProcess.HasExited) { Stop-Process -Id $viteProcess.Id }
