@@ -8,6 +8,7 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   await expect(page).toHaveURL(/\/login$/)
   await page.getByLabel('Email').fill(process.env.SMOKE_EMAIL)
   await page.getByLabel('Password').fill(process.env.SMOKE_PASSWORD)
+  await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Life Areas' })).toBeVisible()
   await expect(page.locator('section')).toHaveCount(10)
@@ -48,7 +49,7 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   await expect(anotherPage.getByLabel('Display name').first()).toHaveValue(updatedName)
   await anotherPage.close()
 
-  await page.getByRole('button', { name: 'Sign out' }).click()
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
   await page.goto('/areas')
   await expect(page).toHaveURL(/\/login$/)

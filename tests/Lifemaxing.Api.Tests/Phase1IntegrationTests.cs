@@ -159,8 +159,23 @@ public sealed class Phase1IntegrationTests(TestDatabaseFixture database)
         }
         using (last)
         {
-            Assert.Equal((HttpStatusCode)423, last!.StatusCode);
-            Assert.Contains("account_locked", await last.Content.ReadAsStringAsync());
+            Assert.Equal(HttpStatusCode.Unauthorized, last!.StatusCode);
+            Assert.Contains("invalid_credentials", await last.Content.ReadAsStringAsync());
+            await using var scope = application.Services.CreateAsyncScope();
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            Assert.True(await users.IsLockedOutAsync((await users.FindByIdAsync(owner.UserId.ToString()))!));
+            using var lockedRequest = CreateJsonRequest(HttpMethod.Post, "/api/v1/auth/login",
+                new { owner.Email, owner.Password }, token);
+            using var lockedResponse = await client.SendAsync(lockedRequest);
+            using var unknownRequest = CreateJsonRequest(HttpMethod.Post, "/api/v1/auth/login",
+                new { Email = "unknown@example.test", owner.Password }, token);
+            using var unknownResponse = await client.SendAsync(unknownRequest);
+            Assert.Equal(HttpStatusCode.Unauthorized, lockedResponse.StatusCode);
+            Assert.Equal(lockedResponse.StatusCode, unknownResponse.StatusCode);
+            var lockedProblem = await lockedResponse.Content.ReadFromJsonAsync<JsonElement>();
+            var unknownProblem = await unknownResponse.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(unknownProblem.GetProperty("detail").GetString(), lockedProblem.GetProperty("detail").GetString());
+            Assert.Equal(unknownProblem.GetProperty("code").GetString(), lockedProblem.GetProperty("code").GetString());
         }
     }
 
