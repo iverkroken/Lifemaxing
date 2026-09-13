@@ -66,3 +66,5 @@ Task is named `TaskItem` in C# to avoid collision with the asynchronous Task typ
 Completion, habit log and goal progress handlers have explicit transaction boundaries where Phase 3 will attach Activity/XP. No unused event bus, no-op service, or Activity table was added.
 
 The dedicated UX pass retains `/today` as the authenticated landing page and exposes only implemented routes through a desktop sidebar and a mobile/tablet dock with a More dialog. See `DESIGN_SYSTEM.md` for the completed navigation and interaction patterns. API contracts are unchanged by that pass.
+
+Phase 3 extends these contracts: task complete/reopen and habit log/revoke require a `ClientActionId` UUID header and return progression feedback in addition to their resource fields. Habits add `xpPerLog` (default 10, configurable 1–25). See the Phase 3 API section in `ARCHITECTURE.md` and the historical storage details in `DATABASE.md`.
