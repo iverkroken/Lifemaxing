@@ -1,4 +1,5 @@
 .git
+**/key-*.xml
 .idea
 **/node_modules
 **/bin
