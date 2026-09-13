@@ -1,3 +1,4 @@
+using Lifemaxing.Api.Features.Progression;
 using System.Security.Claims;
 using System.Text.Json;
 using Lifemaxing.Api.Common;
@@ -30,6 +31,7 @@ public static class HabitEndpoints
         habits.MapPost("/", async (HabitRequest request, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
+            if (request.XpPerLog is < 1 or > 25) return Productivity.Invalid("xpPerLog", "Use 1 to 25 XP per completion.");
             if (!Productivity.TitleValid(request.Title)) return Productivity.Invalid("title", "Enter a title of 1–200 characters.");
             if (!await Productivity.OwnsArea(db, userId, request.LifeAreaId, ct)) return Productivity.NotFound();
             var day = await Productivity.Day(db, userId, clock, ct);
@@ -38,7 +40,7 @@ public static class HabitEndpoints
             if (error is not null) return error;
             if (schedule.EffectiveFromDate < day.Date) return Productivity.Invalid("effectiveFromDate", "A new habit starts today or later.");
             var habit = new Habit { Id = Guid.NewGuid(), UserId = userId, Title = request.Title!.Trim(),
-                LifeAreaId = request.LifeAreaId, IsActive = request.IsActive, CreatedAtUtc = day.Now };
+                LifeAreaId = request.LifeAreaId, IsActive = request.IsActive, XpPerLog = request.XpPerLog, CreatedAtUtc = day.Now };
             habit.Schedules.Add(HabitRules.Create(habit.Id, schedule, day.TimeZoneId));
             db.Habits.Add(habit);
             await db.SaveChangesAsync(ct);
@@ -50,10 +52,11 @@ public static class HabitEndpoints
             var habit = await db.Habits.Include(x => x.Schedules).SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
             if (habit is null) return Productivity.NotFound();
             if (habit.ArchivedAtUtc is not null) return Productivity.Conflict("Archived habits cannot be edited.");
-            var request = Productivity.Patch(new HabitEditRequest(habit.Title, habit.LifeAreaId, habit.IsActive), patch);
+            var request = Productivity.Patch(new HabitEditRequest(habit.Title, habit.LifeAreaId, habit.IsActive, habit.XpPerLog), patch);
+            if (request.XpPerLog is < 1 or > 25) return Productivity.Invalid("xpPerLog", "Use 1 to 25 XP per completion.");
             if (!Productivity.TitleValid(request.Title)) return Productivity.Invalid("title", "Enter a title of 1–200 characters.");
             if (!await Productivity.OwnsArea(db, userId, request.LifeAreaId, ct)) return Productivity.NotFound();
-            habit.Title = request.Title!.Trim(); habit.LifeAreaId = request.LifeAreaId; habit.IsActive = request.IsActive;
+            habit.Title = request.Title!.Trim(); habit.LifeAreaId = request.LifeAreaId; habit.IsActive = request.IsActive; habit.XpPerLog = request.XpPerLog;
             await db.SaveChangesAsync(ct);
             return Results.Ok(HabitRules.Response(habit));
         });
@@ -118,7 +121,9 @@ public static class HabitEndpoints
             var log = new HabitLog { Id = Guid.NewGuid(), UserId = userId, HabitId = id, LocalDate = request.LocalDate,
                 TimeZoneId = schedule.TimeZoneId, LoggedAtUtc = day.Now };
             db.HabitLogs.Add(log);
-            // Phase 3 attaches XP and Activity to this same transaction.
+            var xp = await ProgressionRules.Award(db, userId, "HabitLog", log.Id, habit.LifeAreaId, "Habits", habit.XpPerLog,
+                new OwnerDay(day.Now, log.LocalDate, log.TimeZoneId), ct);
+            ProgressionRules.Record(db, userId, "HabitCompleted", "Habit", id, habit.LifeAreaId, day.Now, $"Completed: {habit.Title} on {log.LocalDate} (+{xp} XP)", log.Id);
             await db.SaveChangesAsync(ct);
             return Results.Created($"/api/v1/habits/{id}/logs", HabitRules.Response(log));
         });
@@ -127,7 +132,13 @@ public static class HabitEndpoints
             var userId = principal.GetUserId();
             var log = await db.HabitLogs.SingleOrDefaultAsync(x => x.Id == logId && x.HabitId == id && x.UserId == userId, ct);
             if (log is null) return Productivity.NotFound();
-            log.ReversedAtUtc ??= clock.GetUtcNow();
+            if (log.ReversedAtUtc is null)
+            {
+                log.ReversedAtUtc = clock.GetUtcNow();
+                var habit = await db.Habits.SingleAsync(x => x.Id == id && x.UserId == userId, ct);
+                var xp = await ProgressionRules.Reverse(db, userId, "HabitLog", log.Id, log.ReversedAtUtc.Value, ct);
+                ProgressionRules.Record(db, userId, "HabitReversed", "Habit", id, habit.LifeAreaId, log.ReversedAtUtc.Value, $"Removed completion: {habit.Title} on {log.LocalDate} ({xp} XP)", log.Id);
+            }
             await db.SaveChangesAsync(ct);
             return Results.Ok(HabitRules.Response(log));
         });
