@@ -13,7 +13,9 @@ export function ActionFeedback({ action, success = 'Saved.' }) {
     <p>{action.error.message}</p>
     {Object.entries(action.error.errors || {}).map(([key, messages]) => <p key={key}>{messages.join(' ')}</p>)}
   </div>
-  return action.isSuccess ? <p role="status" className={styles.feedback}>{success}</p> : null
+  const progression = action.data?.progression
+  const earned = progression && (progression.xpChange !== 0 || /\/(complete|logs)$/.test(action.variables?.path || '')) ? progression : null
+  return action.isSuccess ? <p role="status" className={styles.feedback}>{success}{earned && <> {earned.xpChange > 0 ? '+' : ''}{earned.xpChange} XP.{earned.levelUp && <> Level {earned.progress.level} reached · {earned.progress.rank}.</>}</>}</p> : null
 }
 
 export function Pagination({ data, setPage }) {

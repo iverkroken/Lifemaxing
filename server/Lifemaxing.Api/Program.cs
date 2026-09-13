@@ -1,3 +1,4 @@
+using Lifemaxing.Api.Features.Progression;
 using System.Threading.RateLimiting;
 using Lifemaxing.Api.Data;
 using Lifemaxing.Api.Features.Areas;
@@ -131,6 +132,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+app.Use(async (context, next) => { if (HttpMethods.IsPost(context.Request.Method)) context.Request.EnableBuffering(); await next(); });
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" }));
 app.MapSystemEndpoints();
@@ -142,6 +144,8 @@ productivity.MapTaskEndpoints();
 productivity.MapTodayEndpoints();
 productivity.MapHabitEndpoints();
 productivity.MapGoalEndpoints();
+productivity.MapProgressionEndpoints();
+productivity.MapFocusEndpoints();
 
 // Reserve API and health paths: even unknown routes must never return the SPA.
 app.Map("/api/{**path}", () => Results.Problem(statusCode: 404, title: "Endpoint not found."));
