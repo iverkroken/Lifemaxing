@@ -25,6 +25,7 @@ public sealed class TaskCompletion
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public Guid TaskId { get; set; }
+    public int AwardedXp { get; set; }
     public DateTimeOffset CompletedAtUtc { get; set; }
     public DateTimeOffset? ReversedAtUtc { get; set; }
 }

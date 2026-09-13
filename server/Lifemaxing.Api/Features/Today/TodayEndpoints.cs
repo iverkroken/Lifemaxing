@@ -1,3 +1,4 @@
+using Lifemaxing.Api.Features.Progression;
 using System.Security.Claims;
 using Lifemaxing.Api.Common;
 using Lifemaxing.Api.Data;
@@ -93,11 +94,13 @@ public static class TodayEndpoints
                 return Productivity.Conflict("Choose an active, unfinished task as your mission.");
             var day = await Productivity.Day(db, userId, clock, ct);
             var mission = await db.DailyMissions.SingleOrDefaultAsync(x => x.UserId == userId && x.LocalDate == date, ct);
+            var changed = mission is not null && mission.TaskId != task.Id;
             if (mission is null)
             {
                 mission = new DailyMission { Id = Guid.NewGuid(), UserId = userId, LocalDate = date };
                 db.DailyMissions.Add(mission);
             }
+            if (changed) ProgressionRules.Record(db, userId, "MissionChanged", "Task", task.Id, task.LifeAreaId, day.Now, $"Daily Mission for {date}: {task.Title}");
             mission.TaskId = task.Id; mission.SelectedAtUtc = day.Now;
             await Planning.Commit(db, userId, task.Id, date, day, ct);
             // Selecting a mission adds a daily commitment without moving another intentional plan.
