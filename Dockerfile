@@ -19,6 +19,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0.12 AS final
 WORKDIR /app
 COPY --from=server-build /app/ ./
 ENV ASPNETCORE_HTTP_PORTS=8080
+ENV DataProtection__KeyDirectory=/var/lib/lifemaxing/keys
+RUN mkdir -p /var/lib/lifemaxing/keys && chown "$APP_UID:$APP_UID" /var/lib/lifemaxing/keys && chmod 700 /var/lib/lifemaxing/keys
 USER $APP_UID
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Lifemaxing.Api.dll"]
