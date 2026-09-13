@@ -1,3 +1,4 @@
+import { useLanguage } from '../settings/language.js'
 import { useForm, useWatch } from 'react-hook-form'
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -15,6 +16,7 @@ const schema = z.object({ title: z.string().trim().min(1, 'Enter a title.').max(
   lifeAreaId: z.string(), goalId: z.string(), tier: z.string(), priority: z.string(), plannedDate: z.string(), dueDate: z.string(), estimateMinutes: z.string() })
 
 function TaskForm({ task }) {
+  const { t, areaName } = useLanguage()
   const navigate = useNavigate()
   const areas = useProductivity('/areas')
   const [goalPage, setGoalPage] = useState(1)
@@ -24,7 +26,11 @@ function TaskForm({ task }) {
     tier: task?.tier || 'Small', priority: task?.priority || 'Normal', plannedDate: task?.plannedDate || '', dueDate: task?.dueDate || '', estimateMinutes: task?.estimateMinutes?.toString() || '',
   } })
   const selectedGoal = useWatch({ control: form.control, name: 'goalId' })
-  const save = useProductivityAction(saved => navigate(`/tasks/${saved.id}`, { replace: true }))
+  const save = useProductivityAction(saved => {
+    if (task) form.reset(form.getValues())
+    else navigate(`/tasks/${saved.id}`, { replace: true })
+  })
+  const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction()
   return <form className={styles.form} noValidate onSubmit={form.handleSubmit(values => save.mutate({
     path: task ? `/tasks/${task.id}` : '/tasks', method: task ? 'PATCH' : 'POST', body: { ...values,
@@ -34,53 +40,56 @@ function TaskForm({ task }) {
     <fieldset disabled={save.isPending || action.isPending || Boolean(task?.deletedAtUtc)} className={styles.formFields}>
     <div className={styles.split}>
     <div>
-    <p className={styles.eyebrow}>{task?.deletedAtUtc ? 'Archived' : task?.isCompleted ? 'Completed' : 'Define the action'}</p>
+    <p className={styles.eyebrow}>{task?.deletedAtUtc ? t("Archived") : task?.isCompleted ? t("Completed") : t("Define the action")}</p>
     <fieldset className={styles.formSection}>
-    <Input label="Title" required error={form.formState.errors.title?.message} {...form.register('title')} />
-    <Input label="Details" multiline rows={6} placeholder="A little context, a clear next step…" error={form.formState.errors.details?.message} {...form.register('details')} />
+    <Input label={t("Title")} required error={form.formState.errors.title} {...form.register('title')} />
+    <Input label={t("Details")} multiline rows={6} placeholder={t("A little context, a clear next step…")} error={form.formState.errors.details} {...form.register('details')} />
     </fieldset>
-    <fieldset className={styles.formSection}><legend>Connect it to your life</legend>
-      <Select label="Life Area" {...form.register('lifeAreaId')}><option value="">No area</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{x.displayName}</option>)}</Select>
+    <fieldset className={styles.formSection}><legend>{t("Connect it to your life")}</legend>
+      <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("No area")}</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
       <div className={styles.form}>
-        <Select label="Goal" {...form.register('goalId')}><option value="">No goal</option>
-          {selectedGoal && !goals.data?.items.some(x => x.id === selectedGoal) && <option value={selectedGoal}>Linked goal (outside this page)</option>}
+        <Select label={t("Goal")} {...form.register('goalId')} value={selectedGoal}><option value="">{t("No goal")}</option>
+          {selectedGoal && !goals.data?.items.some(x => x.id === selectedGoal) && <option value={selectedGoal}>{t("Linked goal (outside this page)")}</option>}
           {goals.data?.items.map(x => <option key={x.id} value={x.id}>{x.title}</option>)}
         </Select>
         <Pagination data={goals.data} setPage={setGoalPage} />
       </div>
     </fieldset>
     </div>
-    <fieldset className={`${styles.formSection} ${styles.surface}`}><legend>Make a plan</legend>
-      <Input label="Planned date" type="date" hint="Creates a daily commitment. Leave empty for Inbox." {...form.register('plannedDate')} />
-      <Input label="Due date" type="date" {...form.register('dueDate')} />
-      <Select label="Priority" {...form.register('priority')}>{['Low', 'Normal', 'High'].map(x => <option key={x}>{x}</option>)}</Select>
-      <Select label="Task size" {...form.register('tier')}>{['Tiny', 'Small', 'Medium', 'Large', 'Epic'].map(x => <option key={x}>{x}</option>)}</Select>
-      <Input label="Estimate (minutes)" type="number" min="1" max="10080" {...form.register('estimateMinutes')} />
+    <fieldset className={`${styles.formSection} ${styles.surface}`}><legend>{t("Make a plan")}</legend>
+      <Input label={t("Planned date")} type="date" hint={t("Creates a daily commitment. Leave empty for Inbox.")} {...form.register('plannedDate')} />
+      <Input label={t("Due date")} type="date" {...form.register('dueDate')} />
+      <Select label={t("Priority")} {...form.register('priority')}>{['Low', 'Normal', 'High'].map(x => <option key={x} value={x}>{t(x)}</option>)}</Select>
+      <Select label={t("Task size")} {...form.register('tier')}>{['Tiny', 'Small', 'Medium', 'Large', 'Epic'].map(x => <option key={x} value={x}>{t(x)}</option>)}</Select>
+      <Input label={t("Estimate (minutes)")} type="number" min="1" max="10080" {...form.register('estimateMinutes')} />
     </fieldset>
     </div>
     <QueryFeedback query={areas} /><QueryFeedback query={goals} />
-    {task?.deletedAtUtc ? <p>This task is archived. Its plans and completions are retained.</p> : <div className={styles.formFooter}>
+    {task?.deletedAtUtc ? <p>{t("This task is archived. Its plans and completions are retained.")}</p> : <div className={styles.formFooter}>
       <div className={styles.actions}>
-      <Button type="submit" loading={save.isPending} disabled={action.isPending}>{task ? 'Save task' : 'Create task'}</Button>
+      <Button type="submit" loading={save.isPending} disabled={action.isPending}>{task ? t("Save task") : t("Create task")}</Button>
       {task && <>
-        {!task.isCompleted && <Link to={`/focus?taskId=${task.id}`}>Focus on this task</Link>}
-        <Button variant="secondary" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}/${task.isCompleted ? 'reopen' : 'complete'}` })}>{task.isCompleted ? 'Reopen task' : 'Complete task'}</Button>
+        {!task.isCompleted && <Link to={`/focus?taskId=${task.id}`}>{t("Focus on this task")}</Link>}
+        <Button variant="secondary" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}/${task.isCompleted ? 'reopen' : 'complete'}` })}>{task.isCompleted ? t("Reopen task") : t("Complete task")}</Button>
       </>}
       </div>
-      {task && <details><summary>Archive task</summary><p>Plans and completion history are preserved.</p><Button variant="danger" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}`, method: 'DELETE' })}>Archive task</Button></details>}
+      {task && <details><summary>{t("Archive task")}</summary><p>{t("Plans and completion history are preserved.")}</p><Button variant="danger" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}`, method: 'DELETE' })}>{t("Archive task")}</Button></details>}
     </div>}
-    <ActionFeedback action={save} success="Task saved." /><ActionFeedback action={action} />
+    <ActionFeedback action={save} success={t("Task saved.")} /><ActionFeedback action={action} />
     </fieldset>
   </form>
 }
 
 export function NewTaskPage() {
-  return <div className={styles.stack}><Link to="/tasks">← All tasks</Link><PageHeader eyebrow="From intention to action" title="New task" description="Define the next useful action." /><TaskForm /></div>
+  const { t } = useLanguage()
+  return <div className={styles.stack}><Link to="/tasks">{t("← All tasks")}</Link><PageHeader eyebrow={t("From intention to action")} title={t("New task")} description={t("Define the next useful action.")} /><TaskForm /></div>
 }
-export function TaskDetailPage() {
-  const { id } = useParams()
+export function TaskDetailPage({ taskId, panel = false }) {
+  const { t } = useLanguage()
+  const params = useParams()
+  const id = taskId || params.id
   const task = useProductivity(`/tasks/${id}`)
-  return <div className={styles.stack}><Link to="/tasks">← All tasks</Link><PageHeader eyebrow="Organize → commit → complete" title="Task details" description="Give this action a place in your day." />
+  return <div className={styles.stack}>{!panel && <Link to="/tasks">{t("← All tasks")}</Link>}<PageHeader eyebrow={t("Organize → commit → complete")} title={t("Task details")} description={t("Give this action a place in your day.")} />
     <QueryFeedback query={task} />{task.data && <TaskForm key={task.data.id} task={task.data} />}
   </div>
 }
