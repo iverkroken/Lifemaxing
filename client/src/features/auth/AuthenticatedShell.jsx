@@ -9,6 +9,9 @@ import { Dialog } from '../../shared/ui/Dialog.jsx'
 import { Icon } from '../../shared/ui/Icon.jsx'
 import { QuickAdd } from '../tasks/QuickAdd.jsx'
 import { useProductivity } from '../../shared/api/productivity.js'
+import { HabitForm } from '../habits/HabitForm.jsx'
+import { GoalForm } from '../goals/GoalForm.jsx'
+import { Select } from '../../shared/ui/Select.jsx'
 
 const destinations = [['today', 'Today'], ['tasks', 'Tasks'], ['goals', 'Goals'], ['habits', 'Habits'], ['areas', 'Life Areas']]
 
@@ -20,6 +23,8 @@ export function AuthenticatedShell() {
   const navigate = useNavigate()
   const location = useLocation()
   const [captureOpen, setCaptureOpen] = useState(false)
+  const [capture, setCapture] = useState({ kind: 'task' })
+  const openCapture = (options = {}) => { setCapture({ kind: 'task', ...options }); setCaptureOpen(true) }
   const [menuOpen, setMenuOpen] = useState(false)
   const focusing = location.pathname === '/focus'
   const today = useProductivity('/today')
@@ -51,8 +56,7 @@ export function AuthenticatedShell() {
     <a href="#main-content" className={styles.skipLink}>Skip to content</a>
     <aside className={styles.sidebar}>
       <NavLink to="/today" className={styles.brand}><Icon name="leaf" size={24} />LIFEMAXING</NavLink>
-      <p className={styles.tagline}>A life, intentionally lived.</p>
-      <Button variant="secondary" onClick={() => setCaptureOpen(true)}><Icon name="plus" />Quick Add</Button>
+      <Button variant="secondary" onClick={() => openCapture()}><Icon name="plus" />Quick Add</Button>
       <nav className={styles.navigation} aria-label="Main navigation">
         <p className={styles.navLabel}>Your workspace</p>
         {destinations.map(([path, label]) => <NavLink key={path} to={`/${path}`} className={navClass}><Icon name={path} />{label}</NavLink>)}
@@ -73,17 +77,22 @@ export function AuthenticatedShell() {
       <NavLink to="/inbox" className={styles.mobileInbox}><Icon name="inbox" /><span>Inbox</span></NavLink>
     </header>
     <main id="main-content" className={styles.content} tabIndex={-1}>
-      <Outlet context={{ user }} />
+      <Outlet context={{ user, openCapture }} />
     </main>
     <nav className={styles.dock} aria-label="Mobile navigation">
       <NavLink to="/today" className={navClass}><Icon name="today" />Today</NavLink>
       <NavLink to="/tasks" className={navClass}><Icon name="tasks" />Tasks</NavLink>
-      <button className={styles.dockCapture} onClick={() => setCaptureOpen(true)}><Icon name="plus" />Capture</button>
+      <button className={styles.dockCapture} onClick={() => openCapture()}><Icon name="plus" />Capture</button>
       <NavLink to="/goals" className={navClass}><Icon name="goals" />Goals</NavLink>
       <button className={styles.navLink} aria-haspopup="dialog" onClick={() => setMenuOpen(true)}><Icon name="more" />More</button>
     </nav>
-    <Dialog open={captureOpen} onClose={() => setCaptureOpen(false)} title="Capture a task">
-      <QuickAdd date={today.data?.currentLocalDate} autoFocus />
+    <Dialog open={captureOpen} onClose={() => setCaptureOpen(false)} title={capture.kind === 'habit' ? 'Create a habit' : capture.kind === 'goal' ? 'Create a goal' : 'Capture a task'}>
+      <div className={styles.captureType}><Select label="Create" value={capture.kind} onChange={e => setCapture(value => ({ ...value, kind: e.target.value }))}>
+        <option value="task">Task</option><option value="habit">Habit</option><option value="goal">Goal</option>
+      </Select></div>
+      {capture.kind === 'task' && <QuickAdd date={capture.date === null ? undefined : capture.date || today.data?.currentLocalDate} autoFocus />}
+      {capture.kind === 'habit' && <HabitForm onSaved={habit => { setCaptureOpen(false); navigate(`/habits/${habit.id}`) }} />}
+      {capture.kind === 'goal' && <GoalForm onSaved={goal => { setCaptureOpen(false); navigate(`/goals/${goal.id}`) }} />}
     </Dialog>
     <Dialog open={menuOpen} onClose={() => setMenuOpen(false)} title="Your workspace">
       <nav className={styles.menuLinks} aria-label="More destinations">
