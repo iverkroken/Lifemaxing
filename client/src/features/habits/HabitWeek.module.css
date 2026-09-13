@@ -1,0 +1,17 @@
+.week { min-width: 0; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: var(--space-6); }
+.week > header { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: var(--space-4); }
+.week h2 { font-size: var(--text-section-title); margin: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding: 0; list-style: none; color: var(--color-text-muted); font-size: var(--text-sm); }
+.legend li { white-space: nowrap; }
+.week p, .routineHeading span { font-size: var(--text-sm); color: var(--color-text-muted); }
+.routine { margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+.routineHeading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); }
+.routineHeading a { font-weight: 500; color: var(--color-text); text-decoration: none; min-height: var(--control-height); display: inline-flex; align-items: center; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-2); }
+.day { display: flex; align-items: center; flex-direction: column; gap: var(--space-2); text-align: center; min-width: 0; }
+.day time, .state, .day small { font-size: var(--text-sm); overflow-wrap: anywhere; color: var(--color-text-muted); }
+.mark { width: 100%; display: grid; place-items: center; min-height: var(--control-height); background: var(--color-surface-muted); border-radius: var(--radius-control); color: var(--color-text-muted); font-size: var(--text-lg); }
+.day[data-state='completed'] .mark { background: var(--color-accent-soft); color: var(--color-accent); }
+.day[data-state='corrected'] .mark { color: var(--color-warning); }
+.day[data-state='notPlanned'] .mark, .day[data-state='future'] .mark { background: transparent; border: 1px dashed var(--color-control-border); }
+@media (max-width: 767px) { .week { padding: var(--space-4); } .days { gap: var(--space-1); } .day time { font-size: var(--text-xs); } .state, .day small { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; } }
