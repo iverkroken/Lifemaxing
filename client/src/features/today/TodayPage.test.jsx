@@ -23,7 +23,7 @@ test('uses server local day, displays mission and habit state, and sends complet
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(<QueryClientProvider client={client}><MemoryRouter><Routes><Route element={<Outlet context={{ user: { id: 'owner' } }} />}>
     <Route index element={<TodayPage />} /></Route></Routes></MemoryRouter></QueryClientProvider>)
-  expect(await screen.findByText('2026-03-29 · Europe/Oslo')).toBeInTheDocument()
+  expect(await screen.findByText('29 Mar 2026 · Europe/Oslo')).toBeInTheDocument()
   expect(screen.getByText('2 / 3 this week')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Complete mission' }))
   expect(await screen.findByText('Mission completed.')).toBeInTheDocument()
