@@ -6,7 +6,6 @@ import { AreaPage } from '../features/areas/AreaPage.jsx'
 import { AuthenticatedShell } from '../features/auth/AuthenticatedShell.jsx'
 import { LoginPage } from '../features/auth/LoginPage.jsx'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute.jsx'
-import { useCurrentUser } from '../features/auth/useCurrentUser.js'
 import { SettingsPage } from '../features/settings/SettingsPage.jsx'
 import { StartPage } from '../features/system/StartPage.jsx'
 import { PageHeader } from '../shared/ui/PageHeader.jsx'
@@ -18,9 +17,7 @@ import { HabitsPage, HabitDetailPage } from '../features/habits/HabitsPage.jsx'
 import { GoalsPage, GoalDetailPage } from '../features/goals/GoalsPage.jsx'
 
 function HomeRoute() {
-  const user = useCurrentUser()
-  if (user.isPending) return <main className={styles.centered}>Checking your session…</main>
-  return <Navigate to={user.isSuccess ? '/today' : '/login'} replace />
+  return <Navigate to="/today" replace />
 }
 
 function NotFoundPage() {
