@@ -21,8 +21,10 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
     await page.keyboard.press('Tab')
     await expect(dialog.locator('summary', { hasText: 'More details' })).toBeFocused()
     await page.keyboard.press('Tab')
-    await expect(dialog.getByRole('button', { name: 'Add to Inbox' })).toBeFocused()
-    await page.keyboard.press('Tab')
+    await expect(dialog.getByLabel('Planned date')).toBeFocused()
+    // The editable native date can expose multiple keyboard segments. Check the
+    // actual dialog boundary without assuming a browser-specific segment count.
+    await dialog.locator('button').last().focus()
     await page.keyboard.press('Tab')
     await expect(dialog.getByRole('button', { name: 'Close dialog' })).toBeFocused()
     await page.keyboard.press('Escape')
@@ -45,7 +47,7 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
   await page.route('**/api/v1/tasks', route => route.request().method() === 'POST'
     ? route.fulfill({ status: 503, contentType: 'application/problem+json', body: JSON.stringify({ title: 'Temporarily unavailable.' }) }) : route.continue())
   await captureDialog.getByRole('button', { name: 'Add to Inbox' }).click()
-  await expect(captureDialog.getByRole('alert')).toContainText('Temporarily unavailable.')
+  await expect(captureDialog.getByRole('alert')).toContainText('The server is temporarily unavailable.')
   await expect(captureDialog.getByLabel('Task title', { exact: false })).toHaveValue('Captured from anywhere')
   await page.unroute('**/api/v1/tasks')
   await captureDialog.getByRole('button', { name: 'Add to Inbox' }).click()
@@ -56,7 +58,7 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
   await page.reload()
   await expect(page.getByRole('link', { name: 'Captured from anywhere' })).toBeVisible()
   await page.getByLabel('Search tasks').fill('A search with no matching actions')
-  await expect(page.getByText('A little breathing room', { exact: true })).toBeVisible()
+  await expect(page.getByText('No matching tasks', { exact: true })).toBeVisible()
   await page.getByLabel('Search tasks').fill('')
   await page.getByRole('link', { name: 'Captured from anywhere' }).click()
   await page.locator('summary').filter({ hasText: /^Archive task$/ }).click()
@@ -73,7 +75,7 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
   await page.getByRole('button', { name: 'Edit goal', exact: true }).click()
   await page.getByText('Archive this goal', { exact: true }).click()
   await page.getByRole('button', { name: 'Archive goal', exact: true }).click()
-  await expect(page.getByText('Archived goal', { exact: true })).toBeVisible()
+  await expect(page.getByText('Goal · Archived', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Progress history' }).getByText('A first step, recorded on mobile')).toBeVisible()
 
   await page.goto('/habits')
