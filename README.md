@@ -171,7 +171,7 @@ For a host publish without Docker, run `npm run build`, `dotnet publish server/L
 - `tests/Lifemaxing.Api.Tests`: focused API and PostgreSQL integration tests.
 - `docs`: product and engineering source of truth; current progress is in `IMPLEMENTATION_STATUS.md`.
 
-Phase 2 routes are `/today`, `/inbox`, `/tasks`, `/tasks/new`, `/tasks/:id`, `/habits`, `/habits/:id`, `/goals` and `/goals/:id`. Areas and Settings remain available. Detailed API contracts, validation and historical planning rules are in [docs/PHASE2_API.md](docs/PHASE2_API.md). XP and progression remain Phase 3 work.
+Phase 2 routes are `/today`, `/inbox`, `/tasks`, `/tasks/new`, `/tasks/:id`, `/habits`, `/habits/:id`, `/goals` and `/goals/:id`. Areas and Settings remain available. Detailed API contracts, validation and historical planning rules are in [docs/PHASE2_API.md](docs/PHASE2_API.md). Phase 3 adds `/focus`, `/progress`, `/activity` and `/rewards`. Progression API contracts, mandatory ClientActionId headers and historical rules are documented in ARCHITECTURE.md and DATABASE.md.
 
 On this Windows/Compose development setup, the complete browser checks can run without touching the private owner's data:
 
@@ -180,6 +180,6 @@ dotnet build -c Release
 powershell -NoProfile -ExecutionPolicy Bypass -File tests/browser/run-isolated.ps1
 ```
 
-The runner uses the existing User Secrets database connection, creates a uniquely named temporary PostgreSQL database, applies migrations and provisions a fictional owner. It starts a separate Release API on 5082 and Vite on 5174, runs Phase 0/1/2 browser flows, restarts the API and verifies the stored task, habit/schedule/log and goal history again. It removes its database and stops its processes in `finally`. Ports 5082 and 5174 must be free. Development services on 5080/5173 are left running. `LIFEMAXING_API_TARGET` overrides the Vite proxy only for this isolated run; the normal default remains 5080.
+The runner uses the existing User Secrets database connection, creates a uniquely named temporary PostgreSQL database, applies migrations and provisions a fictional owner. It starts a separate Release API on 5082 and Vite on 5174, runs Phase 0/1/2/3 and UX browser flows, restarts the API and verifies the stored task, habit/schedule/log, goal, XP, reward claim and paused focus history again. It removes its database and stops its processes in `finally`. Ports 5082 and 5174 must be free. Development services on 5080/5173 are left running. `LIFEMAXING_API_TARGET` overrides the Vite proxy only for this isolated run; the normal default remains 5080.
 
 Browser checks edit records and must use a disposable owner. The isolated runner is the preferred full-suite workflow. Restart any already-running development API after rebuilding to load new endpoint code.
