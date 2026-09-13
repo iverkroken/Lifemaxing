@@ -13,3 +13,8 @@ export async function logout() {
   await apiRequest('/auth/logout', { method: 'POST' })
   clearCsrfToken()
 }
+
+export async function logoutEverywhere() {
+  await apiRequest('/auth/logout-everywhere', { method: 'POST' })
+  clearCsrfToken()
+}

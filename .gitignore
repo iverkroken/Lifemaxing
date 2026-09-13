@@ -8,6 +8,7 @@ riderModule.iml
 .idea/
 
 # Secrets
+**/key-*.xml
 .env
 .env.*
 !.env.example

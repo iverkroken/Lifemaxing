@@ -12,7 +12,7 @@
 .account { margin-top: auto; padding-top: var(--space-8); }
 .email { display: block; color: var(--color-text-muted); font-size: var(--text-xs); overflow-wrap: anywhere; padding-inline: var(--space-3); margin-block: var(--space-4) var(--space-2); }
 .error { color: var(--color-danger); font-size: var(--text-sm); }
-.content { min-width: 0; width: 100%; max-width: calc(var(--content-width) + var(--space-16)); padding: var(--space-8) var(--space-6) calc(var(--dock-height) + var(--space-8) + env(safe-area-inset-bottom)); margin-inline: auto; }
+.content { min-width: 0; width: 100%; max-width: var(--workspace-width); padding: var(--space-6) var(--space-6) calc(var(--dock-height) + var(--space-8) + env(safe-area-inset-bottom)); }
 .content:focus { outline: none; }
 .skipLink { position: fixed; top: var(--space-2); left: var(--space-2); clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; z-index: 10; }
 .skipLink:focus { clip-path: none; width: auto; height: auto; padding: var(--space-3); background: var(--color-surface); }
@@ -27,7 +27,7 @@
   .shell { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
   .sidebar { display: flex; flex-direction: column; position: sticky; top: 0; height: 100dvh; overflow-y: auto; border-right: 1px solid var(--color-border); padding: var(--space-8) var(--space-4); }
   .brand, .tagline { padding-inline: var(--space-3); }
-  .content { padding: var(--space-12) var(--space-12) var(--space-16); }
+  .content { padding: var(--space-8) var(--space-8) var(--space-16); }
   .mobileHeader, .dock { display: none; }
 }
 
@@ -36,3 +36,6 @@
 .focusing { display: block; }
 .focusing .sidebar, .focusing .dock, .focusing .mobileHeader { display: none; }
 .focusing .content { padding-bottom: var(--space-12); }
+.focusing .content { margin-inline: auto; max-width: var(--content-width); }
+.sidebar > button { margin-top: var(--space-8); }
+.captureType { margin-bottom: var(--space-6); }

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link, useOutletContext } from 'react-router'
+import { Link, useNavigate, useOutletContext } from 'react-router'
 import { z } from 'zod'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Card } from '../../shared/ui/Card.jsx'
@@ -10,6 +10,7 @@ import { Input } from '../../shared/ui/Input.jsx'
 import { PageHeader } from '../../shared/ui/PageHeader.jsx'
 import { getSettings, updateSettings } from './settingsApi.js'
 import styles from './SettingsPage.module.css'
+import { logoutEverywhere } from '../auth/authApi.js'
 
 const settingsSchema = z.object({
   timeZoneId: z.string().min(1, 'Enter an IANA time zone.'),
@@ -19,6 +20,11 @@ const settingsSchema = z.object({
 export function SettingsPage() {
   const { user } = useOutletContext()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const revoke = useMutation({ mutationFn: logoutEverywhere, onSuccess: () => {
+    queryClient.clear()
+    navigate('/login', { replace: true })
+  } })
   const queryKey = ['settings', user.id]
   const settings = useQuery({ queryKey, queryFn: ({ signal }) => getSettings(signal) })
   const form = useForm({ resolver: zodResolver(settingsSchema), defaultValues: { timeZoneId: '', locale: '' } })
@@ -56,5 +62,10 @@ export function SettingsPage() {
         </fieldset>
       </form>
     </section>}
+    <section className={styles.layout} aria-label="Account security">
+      <div><h2>Signed-in devices</h2><p className={styles.intro}>Sign out here and revoke older sessions on all devices within one minute. This keeps your account and all your work.</p></div>
+      <div><Button variant="secondary" loading={revoke.isPending} onClick={() => revoke.mutate()}>Sign out everywhere</Button>
+        {revoke.isError && <p role="alert">Could not revoke sessions. Check your connection and try again.</p>}</div>
+    </section>
   </>
 }

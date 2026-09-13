@@ -11,7 +11,8 @@ export function Dialog({ open, onClose, title, children }) {
     if (open && !dialog.open) {
       dialog.showModal()
       // React mounts children before showModal; focus an editable field only once it is visible.
-      dialog.querySelector('input:not([type="checkbox"]), textarea, select')?.focus()
+      const field = dialog.querySelector('input:not([type="checkbox"]), textarea') || dialog.querySelector('select')
+      field?.focus()
     }
     if (!open && dialog.open) dialog.close()
   }, [open])

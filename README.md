@@ -74,6 +74,8 @@ These diagnostics remain public and contain no personal data. The CSRF-token and
 
 There is no registration endpoint. After the migration, put the intended owner email and a unique password in ASP.NET Core User Secrets:
 
+**Bruk minst 15 tegn. Flere tilfeldige ord fungerer fint. Tall og spesialtegn er ikke påkrevd.** Maximum 128 Unicode characters; spaces are preserved. New passwords are checked against a bundled, limited common-password list, entirely locally. This intentionally replaces the former 12-character/composition policy. Existing passwords remain valid for sign-in; see the [canonical authentication policy](docs/ARCHITECTURE.md#authentication-policy--prompt-a-13-september-2026).
+
 ```powershell
 $ownerEmail = Read-Host 'Owner email'
 $ownerPassword = Read-Host 'Owner password' -MaskInput
@@ -102,6 +104,30 @@ npm run dev
 Open `http://127.0.0.1:5173`. `/` checks `/api/v1/auth/me` and sends an anonymous visitor to `/login` or the authenticated owner to `/today`. Sign in with the provisioned account. Vite proxies `/api/v1` and `/health` to port 5080; the client always uses relative URLs. No CORS setup or frontend secrets are needed.
 
 The browser stores only HttpOnly Identity and antiforgery cookies. The request token remains in memory and is refreshed across authentication changes. In production, both cookies use the `__Host-` prefix, `Secure`, and `SameSite=Strict`; development uses HTTP-compatible names on localhost. Login is limited to ten requests per IP per minute, and five failed passwords lock the account for five minutes.
+
+### Remembered sessions and troubleshooting
+
+"Hold meg innlogget på denne enheten" is unchecked by default. Without it, the browser receives a session cookie with a 12-hour server limit. With it, the cookie persists for at most 30 days from sign-in. Neither slides indefinitely. These are project choices, configured through `Authentication:Sessions:SessionHours`, `RememberDays` and `StampValidationSeconds` (defaults/maxima 12, 30, 60 respectively). Browser session-restore settings can restore session cookies; closing a browser is not a substitute for Sign out on a shared device.
+
+Settings → **Sign out everywhere** revokes older cookies through Identity's security stamp. The next request after the configured validation interval (at most 60 seconds) rejects them. Normal **Sign out** deletes this client's cookie; it does not immediately invalidate a previously copied cookie. Identity's stamp check is retained alongside JSON redirect handlers. Password reset uses the same revocation mechanism.
+
+Use `http://127.0.0.1:5173` consistently. Cookies for `localhost` and `127.0.0.1` belong to different hosts. The API can use a loopback proxy target, but browser requests stay relative to the Vite origin. Network/5xx failures now show a retry state instead of redirecting to Login; 401 alone means the current session is invalid. 403 is denied access and 429 means wait before retrying. Unknown accounts, wrong passwords and locked accounts share the same public sign-in failure response.
+
+Data Protection uses `%LOCALAPPDATA%\Lifemaxing\keys\Development` on Windows, with per-user DPAPI encryption. Other hosts use the local-application-data directory. `DataProtection:KeyDirectory` can specify an absolute protected directory outside the repository. The application appends the environment name and uses an environment-specific application identity. Keep the process account, directory and environment stable across restarts. Back up keys securely; never put them in Git/images or share Development keys with Production. Linux key directories are created with mode 700 and must be owned by the app account; deploy on protected storage and plan encryption at rest before public operation.
+
+This change establishes a stable key location/application identity, so **cookies issued by the earlier build require one new sign-in**. Existing accounts and all persisted data are unchanged. The audit confirmed durable default Windows keys were already present; it did not establish that key loss caused the user's historical logout. It did confirm automatic redirects on any `/auth/me` error and an overwritten Identity stamp handler. Different browser hosts/profiles and the old content-root-dependent key identity are possible session-loss factors, not independently reproduced historical causes.
+
+### Forgotten local owner password
+
+After the Release build, from the repository root in a local interactive Windows terminal, run:
+
+```powershell
+& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" run --project server/Lifemaxing.Api --configuration Release --no-build --launch-profile http -- --reset-owner-password
+```
+
+Use the .NET 10 SDK described above. The `http` launch profile selects Development; this command exits without starting an HTTP server. Enter the **existing** account email, then a new phrase twice. Password input is masked and supports spaces/paste; Escape cancels. No password/token belongs in command arguments, shell history or redirected input. The command refuses Production, extra arguments and noninteractive input/output. It uses UserManager's reset token/validation, preserves the user ID and all relationships/history, clears lockout after success and revokes older sessions. It never provisions an owner, resets a database or removes passkeys. The real owner must enter their own new password; automated verification uses a disposable fictional account.
+
+Production recovery is deliberately separate: this Development command is unavailable there. Before production rollout, establish an authenticated administrative recovery runbook with verified account identity, restricted operator access, backup/restore verification and an audited reset through Identity; alternatively implement a genuine verified-email recovery service with expiring single-use tokens, rate limiting and account-neutral responses. Revoke sessions after recovery. No production recovery HTTP endpoint or pretend email link is supplied by this task. Do not set a deployed application to Development to bypass this boundary.
 
 ## Builds and tests
 
@@ -152,10 +178,12 @@ ConnectionStrings__Database=Host=db;Port=5432;Database=lifemaxing;Username=lifem
 With the database running:
 
 ```powershell
-docker run --rm --name lifemaxing-phase1 --network lifemaxing_default --env-file .env.container -p 127.0.0.1:8080:8080 lifemaxing:phase1
+docker run --rm --name lifemaxing-phase1 --network lifemaxing_default --env-file .env.container --mount type=volume,source=lifemaxing-production-keys,target=/var/lib/lifemaxing/keys -p 127.0.0.1:8080:8080 lifemaxing:phase1
 ```
 
 Open `http://localhost:8080/start` and refresh it directly. ASP.NET Core serves the app and API on the same origin. `/api/v1/missing` must still return JSON 404. Stop the container with Ctrl+C. This is a local serving check; Phase 8 covers TLS, deployment, backups and operational security before public exposure.
+
+The named key volume is required on every recreation; retain and reuse it. The image contains only an empty key directory owned by the non-root app user, not key material. Use a separate volume for each environment; do not remove the production key volume to troubleshoot login. Authenticated production serving requires HTTPS for Secure cookies; the HTTP diagnostic example does not weaken that policy.
 
 For a host publish without Docker, run `npm run build`, `dotnet publish server/Lifemaxing.Api -c Release -o artifacts/publish`, then copy `client/dist/*` into `artifacts/publish/wwwroot/`. Run `dotnet Lifemaxing.Api.dll` from that publish directory with `ASPNETCORE_URLS=http://localhost:8080` and `ConnectionStrings__Database` set in the process environment. Production does not load development User Secrets.
 
@@ -183,3 +211,30 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests/browser/run-isolated.p
 The runner uses the existing User Secrets database connection, creates a uniquely named temporary PostgreSQL database, applies migrations and provisions a fictional owner. It starts a separate Release API on 5082 and Vite on 5174, runs Phase 0/1/2/3 and UX browser flows, restarts the API and verifies the stored task, habit/schedule/log, goal, XP, reward claim and paused focus history again. It removes its database and stops its processes in `finally`. Ports 5082 and 5174 must be free. Development services on 5080/5173 are left running. `LIFEMAXING_API_TARGET` overrides the Vite proxy only for this isolated run; the normal default remains 5080.
 
 Browser checks edit records and must use a disposable owner. The isolated runner is the preferred full-suite workflow. Restart any already-running development API after rebuilding to load new endpoint code.
+
+Prompt A verification (13 September 2026): 44 backend tests passed, including all prior 36 cases and 8 auth cases; 17 frontend tests passed; lint and production build passed. All 11 isolated browser checks passed (6 existing flows, 2 auth checks, 2 Phase 2/3 API-restart checks, 1 remembered-login restart check). The new restart test closes/relaunches Chromium with a real persistent profile rather than importing exported storage. Login was checked at 375/768/1440 px, with keyboard visibility toggle, autofill attributes, error recovery and both cookie choices. Paste/exact Unicode text is also covered by component tests. A specific third-party password manager, browser session-restore configurations and browsers beyond Chromium were not manually verified.
+
+For repeatable container key persistence and Production-command refusal checks, build `docker build -t lifemaxing:auth-verification .`, then run `powershell -NoProfile -File tests/browser/run-auth-runtime.ps1`. It uses port 5083, its own database/container/key volume, and cleans those resources. Optional `-InteractiveRecovery` exercises the actual masked .NET command against the script's fictional account/phrase; this was verified successfully, including old-password rejection, new-password login, unchanged ID and ten retained Life Areas. Backend tests additionally retain task completion, XP, Activity and command receipts across recovery, and verify stamp revocation, expiry, lockout, CSRF and Production cookie flags. Production HTTPS deployment and its eventual operational recovery process remain unverified deployment work.
+
+## Local Development account lockout exception
+
+Local access maintenance after Prompt B adds an explicitly opted-in exception for one existing account. `DevelopmentAccess:Email` and `DevelopmentAccess:DisableAccountLockout` are stored in local User Secrets, never committed configuration. The current operator configured the intended existing account locally; no password was generated, logged or stored in configuration by the agent.
+
+Both the environment and exact normalized account email must match. Ordinary password verification, confirmed-email checks, CSRF, cookies and the IP rate limit remain active. Only Identity account lockout is bypassed for that selected Development account. `LockoutEnabled` stays true in the database: Production/Staging ignore the exception even if the configuration is accidentally supplied there. No other account is unlocked or provisioned.
+
+To clear an existing lockout after configuring that local opt-in:
+
+```powershell
+& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" run --project server/Lifemaxing.Api --configuration Release --no-build --launch-profile http -- --unlock-development-account
+```
+
+This command uses UserManager, clears LockoutEnd/AccessFailedCount and exits without an HTTP endpoint. It neither changes a password nor deletes domain data. Use the existing masked `--reset-owner-password` command above to select a new password privately. No reset-password secret is required, and nothing needs to be copied into shell history or chat.
+
+To restore ordinary account lockout, remove the local opt-in and restart the API:
+
+```powershell
+& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" user-secrets remove "DevelopmentAccess:DisableAccountLockout" --project server/Lifemaxing.Api
+& "$env:LOCALAPPDATA\Microsoft\dotnet\dotnet.exe" user-secrets remove "DevelopmentAccess:Email" --project server/Lifemaxing.Api
+```
+
+This Development convenience does not disable the independent IP limiter. Repeated requests can still receive 429; wait for its normal one-minute window. Do not enable Development on a deployed environment to obtain this exception.

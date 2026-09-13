@@ -20,7 +20,8 @@ public static class AuthEndpoints
             return Results.Ok(new CsrfResponse(tokens.RequestToken!));
         }).AllowAnonymous();
 
-        auth.MapPost("/login", async (LoginRequest request, SignInManager<AppUser> signInManager) =>
+        auth.MapPost("/login", async (LoginRequest request, SignInManager<AppUser> signInManager,
+            IHostEnvironment environment, IConfiguration configuration) =>
         {
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrEmpty(request.Password))
             {
@@ -35,20 +36,25 @@ public static class AuthEndpoints
             if (user is null)
             {
                 // Run the hasher once to reduce the timing difference for unknown accounts.
-                _ = signInManager.UserManager.PasswordHasher.VerifyHashedPassword(
-                    new AppUser(), signInManager.UserManager.PasswordHasher.HashPassword(new AppUser(), "timing-only"), request.Password);
+                _ = signInManager.UserManager.PasswordHasher.HashPassword(new AppUser(), request.Password);
                 return InvalidCredentials();
             }
 
-            var result = await signInManager.PasswordSignInAsync(user, request.Password, isPersistent: true, lockoutOnFailure: true);
-            if (result.IsLockedOut)
+            var developmentExemption = DevelopmentLoginAccess.IsExempt(environment, configuration, user);
+            if (developmentExemption)
             {
-                return Results.Problem(
-                    statusCode: StatusCodes.Status423Locked,
-                    title: "Account temporarily locked.",
-                    detail: "Too many unsuccessful sign-in attempts. Try again later.",
-                    extensions: new Dictionary<string, object?> { ["code"] = "account_locked" });
+                var unlock = await DevelopmentLoginAccess.ClearLockoutAsync(signInManager.UserManager, user);
+                if (!unlock.Succeeded) return Results.Problem(statusCode: 409, title: "Sign-in could not be completed. Try again.");
             }
+            if (await signInManager.UserManager.IsLockedOutAsync(user))
+            {
+                _ = signInManager.UserManager.PasswordHasher.HashPassword(new AppUser(), request.Password);
+                return InvalidCredentials();
+            }
+
+            var result = await signInManager.PasswordSignInAsync(user, request.Password, request.RememberMe, lockoutOnFailure: !developmentExemption);
+            if (result.IsNotAllowed)
+                _ = signInManager.UserManager.PasswordHasher.HashPassword(new AppUser(), request.Password);
 
             return result.Succeeded ? Results.NoContent() : InvalidCredentials();
         }).AllowAnonymous().ValidateAntiforgery().RequireRateLimiting("login");
@@ -59,8 +65,19 @@ public static class AuthEndpoints
             return Results.NoContent();
         }).RequireAuthorization().ValidateAntiforgery();
 
-        auth.MapGet("/me", async (ClaimsPrincipal principal, AppDbContext db, CancellationToken cancellationToken) =>
+        auth.MapPost("/logout-everywhere", async (ClaimsPrincipal principal, SignInManager<AppUser> signInManager) =>
         {
+            var user = await signInManager.UserManager.GetUserAsync(principal);
+            if (user is null) return Results.Unauthorized();
+            var result = await signInManager.UserManager.UpdateSecurityStampAsync(user);
+            if (!result.Succeeded) return Results.Problem(statusCode: 409, title: "Sessions could not be revoked. Try again.");
+            await signInManager.SignOutAsync();
+            return Results.NoContent();
+        }).RequireAuthorization().ValidateAntiforgery();
+
+        auth.MapGet("/me", async (HttpContext context, ClaimsPrincipal principal, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
             var userId = principal.GetUserId();
             var result = await db.Users
                 .Where(user => user.Id == userId)
@@ -73,10 +90,10 @@ public static class AuthEndpoints
     private static IResult InvalidCredentials() => Results.Problem(
         statusCode: StatusCodes.Status401Unauthorized,
         title: "Sign-in failed.",
-        detail: "The email or password is incorrect.",
+        detail: "Sign-in failed. Check your email and password, or wait a few minutes before trying again.",
         extensions: new Dictionary<string, object?> { ["code"] = "invalid_credentials" });
 }
 
 public sealed record CsrfResponse(string RequestToken);
-public sealed record LoginRequest(string Email, string Password);
+public sealed record LoginRequest(string Email, string Password, bool RememberMe = false);
 public sealed record MeResponse(Guid Id, string Email);

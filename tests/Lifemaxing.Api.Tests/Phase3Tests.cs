@@ -155,6 +155,7 @@ public sealed class Phase3Tests(TestDatabaseFixture database)
         {
             s.AddSingleton<TimeProvider>(clock);
             s.PostConfigure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, o => o.TimeProvider = TimeProvider.System);
+            s.PostConfigure<SecurityStampValidatorOptions>(o => o.TimeProvider = TimeProvider.System);
         }));
         var owner = await database.CreateOwnerAsync(app, "xp-cap"); using var client = app.CreateClient(); await Login(client, owner.Email, owner.Password);
         var ids = new List<Guid>();
@@ -212,6 +213,7 @@ public sealed class Phase3Tests(TestDatabaseFixture database)
         {
             s.AddSingleton<TimeProvider>(clock);
             s.PostConfigure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, o => o.TimeProvider = TimeProvider.System);
+            s.PostConfigure<SecurityStampValidatorOptions>(o => o.TimeProvider = TimeProvider.System);
         }));
         var owner = await database.CreateOwnerAsync(app, "focus"); using var client = app.CreateClient(); await Login(client, owner.Email, owner.Password);
         var task = (await Send(client, "/tasks", new { title = "One thing", tier = "Medium" }, 201)).GetProperty("id").GetGuid();

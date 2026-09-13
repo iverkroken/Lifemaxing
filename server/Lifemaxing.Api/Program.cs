@@ -17,6 +17,13 @@ using Lifemaxing.Api.Features.Habits;
 using Lifemaxing.Api.Features.Goals;
 
 var builder = WebApplication.CreateBuilder(args);
+AuthDataProtection.Configure(builder);
+builder.Services.AddOptions<AuthSessionOptions>().BindConfiguration("Authentication:Sessions")
+    .Validate(options => options.SessionHours is > 0 and <= 12 && options.RememberDays is > 0 and <= 30
+        && options.StampValidationSeconds is > 0 and <= 60, "Session limits must not exceed 12 hours, 30 days and 60 seconds.")
+    .ValidateOnStart();
+builder.Services.AddOptions<SecurityStampValidatorOptions>().Configure<Microsoft.Extensions.Options.IOptions<AuthSessionOptions>>(
+    (options, policy) => options.ValidationInterval = TimeSpan.FromSeconds(policy.Value.StampValidationSeconds));
 
 builder.Services.AddProblemDetails(options =>
 {
@@ -80,13 +87,15 @@ builder.Services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
         options.Lockout.AllowedForNewUsers = true;
         options.Lockout.MaxFailedAccessAttempts = 5;
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
-        options.Password.RequiredLength = 12;
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = true;
+        options.Password.RequiredLength = PasswordPolicy.MinimumLength;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
     })
-    .AddEntityFrameworkStores<AppDbContext>();
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders()
+    .AddPasswordValidator<PasswordPolicy>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -98,18 +107,29 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
-    options.ExpireTimeSpan = TimeSpan.FromDays(14);
-    options.SlidingExpiration = true;
-    options.Events = new CookieAuthenticationEvents
-    {
-        OnRedirectToLogin = context => WriteAuthenticationProblem(context, StatusCodes.Status401Unauthorized,
-            "Authentication required.", "authentication_required"),
-        OnRedirectToAccessDenied = context => WriteAuthenticationProblem(context, StatusCodes.Status403Forbidden,
-            "Access denied.", "access_denied")
-    };
+    options.ExpireTimeSpan = TimeSpan.FromHours(12);
+    options.SlidingExpiration = false;
+    // Retain Identity's OnValidatePrincipal/security-stamp validation.
+    options.Events.OnSigningIn = AuthSessionOptions.SetExpiry;
+    options.Events.OnRedirectToLogin = context => WriteAuthenticationProblem(context, StatusCodes.Status401Unauthorized,
+        "Authentication required.", "authentication_required");
+    options.Events.OnRedirectToAccessDenied = context => WriteAuthenticationProblem(context, StatusCodes.Status403Forbidden,
+        "Access denied.", "access_denied");
 });
 
 var app = builder.Build();
+
+if (args.Length == 1 && args[0] == "--unlock-development-account")
+{
+    Environment.ExitCode = await DevelopmentLoginAccess.UnlockAsync(app.Services, app.Environment, app.Configuration);
+    return;
+}
+
+if (args.Contains("--reset-owner-password", StringComparer.Ordinal))
+{
+    Environment.ExitCode = await OwnerPasswordRecovery.RunAsync(app.Services, app.Environment, args);
+    return;
+}
 
 if (args.Contains("--provision-owner", StringComparer.Ordinal))
 {
