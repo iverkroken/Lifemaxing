@@ -1,5 +1,5 @@
-﻿import { useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useState } from 'react'
+import { Link, useOutletContext, useParams, useSearchParams } from 'react-router'
 import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Dialog } from '../../shared/ui/Dialog.jsx'
@@ -15,17 +15,17 @@ import styles from '../../shared/ui/Productivity.module.css'
 export function HabitsPage() {
   const [page, setPage] = useState(1)
   const [archived, setArchived] = useState('false')
-  const [creating, setCreating] = useState(false)
+  const { openCapture } = useOutletContext()
   const [params, setParams] = useSearchParams()
   const areaId = params.get('areaId') || ''
   const habits = useProductivity(`/habits?page=${page}&archived=${archived}&${areaId ? `areaId=${areaId}` : ''}`)
   const today = useProductivity('/today')
   const areas = useProductivity('/areas')
   const action = useProductivityAction()
-  const navigate = useNavigate()
+
   return <div className={styles.stack}>
     <PageHeader eyebrow="Small actions, woven into life" title="Habits" description="Build a rhythm you want to return to."
-      action={<Button onClick={() => setCreating(true)}>New habit</Button>} />
+      action={<Button onClick={() => openCapture({ kind: 'habit' })}>New habit</Button>} />
     <div className={styles.split}>
       <section aria-label="Habits today"><div className={styles.sectionHeading}><h2>For today</h2><span className={styles.meta}>{areaId ? 'All areas · ' : ''}{today.data?.localDate}</span></div>
         <QueryFeedback query={today} /><TodayHabits data={today.data} action={action} /><ActionFeedback action={action} />
@@ -41,7 +41,6 @@ export function HabitsPage() {
         </div><Link to={`/habits/${habit.id}`} aria-label={`History and settings for ${habit.title}`}>→</Link></li>)}</ul><Pagination data={habits.data} setPage={setPage} />
       </section>
     </div>
-    <Dialog open={creating} onClose={() => setCreating(false)} title="Build a habit"><HabitForm onSaved={habit => { setCreating(false); navigate(`/habits/${habit.id}`) }} /></Dialog>
   </div>
 }
 

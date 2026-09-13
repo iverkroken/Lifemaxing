@@ -1,5 +1,5 @@
-﻿import { useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useState } from 'react'
+import { Link, useOutletContext, useParams, useSearchParams } from 'react-router'
 import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Dialog } from '../../shared/ui/Dialog.jsx'
@@ -15,28 +15,27 @@ import styles from '../../shared/ui/Productivity.module.css'
 export function GoalsPage() {
   const [page, setPage] = useState(1)
   const [archived, setArchived] = useState('false')
-  const [creating, setCreating] = useState(false)
+  const { openCapture } = useOutletContext()
   const [params, setParams] = useSearchParams()
   const areaId = params.get('areaId') || ''
   const goals = useProductivity(`/goals?page=${page}&pageSize=12&archived=${archived}&${areaId ? `areaId=${areaId}` : ''}`)
   const areas = useProductivity('/areas')
-  const navigate = useNavigate()
+
   return <div className={styles.stack}>
     <PageHeader eyebrow="A direction worth moving in" title="Goals" description="Keep the bigger picture close. Make your next step meaningful."
-      action={<Button onClick={() => setCreating(true)}>New goal</Button>} />
+      action={<Button onClick={() => openCapture({ kind: 'goal' })}>New goal</Button>} />
     <div className={styles.toolbar}>
       <Select label="Goal list" value={archived} onChange={e => { setArchived(e.target.value); setPage(1) }}><option value="false">Current goals</option><option value="true">Archived goals</option></Select>
       <Select label="Life Area filter" value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value } : {}); setPage(1) }}><option value="">All areas</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{area.displayName}</option>)}</Select>
     </div>
     <QueryFeedback query={goals} /><QueryFeedback query={areas} />
-    {goals.data?.total === 0 && <EmptyState title="What would you like to move toward?" icon="goals" action={<Button variant="secondary" onClick={() => setCreating(true)}>Set your first goal</Button>}>Choose a meaningful outcome. Track it with numbers or simply record what changed.</EmptyState>}
+    {goals.data?.total === 0 && <EmptyState title="What would you like to move toward?" icon="goals" action={<Button variant="secondary" onClick={() => openCapture({ kind: 'goal' })}>Set your first goal</Button>}>Choose a meaningful outcome. Track it with numbers or simply record what changed.</EmptyState>}
     <div className={styles.tileGrid}>{goals.data?.items.map(goal => <article className={styles.tile} key={goal.id}>
       <div className={styles.sectionHeading}><span className={styles.eyebrow}>{areas.data?.find(area => area.id === goal.lifeAreaId)?.displayName || 'Your direction'}</span><span className={styles.badge}>{goal.archivedAtUtc ? 'Archived' : goal.state}</span></div>
       <h2><Link to={`/goals/${goal.id}`}>{goal.title}</Link></h2>
       <GoalProgress goal={goal} />
       <div className={styles.sectionHeading}><span className={styles.meta}>{goal.targetDate ? `Target date ${goal.targetDate}` : 'At your own pace'}</span><Link to={`/goals/${goal.id}`}>View progress →</Link></div>
     </article>)}</div><Pagination data={goals.data} setPage={setPage} />
-    <Dialog open={creating} onClose={() => setCreating(false)} title="Set a goal"><GoalForm onSaved={goal => { setCreating(false); navigate(`/goals/${goal.id}`) }} /></Dialog>
   </div>
 }
 
