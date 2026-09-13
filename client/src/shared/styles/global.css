@@ -4,3 +4,12 @@ button, input, textarea, select { font: inherit; }
 a { color: var(--color-accent); }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
 button, input, a { -webkit-tap-highlight-color: transparent; }
+html { scroll-padding-bottom: calc(var(--dock-height) + var(--space-6)); }
+button, input, textarea, select, summary { accent-color: var(--color-accent); }
+button svg, a svg { flex-shrink: 0; }
+summary { cursor: pointer; min-height: var(--control-height); padding-block: var(--space-3); color: var(--color-accent); font-size: var(--text-sm); font-weight: 500; }
+details[open] > summary { margin-bottom: var(--space-4); }
+textarea { resize: vertical; }
+input, select, textarea { min-width: 0; }
+h1, h2, h3, p, a { overflow-wrap: anywhere; }
+::selection { background: var(--color-accent-soft); color: var(--color-text); }
