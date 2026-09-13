@@ -1,5 +1,9 @@
 // A small shared stroke icon set; decorative icons always accompany a text label.
 const paths = {
+  focus: 'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M9 8l7 4-7 4V8Z',
+  progress: 'M4 20V14m8 6V9m8 11V4',
+  activity: 'M4 6h16M4 12h16M4 18h10',
+  rewards: 'M3 8h18v4H3zM5 12v9h14v-9M12 8v13M12 8C4 8 5 1 9 3l3 5Zm0 0c8 0 7-7 3-5l-3 5Z',
   today: 'M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
   tasks: 'm4 6 1.5 1.5L8 5m3 1h9M4 12h3m4 0h9M4 18h3m4 0h9',
   goals: 'M20 12a8 8 0 1 1-8-8m4 8a4 4 0 1 1-4-4m0 4L21 3m-5 0h5v5',

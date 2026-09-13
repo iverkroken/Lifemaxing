@@ -1,0 +1,7 @@
+.page { max-width: 48rem; margin-inline: auto; }
+.page h1 { font-size: var(--text-xl); }
+.session { display: grid; gap: var(--space-6); }
+.taskTitle { font-size: var(--text-3xl); font-weight: 500; letter-spacing: -0.025em; margin: 0; overflow-wrap: anywhere; }
+.timer { font-size: var(--text-4xl); font-variant-numeric: tabular-nums; letter-spacing: -0.04em; margin: var(--space-6) 0; }
+.description { color: var(--color-text-muted); margin: 0; }
+@media (max-width: 767px) { .timer { font-size: var(--text-3xl); } .taskTitle { font-size: var(--text-2xl); } }

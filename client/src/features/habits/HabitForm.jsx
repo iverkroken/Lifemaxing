@@ -9,7 +9,7 @@ import { Select } from '../../shared/ui/Select.jsx'
 import { ActionFeedback, QueryFeedback } from '../../shared/ui/ProductivityFeedback.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
 
-const schema = z.object({ title: z.string().trim().min(1, 'Enter a habit title.').max(200), lifeAreaId: z.string(), isActive: z.boolean() })
+const schema = z.object({ title: z.string().trim().min(1, 'Enter a habit title.').max(200), lifeAreaId: z.string(), isActive: z.boolean(), xpPerLog: z.coerce.number().int().min(1).max(25) })
 
 export function HabitForm({ habit, onSaved }) {
   const areas = useProductivity('/areas')
@@ -18,7 +18,7 @@ export function HabitForm({ habit, onSaved }) {
   const [days, setDays] = useState([1, 3, 5])
   const [target, setTarget] = useState(3)
   const [from, setFrom] = useState('')
-  const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: habit?.title || '', lifeAreaId: habit?.lifeAreaId || '', isActive: habit?.isActive ?? true } })
+  const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: habit?.title || '', lifeAreaId: habit?.lifeAreaId || '', isActive: habit?.isActive ?? true, xpPerLog: habit?.xpPerLog ?? 10 } })
   const action = useProductivityAction(saved => { if (!habit) form.reset(); onSaved?.(saved) })
   return <form className={styles.form} noValidate onSubmit={form.handleSubmit(values => action.mutate({ path: habit ? `/habits/${habit.id}` : '/habits', method: habit ? 'PATCH' : 'POST', body: { ...values, lifeAreaId: values.lifeAreaId || null,
     ...(!habit && { schedule: { effectiveFromDate: from || today.data?.currentLocalDate, pattern, daysOfWeek: pattern === 'SelectedWeekdays' ? days : null, weeklyTarget: pattern === 'WeeklyCount' ? Number(target) : null } }),
@@ -26,6 +26,7 @@ export function HabitForm({ habit, onSaved }) {
     <fieldset disabled={action.isPending} className={styles.formFields}>
     <Input label="Habit title" required error={form.formState.errors.title?.message} {...form.register('title')} />
     <Select label="Life Area" {...form.register('lifeAreaId')}><option value="">No area</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{x.displayName}</option>)}</Select>
+    <Input label="XP per completion" type="number" min="1" max="25" hint="Daily habit awards share a 75 XP cap." error={form.formState.errors.xpPerLog?.message} {...form.register('xpPerLog')} />
     <label className={styles.check}><input type="checkbox" {...form.register('isActive')} />Active habit</label>
     {!habit && <ScheduleFields {...{ pattern, setPattern, days, setDays, target, setTarget }} from={from || today.data?.currentLocalDate || ''} setFrom={setFrom}
       hint="Start today or later. Future schedule changes preserve this initial plan." />}

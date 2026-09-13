@@ -3,13 +3,13 @@ using Lifemaxing.Api.Common;
 namespace Lifemaxing.Api.Features.Habits;
 
 public sealed record ScheduleRequest(DateOnly EffectiveFromDate, string Pattern = "Daily", int[]? DaysOfWeek = null, int? WeeklyTarget = null);
-public sealed record HabitRequest(string? Title, Guid? LifeAreaId = null, bool IsActive = true, ScheduleRequest? Schedule = null);
-public sealed record HabitEditRequest(string? Title, Guid? LifeAreaId, bool IsActive);
+public sealed record HabitRequest(string? Title, Guid? LifeAreaId = null, bool IsActive = true, ScheduleRequest? Schedule = null, int XpPerLog = 10);
+public sealed record HabitEditRequest(string? Title, Guid? LifeAreaId, bool IsActive, int XpPerLog = 10);
 public sealed record LogRequest(DateOnly LocalDate);
 public sealed record ScheduleResponse(Guid Id, DateOnly EffectiveFromDate, DateOnly? EffectiveToDate,
     string TimeZoneId, string Pattern, int[]? DaysOfWeek, int? WeeklyTarget);
 public sealed record HabitResponse(Guid Id, string Title, Guid? LifeAreaId, bool IsActive,
-    DateTimeOffset CreatedAtUtc, DateTimeOffset? ArchivedAtUtc, IReadOnlyList<ScheduleResponse> Schedules);
+    DateTimeOffset CreatedAtUtc, DateTimeOffset? ArchivedAtUtc, IReadOnlyList<ScheduleResponse> Schedules, int XpPerLog);
 public sealed record LogResponse(Guid Id, DateOnly LocalDate, string TimeZoneId, DateTimeOffset LoggedAtUtc, DateTimeOffset? ReversedAtUtc);
 
 public static class HabitRules
@@ -40,6 +40,6 @@ public static class HabitRules
     };
     public static HabitResponse Response(Habit habit) => new(habit.Id, habit.Title, habit.LifeAreaId,
         habit.IsActive, habit.CreatedAtUtc, habit.ArchivedAtUtc, habit.Schedules.OrderBy(x => x.EffectiveFromDate)
-            .Select(x => new ScheduleResponse(x.Id, x.EffectiveFromDate, x.EffectiveToDate, x.TimeZoneId, x.Pattern, x.DaysOfWeek, x.WeeklyTarget)).ToList());
+            .Select(x => new ScheduleResponse(x.Id, x.EffectiveFromDate, x.EffectiveToDate, x.TimeZoneId, x.Pattern, x.DaysOfWeek, x.WeeklyTarget)).ToList(), habit.XpPerLog);
     public static LogResponse Response(HabitLog log) => new(log.Id, log.LocalDate, log.TimeZoneId, log.LoggedAtUtc, log.ReversedAtUtc);
 }

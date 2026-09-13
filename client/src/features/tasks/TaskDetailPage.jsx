@@ -63,6 +63,7 @@ function TaskForm({ task }) {
       <div className={styles.actions}>
       <Button type="submit" loading={save.isPending} disabled={action.isPending}>{task ? 'Save task' : 'Create task'}</Button>
       {task && <>
+        {!task.isCompleted && <Link to={`/focus?taskId=${task.id}`}>Focus on this task</Link>}
         <Button variant="secondary" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}/${task.isCompleted ? 'reopen' : 'complete'}` })}>{task.isCompleted ? 'Reopen task' : 'Complete task'}</Button>
       </>}
       </div>

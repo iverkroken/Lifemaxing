@@ -251,7 +251,7 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         var date = (await Get(client, "/today")).GetProperty("localDate").GetString();
         await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => Send(client, HttpMethod.Put, $"/daily-mission/{date}", new { taskId })));
         var habitId = (await Send(client, HttpMethod.Post, "/habits", new { title = "Once per day" }, HttpStatusCode.Created)).GetProperty("id").GetGuid();
-        var responses = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => client.PostAsJsonAsync($"/api/v1/habits/{habitId}/logs", new { localDate = date })));
+        var responses = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => { var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/habits/{habitId}/logs") { Content = JsonContent.Create(new { localDate = date }) }; request.Headers.Add("ClientActionId", Guid.NewGuid().ToString()); return client.SendAsync(request); }));
         Assert.Single(responses, x => x.StatusCode == HttpStatusCode.Created);
         Assert.Equal(3, responses.Count(x => x.StatusCode == HttpStatusCode.Conflict));
         await using var scope = app.Services.CreateAsyncScope();
@@ -300,6 +300,7 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
     private static async Task<JsonElement> Send(HttpClient client, HttpMethod method, string path, object body, HttpStatusCode expected = HttpStatusCode.OK)
     {
         using var request = new HttpRequestMessage(method, "/api/v1" + path) { Content = JsonContent.Create(body) };
+        request.Headers.Add("ClientActionId", Guid.NewGuid().ToString());
         using var response = await client.SendAsync(request);
         Assert.True(response.StatusCode == expected, $"{method} {path}: expected {expected}, got {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
         return response.StatusCode == HttpStatusCode.NoContent ? default : await response.Content.ReadFromJsonAsync<JsonElement>();

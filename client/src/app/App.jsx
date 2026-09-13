@@ -1,3 +1,6 @@
+import { FocusPage } from '../features/focus/FocusPage.jsx'
+import { ProgressPage, ActivityPage } from '../features/progress/ProgressPage.jsx'
+import { RewardsPage } from '../features/progress/RewardsPage.jsx'
 import { Link, Navigate, Route, Routes } from 'react-router'
 import { AreaPage } from '../features/areas/AreaPage.jsx'
 import { AuthenticatedShell } from '../features/auth/AuthenticatedShell.jsx'
@@ -34,6 +37,10 @@ export function App() {
       <Route path="login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedShell />}>
+          <Route path="focus" element={<FocusPage />} />
+          <Route path="progress" element={<ProgressPage />} />
+          <Route path="activity" element={<ActivityPage />} />
+          <Route path="rewards" element={<RewardsPage />} />
           <Route path="today" element={<TodayPage />} />
           <Route path="inbox" element={<TasksPage key="inbox" inbox />} />
           <Route path="tasks" element={<TasksPage key="tasks" />} />

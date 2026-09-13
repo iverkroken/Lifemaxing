@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Lifemaxing.Api.Features.Progression;
 using System.Text.Json;
 using System.Linq.Expressions;
 using Lifemaxing.Api.Common;
@@ -50,6 +51,8 @@ public static class GoalEndpoints
             var error = await Validate(request, userId, db, ct);
             if (error is not null) return error;
             var goal = new Goal { Id = Guid.NewGuid(), UserId = userId, CreatedAtUtc = clock.GetUtcNow() };
+            if (goal.State != "Completed" && request.State == "Completed")
+                ProgressionRules.Record(db, userId, "GoalCompleted", "Goal", goal.Id, request.LifeAreaId, clock.GetUtcNow(), $"Completed goal: {request.Title!.Trim()}");
             Apply(goal, request, clock.GetUtcNow());
             db.Goals.Add(goal);
             await db.SaveChangesAsync(ct);
@@ -69,6 +72,8 @@ public static class GoalEndpoints
                  request.TargetValue.HasValue != goal.TargetValue.HasValue) &&
                 await db.GoalProgressEntries.AnyAsync(x => x.GoalId == id && x.UserId == userId, ct))
                 return Productivity.Conflict("Progress already exists. Keep the goal type, unit, direction and baseline so its history remains meaningful.");
+            if (goal.State != "Completed" && request.State == "Completed")
+                ProgressionRules.Record(db, userId, "GoalCompleted", "Goal", id, request.LifeAreaId, clock.GetUtcNow(), $"Completed goal: {request.Title!.Trim()}");
             Apply(goal, request, clock.GetUtcNow());
             await db.SaveChangesAsync(ct);
             return Results.Ok(await Response(db, id, userId, ct));
@@ -107,7 +112,10 @@ public static class GoalEndpoints
             var entry = new GoalProgressEntry { Id = Guid.NewGuid(), UserId = userId, GoalId = id,
                 RecordedAtUtc = clock.GetUtcNow(), Value = request.Value, Note = request.Note?.Trim() };
             db.GoalProgressEntries.Add(entry);
-            // Phase 3 adds Activity at this transactional boundary, without goal XP.
+            var note = entry.Note ?? "";
+            var detail = entry.Value.HasValue ? $"{entry.Value} {goal.Unit}" : note[..Math.Min(300, note.Length)];
+            ProgressionRules.Record(db, userId, "GoalProgressRecorded", "Goal", id, goal.LifeAreaId, entry.RecordedAtUtc,
+                $"Progress on {goal.Title}: {detail}", entry.Id);
             await db.SaveChangesAsync(ct);
             return Results.Created($"/api/v1/goals/{id}/progress", new ProgressResponse(entry.Id, entry.RecordedAtUtc, entry.Value, entry.Note));
         });

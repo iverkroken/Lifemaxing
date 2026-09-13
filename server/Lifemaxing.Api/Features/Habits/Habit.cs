@@ -6,6 +6,7 @@ public sealed class Habit
     public Guid UserId { get; set; }
     public Guid? LifeAreaId { get; set; }
     public string Title { get; set; } = "";
+    public int XpPerLog { get; set; } = 10;
     public bool IsActive { get; set; } = true;
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? ArchivedAtUtc { get; set; }

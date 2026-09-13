@@ -44,6 +44,18 @@ Registrer TaskCompletion, XpEntry, ActivityEvent og CommandReceipt i én databas
 
 Ikke bruk full Event Sourcing. Task, Goal, Habit og hver områdemodul beholder vanlig nåtilstand. ActivityEvent er lesbar revisjonshistorikk, ikke eneste kilde for rekonstruksjon. For avgrenset arkivbehov legges nødvendige felt i hendelsens Summary eller versjonerte, begrensede DetailsJson.
 
+### Phase 3 implementation details
+
+`ProgressionAndFocus` adds the six new tables above and extends TaskCompletion with AwardedXp and Habit with XpPerLog. Existing Phase 2 completions retain AwardedXp 0; the migration does not invent retroactive awards or activity. Reopening a pre-progression completion therefore has no ledger reversal; a later new completion follows the current rules.
+
+XpEntry also stores LocalDate, TimeZoneId and Category. Tiny/Small awards share the SmallTasks bucket for the owner's completion day. Habit awards use the log's scheduled local date and historical schedule timezone, including backdated logs. Reversals retain the original award's bucket and rule version, while OccurredAtUtc records when the correction happened. Caps use the net amount in that original category/date bucket; travel and corrections never rewrite old dates. Zero/capped awards still get an entry and completion activity. Habit XP is configurable from 1 to 25, initially 10. The product formula and tier/rank rules remain canonical in PROJECT_SPEC.md.
+
+CommandReceipt stores a bounded operation name, SHA-256 request fingerprint, response status and JSON response snapshot in addition to the documented identity/result fields. This lets a retry return its original result even after a later correction. A reused identity with a different operation or body returns 409. Successful receipt and domain writes share the existing transaction/owner row lock. XP, activity and receipt entities reject update/delete through AppDbContext; no API edits or deletes those histories. Unique source/cycle/claim/session indexes provide additional database guarantees.
+
+Focus states are Running, Paused, Completed, Stopped and Cancelled. Only Running has RunningSinceUtc; Completed/Stopped/Cancelled have EndedAtUtc. Pauses fold server elapsed seconds into AccumulatedSeconds. Ended non-cancelled sessions contribute to the descriptive focus total; cancelled sessions remain in history. Completing a linked task and ending its session is one transaction. A completed session without task completion awards no XP.
+
+Reward claims never spend XP and remain claimed after a level correction. Claimed reward definitions are retained unchanged; archival preserves the definition and claim date. Activity snapshots include meaningful completion/correction summaries with actual XP, goal progress/completion (without XP), level increases, mission replacements, reward claims and ended focus sessions. The ledger itself provides XP attribution without duplicating every completion into a separate noisy activity row.
+
 ## Metrics, Area Scores og Life Score, fase 4
 
 | Entity | Viktige felt | Relasjoner og invariant |

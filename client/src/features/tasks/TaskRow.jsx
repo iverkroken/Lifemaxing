@@ -25,6 +25,7 @@ export function TaskRow({ task, action, date, commitment, areaName }) {
       </div>
     </div>
     {!task.deletedAtUtc && !task.isCompleted && <div className={row.actions}>
+      <Link to={`/focus?taskId=${task.id}`}>Focus</Link>
       {date && (!commitment || commitment.removedAtUtc) && <Button variant="quiet" size="small" loading={action.isPending}
         onClick={() => action.mutate({ path: '/daily-commitments', body: { taskId: task.id, localDate: date } })}>Commit to this day</Button>}
       {commitment && !commitment.removedAtUtc && <Button variant="quiet" size="small" loading={action.isPending}

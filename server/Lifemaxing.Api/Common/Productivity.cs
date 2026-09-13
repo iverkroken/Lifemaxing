@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using Lifemaxing.Api.Features.Progression;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Lifemaxing.Api.Data;
@@ -30,7 +32,44 @@ public sealed class ProductivityWriteFilter : IEndpointFilter
             $"SELECT 1 FROM \"UserSettings\" WHERE \"UserId\" = {userId} FOR UPDATE", http.RequestAborted);
         try
         {
+            // Goal progress keeps its Phase 2 body/optional identity contract, but new clients
+            // opt into replay protection so a lost response does not duplicate history.
+            var identifiedGoalProgress = http.Request.Headers.ContainsKey("ClientActionId") &&
+                System.Text.RegularExpressions.Regex.IsMatch(http.Request.Path, @"/goals/[^/]+/progress/?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var guarded = HttpMethods.IsPost(http.Request.Method) && System.Text.RegularExpressions.Regex.IsMatch(http.Request.Path,
+                @"/(tasks/[^/]+/(complete|reopen)|habits/[^/]+/logs(/[^/]+/revoke)?|rewards/[^/]+/claim|focus-sessions(/[^/]+/(pause|resume|stop))?)/?$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+            guarded |= HttpMethods.IsPost(http.Request.Method) && identifiedGoalProgress;
+            Guid actionId = default;
+            var operation = http.Request.Method + " " + http.Request.Path.Value!.TrimEnd('/').ToLowerInvariant();
+            var hash = "";
+            long before = 0;
+            if (guarded)
+            {
+                if (!Guid.TryParse(http.Request.Headers["ClientActionId"], out actionId) || actionId == Guid.Empty)
+                    return Productivity.Invalid("clientActionId", "Send a non-empty ClientActionId UUID header for this action.");
+                http.Request.Body.Position = 0;
+                hash = Convert.ToHexString(await SHA256.HashDataAsync(http.Request.Body, http.RequestAborted));
+                var previous = await db.CommandReceipts.SingleOrDefaultAsync(x => x.UserId == userId && x.ClientActionId == actionId, http.RequestAborted);
+                if (previous is not null)
+                    return previous.Operation != operation || previous.RequestHash != hash
+                        ? Productivity.Conflict("This ClientActionId was already used for a different request.")
+                        : Results.Content(previous.ResponseJson, "application/json", statusCode: previous.StatusCode);
+                before = await ProgressionRules.Total(db, userId, http.RequestAborted);
+            }
             var result = await next(context);
+            if (guarded && result is IValueHttpResult value && result is IStatusCodeHttpResult { StatusCode: >= 200 and < 300 } status)
+            {
+                var payload = JsonSerializer.SerializeToNode(value.Value, new JsonSerializerOptions(JsonSerializerDefaults.Web))!.AsObject();
+                var after = await ProgressionRules.Total(db, userId, http.RequestAborted);
+                payload["progression"] = JsonSerializer.SerializeToNode(new { xpChange = after - before, progress = ProgressionRules.Calculate(after), levelUp = ProgressionRules.Calculate(after).Level > ProgressionRules.Calculate(before).Level }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                var json = payload.ToJsonString();
+                db.CommandReceipts.Add(new CommandReceipt { Id = Guid.NewGuid(), UserId = userId, ClientActionId = actionId, Operation = operation,
+                    RequestHash = hash, ResponseJson = json, StatusCode = status.StatusCode.Value,
+                    ResultId = payload["id"]?.GetValue<Guid>(), CreatedAtUtc = http.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow() });
+                await db.SaveChangesAsync(http.RequestAborted);
+                result = Results.Content(json, "application/json", statusCode: status.StatusCode);
+            }
             if (result is not IStatusCodeHttpResult { StatusCode: >= 400 })
                 await transaction.CommitAsync(http.RequestAborted);
             return result;

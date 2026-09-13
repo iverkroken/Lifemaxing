@@ -12,6 +12,8 @@ import { useProductivity } from '../../shared/api/productivity.js'
 
 const destinations = [['today', 'Today'], ['tasks', 'Tasks'], ['goals', 'Goals'], ['habits', 'Habits'], ['areas', 'Life Areas']]
 
+const progressionDestinations = [['focus', 'Focus'], ['progress', 'Progress'], ['activity', 'Activity'], ['rewards', 'Rewards']]
+
 export function AuthenticatedShell() {
   const { user } = useOutletContext()
   const queryClient = useQueryClient()
@@ -19,6 +21,7 @@ export function AuthenticatedShell() {
   const location = useLocation()
   const [captureOpen, setCaptureOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const focusing = location.pathname === '/focus'
   const today = useProductivity('/today')
   const logoutMutation = useMutation({
     mutationFn: logout,
@@ -44,7 +47,7 @@ export function AuthenticatedShell() {
   }, [location.pathname])
 
   const navClass = ({ isActive }) => isActive ? styles.activeLink : styles.navLink
-  return <div className={styles.shell}>
+  return <div className={`${styles.shell} ${focusing ? styles.focusing : ''}`}>
     <a href="#main-content" className={styles.skipLink}>Skip to content</a>
     <aside className={styles.sidebar}>
       <NavLink to="/today" className={styles.brand}><Icon name="leaf" size={24} />LIFEMAXING</NavLink>
@@ -54,6 +57,9 @@ export function AuthenticatedShell() {
         <p className={styles.navLabel}>Your workspace</p>
         {destinations.map(([path, label]) => <NavLink key={path} to={`/${path}`} className={navClass}><Icon name={path} />{label}</NavLink>)}
         <div className={styles.inbox}><NavLink to="/inbox" aria-label="Inbox" className={navClass}><Icon name="inbox" />Inbox{today.data && <span className={styles.count} aria-hidden="true">{today.data.inboxCount}</span>}</NavLink></div>
+        <details className={styles.progressionNav} open={progressionDestinations.some(([path]) => location.pathname.startsWith('/' + path))}><summary>Progress & execution</summary>
+          {progressionDestinations.map(([path, label]) => <NavLink key={path} to={'/' + path} className={navClass}>{label}</NavLink>)}
+        </details>
       </nav>
       <div className={styles.account}>
         <NavLink to="/settings" className={navClass}><Icon name="settings" />Settings</NavLink>
@@ -81,7 +87,7 @@ export function AuthenticatedShell() {
     </Dialog>
     <Dialog open={menuOpen} onClose={() => setMenuOpen(false)} title="Your workspace">
       <nav className={styles.menuLinks} aria-label="More destinations">
-        {[...destinations, ['inbox', 'Inbox'], ['settings', 'Settings']].map(([path, label]) => <NavLink key={path} to={`/${path}`} className={navClass} onClick={() => setMenuOpen(false)}><Icon name={path} />{label}</NavLink>)}
+        {[...destinations, ...progressionDestinations, ['inbox', 'Inbox'], ['settings', 'Settings']].map(([path, label]) => <NavLink key={path} to={`/${path}`} className={navClass} onClick={() => setMenuOpen(false)}><Icon name={path} />{label}</NavLink>)}
       </nav>
       <p className={styles.email}>{user.email}</p>
       <Button variant="quiet" loading={logoutMutation.isPending} onClick={() => logoutMutation.mutate()}>Sign out</Button>

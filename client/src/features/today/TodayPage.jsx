@@ -1,3 +1,4 @@
+import { ProgressSummary } from '../progress/ProgressPage.jsx'
 ﻿import { useState } from 'react'
 import { Link } from 'react-router'
 import { queryString, useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
@@ -47,6 +48,7 @@ export function TodayPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const today = useProductivity(`/today${selectedDate ? `?date=${selectedDate}` : ''}`)
   const areas = useProductivity('/areas')
+  const focus = useProductivity('/focus-sessions/active')
   const action = useProductivityAction()
   const planning = useProductivityAction(() => setPickerOpen(false))
   const data = today.data
@@ -65,6 +67,7 @@ export function TodayPage() {
       action={<div className={layout.dateBar}><Input label="Plan date" type="date" value={selectedDate || data?.localDate || ''} onChange={e => setSelectedDate(e.target.value)} />
         {selectedDate && <Button variant="quiet" onClick={() => setSelectedDate('')}>Go to today</Button>}</div>} />
     <QueryFeedback query={today} />
+    {focus.data?.session && <p className={styles.meta}>Your focus session is {focus.data.session.status.toLowerCase()}. <Link to="/focus">Return to focus →</Link></p>}
     {data && <>
       <div className={layout.context}>
         <span>{data.commitments.filter(plan => !plan.removedAtUtc).length} {data.commitments.filter(plan => !plan.removedAtUtc).length === 1 ? 'commitment' : 'commitments'}</span>
@@ -81,6 +84,7 @@ export function TodayPage() {
               {mission && !mission.deletedAtUtc && <Button loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${mission.id}/${mission.isCompleted ? 'reopen' : 'complete'}` })}><Icon name="check" />{mission.isCompleted ? 'Reopen mission' : 'Complete mission'}</Button>}
               <Button variant={mission ? 'quiet' : 'primary'} onClick={() => { planning.reset(); setPickerOpen(true) }}>{mission ? 'Change mission' : 'Choose a mission'}</Button>
             </div>
+            {mission && !mission.isCompleted && !mission.deletedAtUtc && <Link to={`/focus?taskId=${mission.id}`}>Focus on this task →</Link>}
             {mission?.goalId && <MissionGoal id={mission.goalId} />}
           </section>
           <ActionFeedback action={action} />
@@ -95,6 +99,7 @@ export function TodayPage() {
         </div>
         <aside className={layout.aside} aria-label="Daily routines and capture">
           <section aria-label="Today's habits"><div className={styles.sectionHeading}><h2>Daily rhythms</h2><Link to="/habits">All habits →</Link></div><TodayHabits data={data} action={action} /></section>
+          <ProgressSummary compact />
           <div className={layout.capture}><QuickAdd date={data.localDate} /></div>
           <p className={styles.meta}>Capture now. Organize in Inbox. Commit when you are ready.</p>
         </aside>

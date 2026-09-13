@@ -2,11 +2,13 @@
 
 ## Current Phase
 
+Phase 3: Progression and execution - complete and verified (13 September 2026) on `feat/phase-3-progression`. Phase 4 has not started.
+
 Phase 2: Core productivity — complete and verified (13 September 2026).
 
 Dedicated UX/UI architecture and product experience pass — complete and verified (13 September 2026).
 
-Resumed the clean `wip/phase-2-interrupted` checkpoint at `91ff123`. The checkpoint already contained the Phase 2 implementation, migration, API documentation and tests; this status file had not been updated. Existing work was retained and audited rather than regenerated. Phase 3 has not started.
+Resumed the clean `wip/phase-2-interrupted` checkpoint at `91ff123`. The checkpoint already contained the Phase 2 implementation, migration, API documentation and tests; this status file had not been updated. Existing work was retained and audited rather than regenerated. Phase 3 was not part of that earlier checkpoint.
 
 ## Completed
 
@@ -56,7 +58,7 @@ Phase 2:
 
 The Phase 2 browser → API → PostgreSQL flows are implemented and verified. Tasks, plans, missions, habits, schedule/log history, goals and progress history persist. Private local user records were not used as fixtures or deleted; integration and browser writes used isolated databases and fictional owners.
 
-The dedicated frontend UX pass is also complete. Stop and await an explicit next task. XP, levels, ranks, rewards, Activity History, Focus Mode and scoring are not implemented. Phase 2 is not the complete V1 milestone.
+The dedicated frontend UX pass and Phase 3 are now complete. V1 is functionally verified for private local use. Stop and await an explicit next task. Phase 4 scoring/analytics and later features are not implemented. Public deployment still requires Phase 8.
 
 ## Verification — 13 September 2026
 
@@ -76,10 +78,11 @@ The dedicated frontend UX pass is also complete. Stop and await an explicit next
 
 PostgreSQL 18.6 is healthy in Compose with loopback-only access and its existing persistent volume.
 
-Both migrations are present and applied to the configured local development database:
+All three migrations are present and applied to the configured local development database:
 
 - `20260912173928_InitialIdentityAndAreas`
 - `20260912202529_CoreProductivity`
+- `20260913133032_ProgressionAndFocus`
 
 The existing CoreProductivity migration was reviewed and retained unchanged. `database update` reported the development database was already up to date; isolated integration/browser databases successfully applied the migrations from scratch. EF reports no pending model changes. No duplicate migration, schema rewrite or local data deletion was necessary. Ordinary application startup still does not run migrations.
 
@@ -121,3 +124,39 @@ Verification:
 Scope and limitations: Phase 2 has dates, not timed appointments, so Today groups planned/overdue work without an hourly calendar. Life Areas link to existing filtered productivity views; specialized modules remain deferred. This pass verifies Chromium and obvious keyboard/responsive accessibility; a full assistive-technology and cross-browser audit remains later work. Goal lists need a bounded latest-entry request per visible goal until a future justified API optimization.
 
 Related documentation: DESIGN_SYSTEM.md records the implemented navigation, composition and interaction patterns; PHASE2_API.md's shell note now points to that completed pass. No unrelated architecture was rewritten. All changes remain unstaged on the existing feature branch; no commit, push, merge or branch switch was performed.
+
+
+## Phase 3 - complete and verified, 13 September 2026
+
+Started from clean branch `feat/phase-3-progression` at `f091fceebfe4c73b085486bba788e48bcabe28d5`. Read the required documentation, inspected the current completion/planning/history flows, and retained the completed Phase 2/UX implementation.
+
+Implemented:
+
+- XpEntry ledger with immutable signed entries, exact original-entry reversals, rule version and historical calendar/category buckets. TaskCompletion records its actual capped AwardedXp. Habit XP defaults to 10 and is configurable from 1 to 25.
+- Central, tested level/rank/tier calculations follow PROJECT_SPEC.md. Tiny/Small share 50 XP per local completion day; habits share 75 XP per scheduled local date. Goals and focus minutes do not award XP. Levels/ranks are derived, not independently mutable or spendable.
+- Required ClientActionId headers for task complete/reopen, habit log/revoke, reward claim and focus commands. Owner-scoped receipts store request fingerprint and original result. New goal-progress calls also opt into replay protection, while old unidentified Phase 2 calls remain valid. Existing transaction and owner row locking protect domain changes, XP, activity and receipt as one unit. Unique database constraints protect active cycles, habit/date logs, ledger sources, claims and focus sessions. Case-insensitive route aliases cannot bypass the identity requirement.
+- Append-oriented Activity includes task/habit completions and corrections, goal progress/completion without XP, level increases, mission replacements, reward claims and ended focus sessions. Histories are paginated, owner-scoped and retain source identities/summaries. XP/activity/receipts reject modification or deletion through normal synchronous and asynchronous DbContext saves.
+- User-defined rewards have level eligibility, editing before claim, archival and one persisted claim. Claimed definitions and claim dates remain intact after archival or a level decrease.
+- FocusSession supports task-linked or unstructured sessions, one unfinished session per owner, server-timed pause/resume, completed/stopped/cancelled outcomes, and atomic task completion. Active state survives navigation, reload and API restart. Cancelled sessions stay in history but are excluded from descriptive focus totals.
+- Focus, Progress, Activity and Rewards are integrated beneath the existing navigation hierarchy. Today remains home with a restrained progression meter, focus-return link and signed completion feedback. Focus removes workspace navigation and emphasizes the selected action and timer. Existing task, habit, goal, area, settings and capture flows remain available. New history timestamps use configured locale/timezone.
+
+Database and API:
+
+- Additive migration `20260913133032_ProgressionAndFocus` reviewed and applied to the existing development database. Fresh test databases apply all migrations; a dedicated upgrade test migrates a populated Phase 2 database and verifies old completions survive with zero historical XP. No retroactive awards, duplicate migrations or deletion of real local records.
+- Final EF check reports no pending model changes. PostgreSQL remains healthy with its existing persistent volume. Ordinary API startup still does not migrate the database.
+- Added /progress, /progress/ledger, /activity, /rewards (+ detail/edit/archive/claim), /focus-sessions (+ active/pause/resume/stop). Existing completion/log DTOs add progression feedback; habit contracts add xpPerLog. Detailed contracts are in ARCHITECTURE.md and persistence clarifications in DATABASE.md.
+
+Final verification:
+
+- Locked .NET restore and local EF tool restore passed with SDK 10.0.401. Existing frontend dependencies were already installed and sufficient; no dependencies or lockfiles changed.
+- Release backend build: 0 warnings, 0 errors. Full backend suite: 36 passed, 0 failed, 0 skipped, including all 27 earlier foundation/Phase 1/Phase 2 regressions. The goal-activity regression was additionally rerun successfully after the final nullable-text cleanup.
+- Frontend lint passed; 11 tests passed across 7 files; production build passed. Tests cover retained command identity after lost response and server-derived XP/level feedback as well as prior frontend behavior.
+- Isolated browser runner: 6 main tests passed, then 2 persistence tests passed after API restart. Real PostgreSQL and a separate Release API/Vite were used throughout. Includes a server-committed completion with deliberately lost HTTP response, retry with the same identity and one award, reversal/recompletion, reward claim, focus pause/reload/resume/task completion, and stored ledger/claims/activity/paused focus after restart.
+- New screens and Today checked at 375, 768 and 1440 px with loaded-content screenshots, no horizontal overflow and no uncaught page errors. Existing Phase 1/2/UX browser coverage also passed. Keyboard return navigation, shared dialog focus/Escape, mobile More navigation, reduced motion, empty/error/retry states remain verified. Visual review retained Today's hierarchy and gave the task more prominence in Focus.
+- Isolated test databases/processes were cleaned up. Screenshots, logs and Playwright artifacts remain ignored. No private owner data was used as fixtures. Final diff/working-tree audit found no secrets or generated build artifacts as commit candidates; git diff --check passed.
+
+Scope decisions and limitations:
+
+No architectural deviation. Implementation details now documented explicitly include header-based command identity, request/response receipts, calendar cap buckets, zero-XP legacy completions, immutable claimed reward definitions and cancelled-focus totals. Goal progress receives optional replay protection and meaningful Activity without adding an XP source. Browser verification uses Chromium; comprehensive cross-browser and assistive-technology auditing remains later polish. An already-running development API must be restarted to load the changed backend; the isolated verification API used the current build.
+
+All work remains unstaged on the original feature branch: 29 tracked files modified and 16 intentional untracked source/test/migration files before final report. No commit, push, merge or branch switch. Phase 4 was NOT started. Stop after this phase.

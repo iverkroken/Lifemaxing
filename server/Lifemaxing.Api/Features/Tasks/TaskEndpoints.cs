@@ -1,3 +1,4 @@
+using Lifemaxing.Api.Features.Progression;
 using System.Security.Claims;
 using System.Text.Json;
 using Lifemaxing.Api.Common;
@@ -92,17 +93,28 @@ public static class TaskEndpoints
             Complete(id, true, principal.GetUserId(), db, clock, ct));
     }
 
-    private static async Task<IResult> Complete(Guid id, bool reopen, Guid userId, AppDbContext db, TimeProvider clock, CancellationToken ct)
+    internal static async Task<IResult> Complete(Guid id, bool reopen, Guid userId, AppDbContext db, TimeProvider clock, CancellationToken ct)
     {
         var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
         if (task is null) return Productivity.NotFound();
         if (task.DeletedAtUtc is not null) return Productivity.Conflict("Archived tasks cannot be completed or reopened.");
         var active = await db.TaskCompletions.SingleOrDefaultAsync(x => x.TaskId == id && x.UserId == userId && x.ReversedAtUtc == null, ct);
-        if (reopen && active is not null) active.ReversedAtUtc = clock.GetUtcNow();
-        if (!reopen && active is null) db.TaskCompletions.Add(new TaskCompletion { Id = Guid.NewGuid(), UserId = userId,
-            TaskId = id, CompletedAtUtc = clock.GetUtcNow() });
+        var day = await Productivity.Day(db, userId, clock, ct);
+        if (reopen && active is not null)
+        {
+            active.ReversedAtUtc = day.Now;
+            var change = await ProgressionRules.Reverse(db, userId, "TaskCompletion", active.Id, day.Now, ct);
+            ProgressionRules.Record(db, userId, "TaskReopened", "Task", id, task.LifeAreaId, day.Now, $"Reopened: {task.Title} ({change} XP)", active.Id);
+        }
+        if (!reopen && active is null)
+        {
+            var completion = new TaskCompletion { Id = Guid.NewGuid(), UserId = userId, TaskId = id, CompletedAtUtc = day.Now };
+            completion.AwardedXp = await ProgressionRules.Award(db, userId, "TaskCompletion", completion.Id, task.LifeAreaId,
+                task.Tier is "Tiny" or "Small" ? "SmallTasks" : "Tasks", ProgressionRules.TaskXp(task.Tier), day, ct);
+            db.TaskCompletions.Add(completion);
+            ProgressionRules.Record(db, userId, "TaskCompleted", "Task", id, task.LifeAreaId, day.Now, $"Completed: {task.Title} (+{completion.AwardedXp} XP)", completion.Id);
+        }
         task.UpdatedAtUtc = clock.GetUtcNow();
-        // Phase 3 attaches transactional XP, Activity and command receipts at this boundary.
         await db.SaveChangesAsync(ct);
         return Results.Ok(await Response(db, id, userId, ct));
     }
