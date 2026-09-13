@@ -19,6 +19,8 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
     const dialog = page.getByRole('dialog', { name: 'Capture a task' })
     await expect(dialog.getByLabel('Task title', { exact: false })).toBeFocused()
     await page.keyboard.press('Tab')
+    await expect(dialog.locator('summary', { hasText: 'More details' })).toBeFocused()
+    await page.keyboard.press('Tab')
     await expect(dialog.getByRole('button', { name: 'Add to Inbox' })).toBeFocused()
     await page.keyboard.press('Tab')
     await page.keyboard.press('Tab')
@@ -88,7 +90,7 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
 
   await page.route('**/api/v1/today', route => route.fulfill({ status: 503, contentType: 'application/problem+json', body: JSON.stringify({ title: 'Daily plan unavailable.' }) }))
   await page.goto('/today')
-  await expect(page.getByRole('alert')).toContainText('Daily plan unavailable.')
+  await expect(page.getByRole('alert')).toContainText('Your day could not be loaded.')
   await page.unroute('**/api/v1/today')
   await page.getByRole('button', { name: 'Try again' }).click()
   await expect(page.getByRole('region', { name: 'Daily Mission' })).toBeVisible()
