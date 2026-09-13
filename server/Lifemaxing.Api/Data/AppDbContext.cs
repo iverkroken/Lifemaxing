@@ -58,6 +58,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             settings.HasKey(value => value.UserId);
             settings.Property(value => value.TimeZoneId).HasMaxLength(100).IsRequired();
             settings.Property(value => value.Locale).HasMaxLength(20).IsRequired();
+            settings.Property(value => value.UiLanguage).HasMaxLength(2).HasDefaultValue("en").IsRequired();
+            settings.Property(value => value.Theme).HasMaxLength(6).HasDefaultValue("system").IsRequired();
+            settings.Property(value => value.Density).HasMaxLength(7).HasDefaultValue("normal").IsRequired();
             settings.Property(value => value.CreatedAtUtc).IsRequired();
             settings.HasOne(value => value.User)
                 .WithOne()

@@ -1,4 +1,5 @@
-﻿import { useState } from 'react'
+import { useLanguage } from '../settings/language.js'
+
 import { Link, NavLink, useSearchParams, useOutletContext } from 'react-router'
 import { queryString, useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Input } from '../../shared/ui/Input.jsx'
@@ -11,40 +12,49 @@ import { TaskRow } from './TaskRow.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
 
 export function TasksPage({ inbox = false }) {
+  const { t, areaName } = useLanguage()
   const { openCapture } = useOutletContext()
-  const [page, setPage] = useState(1)
-  const [status, setStatus] = useState('active')
-  const [search, setSearch] = useState('')
   const [params, setParams] = useSearchParams()
+  const page = Math.max(1, Number(params.get('page')) || 1)
+  const status = params.get('status') || 'active'
+  const search = params.get('search') || ''
+  const changeFilter = (key, value) => setParams(current => {
+    const next = new URLSearchParams(current)
+    if (value) next.set(key, value); else next.delete(key)
+    if (key !== 'page') next.delete('page')
+    return next
+  }, { replace: true })
+  const setPage = value => changeFilter('page', String(value))
   const areaId = params.get('areaId') || ''
   const areas = useProductivity('/areas')
   const today = useProductivity('/today')
   const tasks = useProductivity(`/tasks?${queryString({ inbox, page, status, search, areaId })}`)
   const action = useProductivityAction()
   return <div className={styles.stack}>
-    <PageHeader eyebrow={inbox ? 'Capture → organize → commit' : 'Your work, with intention'} title={inbox ? 'Inbox' : 'Tasks'}
-      description={inbox ? 'A place for everything on your mind. Choose a day to turn a thought into a commitment.' : 'Clear actions. A little less on your mind.'}
-      action={<Link to="/tasks/new">Create task with details →</Link>} />
-    <nav className={styles.tabs} aria-label="Task views"><NavLink to="/tasks" end>All tasks</NavLink><NavLink to="/inbox">Inbox</NavLink></nav>
-    <div className={inbox ? styles.split : styles.stack}>
-      <section aria-label="Task workspace">
+    <PageHeader eyebrow={inbox ? t("Capture → organize → commit") : t("Plan and do")} title={inbox ? t("Inbox") : t("Tasks")}
+      description={inbox ? t("A place for everything on your mind. Choose a day to turn a thought into a commitment.") : t("Choose your next action. Plan it, complete it, or pick up where you left off.")}
+      action={<Button onClick={() => openCapture({ date: null })}>{t("Capture a task")}</Button>} />
+    <nav className={styles.tabs} aria-label={t("Task views")}><NavLink to="/tasks" end>{t("All tasks")}</NavLink><NavLink to="/inbox">{t("Inbox")}</NavLink></nav>
+    <div className={styles.stack}>
+      <section className={styles.surface} aria-label={t("Task workspace")}>
         <div className={styles.toolbar}>
-          <Input label="Search tasks" placeholder="Find an action…" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
-          {!inbox && <Select label="Task status" value={status} onChange={e => { setStatus(e.target.value); setPage(1) }}>
-            <option value="active">Active</option><option value="completed">Completed</option><option value="all">All unarchived</option><option value="archived">Archived</option>
+          <Input label={t("Search tasks")} placeholder={t("Find an action…")} value={search} onChange={e => changeFilter('search', e.target.value)} />
+          {!inbox && <Select label={t("Task status")} value={status} onChange={e => changeFilter('status', e.target.value)}>
+            <option value="active">{t("Active")}</option><option value="completed">{t("Completed")}</option><option value="all">{t("All unarchived")}</option><option value="archived">{t("Archived")}</option>
           </Select>}
-          <Select label="Life Area filter" value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value } : {}); setPage(1) }}>
-            <option value="">All areas</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{area.displayName}</option>)}
+          <Select label={t("Life Area filter")} value={areaId} onChange={e => changeFilter('areaId', e.target.value)}>
+            <option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}
           </Select>
+          {(search || areaId || status !== 'active') && <Button variant="quiet" onClick={() => setParams({}, { replace: true })}>{t("Reset filters")}</Button>}
         </div>
         <QueryFeedback query={areas} />{inbox && <QueryFeedback query={today} />}<QueryFeedback query={tasks} /><ActionFeedback action={action} />
-        {tasks.data && <p className={styles.meta}>{tasks.data.total} {inbox ? 'unplanned' : status} {tasks.data.total === 1 ? 'task' : 'tasks'}</p>}
-        {tasks.data?.items.length === 0 && <EmptyState title={inbox ? 'A little breathing room' : 'Nothing here just yet'} icon={inbox ? 'inbox' : 'tasks'}>{inbox ? 'Your Inbox is clear. Capture an idea whenever it comes to mind.' : 'Create your next action, or adjust the filters to find earlier work.'}</EmptyState>}
+        {tasks.data && <p className={styles.meta}>{t('taskCount', { count: tasks.data.total, status: t(inbox ? 'unplanned' : { active: 'Active', completed: 'Completed', all: 'All unarchived', archived: 'Archived' }[status]) })}</p>}
+        {tasks.data?.items.length === 0 && <EmptyState title={search || areaId ? t("No matching tasks") : inbox ? t("Your Inbox is clear") : t("No tasks in this view")} icon={inbox ? 'inbox' : 'tasks'}>{inbox ? t("Your Inbox is clear. Capture an idea whenever it comes to mind.") : t("Create your next action, or adjust the filters to find earlier work.")}</EmptyState>}
         <ul className={styles.list}>{tasks.data?.items.map(task => <TaskRow key={task.id} task={task} action={action}
-          date={inbox ? today.data?.currentLocalDate : undefined} areaName={areas.data?.find(area => area.id === task.lifeAreaId)?.displayName} />)}</ul>
+          date={inbox ? today.data?.currentLocalDate : undefined} areaName={areaName(areas.data?.find(area => area.id === task.lifeAreaId))} />)}</ul>
         <Pagination data={tasks.data} setPage={setPage} />
       </section>
-      <aside className={styles.section} aria-label="Capture a task"><Button onClick={() => openCapture({ date: null })}>Capture a task</Button>{inbox && <p className={styles.meta}>Open a task to add details, a Life Area or a due date. It leaves Inbox when you choose a planned date.</p>}</aside>
+      <div className={styles.actions}><Link to="/tasks/new">{t("Create task with details →")}</Link>{inbox && <p className={styles.meta}>{t("Choose a planned date to move a task out of Inbox.")}</p>}</div>
     </div>
   </div>
 }

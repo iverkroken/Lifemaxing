@@ -1,5 +1,17 @@
 .summary { max-width: 48rem; padding-block: var(--space-6); border-block: 1px solid var(--color-border); }
 .compact { border-top: 1px solid var(--color-border); padding-top: var(--space-6); }
+.rankBadge { display: block; float: right; width: 7rem; color: var(--color-rank-bronze); margin: 0 0 var(--space-4) var(--space-4); }
+.rankBadge[data-rank='Silver'] { color: var(--color-rank-silver); }
+.rankBadge[data-rank='Gold'] { color: var(--color-rank-gold); }
+.rankBadge[data-rank='Platinum'] { color: var(--color-rank-platinum); }
+.rankBadge[data-rank='Diamond'] { color: var(--color-rank-diamond); }
+.rankBadge[data-rank='Apex'] { color: var(--color-rank-apex); }
+.activity { list-style: none; padding: 0; margin: 0; }
+.activity > li { padding-block: var(--row-padding); border-bottom: 1px solid var(--color-border); }
+.eventHeading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.eventHeading time { margin-left: auto; color: var(--color-text-muted); font-size: var(--text-sm); }
+.activity details { font-size: var(--text-sm); color: var(--color-text-muted); }
+.activity p { margin-block: var(--space-2); }
 .meter { display: block; width: 100%; height: var(--space-2); border: 0; border-radius: var(--radius-pill); overflow: hidden; background: var(--color-border); accent-color: var(--color-accent); }
 .meter::-webkit-progress-bar { background: var(--color-border); }
 .meter::-webkit-progress-value { background: var(--color-accent); transition: width var(--motion-fast); }
@@ -8,3 +20,11 @@
 .facts dt { color: var(--color-text-muted); font-size: var(--text-sm); }
 .facts dd { font-size: var(--text-2xl); margin: var(--space-2) 0; font-variant-numeric: tabular-nums; }
 @media (max-width: 767px) { .facts { grid-template-columns: 1fr; gap: var(--space-4); } }
+
+.summary { max-width: none; background: var(--color-accent-soft); border: 1px solid var(--color-border); border-left: var(--space-1) solid var(--color-accent); border-radius: var(--radius-card); padding: var(--space-8); }
+.summary h2 { font-size: var(--text-2xl); }
+.facts { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: var(--radius-card); gap: 0; }
+.facts > div { padding: var(--space-6); }
+.facts > div + div { border-left: 1px solid var(--color-border); }
+.facts dd { font-weight: 600; }
+@media (max-width: 767px) { .summary { padding: var(--space-6); } .facts > div + div { border-left: 0; border-top: 1px solid var(--color-border); } }

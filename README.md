@@ -103,7 +103,7 @@ npm run dev
 
 Open `http://127.0.0.1:5173`. `/` checks `/api/v1/auth/me` and sends an anonymous visitor to `/login` or the authenticated owner to `/today`. Sign in with the provisioned account. Vite proxies `/api/v1` and `/health` to port 5080; the client always uses relative URLs. No CORS setup or frontend secrets are needed.
 
-The browser stores only HttpOnly Identity and antiforgery cookies. The request token remains in memory and is refreshed across authentication changes. In production, both cookies use the `__Host-` prefix, `Secure`, and `SameSite=Strict`; development uses HTTP-compatible names on localhost. Login is limited to ten requests per IP per minute, and five failed passwords lock the account for five minutes.
+Authentication uses HttpOnly Identity and antiforgery cookies. The request token remains in memory and is refreshed across authentication changes. Only the non-sensitive interface language, theme and density are remembered in local display storage; no credentials, session identifiers or private domain data are stored there. In production, both cookies use the `__Host-` prefix, `Secure`, and `SameSite=Strict`; development uses HTTP-compatible names on localhost. Login is limited to ten requests per IP per minute, and five failed passwords lock the account for five minutes.
 
 ### Remembered sessions and troubleshooting
 
@@ -218,6 +218,8 @@ For repeatable container key persistence and Production-command refusal checks, 
 
 ## Local Development account lockout exception
 
+Historical opt-in only: the local exception was removed during authentication recovery closure. Ordinary account lockout is active. The full redesign does not enable this exception or reset the owner's password.
+
 Local access maintenance after Prompt B adds an explicitly opted-in exception for one existing account. `DevelopmentAccess:Email` and `DevelopmentAccess:DisableAccountLockout` are stored in local User Secrets, never committed configuration. The current operator configured the intended existing account locally; no password was generated, logged or stored in configuration by the agent.
 
 Both the environment and exact normalized account email must match. Ordinary password verification, confirmed-email checks, CSRF, cookies and the IP rate limit remain active. Only Identity account lockout is bypassed for that selected Development account. `LockoutEnabled` stays true in the database: Production/Staging ignore the exception even if the configuration is accidentally supplied there. No other account is unlocked or provisioned.
@@ -238,3 +240,14 @@ To restore ordinary account lockout, remove the local opt-in and restart the API
 ```
 
 This Development convenience does not disable the independent IP limiter. Repeated requests can still receive 429; wait for its normal one-minute window. Do not enable Development on a deployed environment to obtain this exception.
+
+The UX refresh checks run separately with `powershell -NoProfile -ExecutionPolicy Bypass -File tests/browser/run-isolated.ps1 -UxRefresh`. They use their own fictional PostgreSQL account, test language persistence and both logout confirmations, and capture empty/populated surfaces at 375/768/1440/1920 px under ignored `artifacts/ux-refresh/`. The isolated runners explicitly set their fictional account locale to English for deterministic regression copy; real account preferences are untouched.
+
+
+## Full interface redesign
+
+The complete Phase 1–3 interface supports English, Norwegian Bokmål, Swedish and Danish, with separate regional formatting and time zone, light/dark/system themes and normal/compact density. Account preferences use the additive `20260913181606_InterfacePreferences` migration. Apply reviewed migrations with the existing database-update workflow before running the updated API; this migration preserves Locale, time zone and historical domain data. Restart the development API after rebuilding.
+
+Build with `npm run build`, then run `powershell -NoProfile -ExecutionPolicy Bypass -File tests/browser/run-isolated.ps1 -Redesign` for the production-preview Chromium matrix. Add `-BrowserEngine firefox` for the second engine (`npx playwright install firefox` once). `-PerformanceStage after` records local production loading, route/action timings, requests and raw/gzip bundles. These options create disposable databases and fictional accounts, use ports 5082/5174, and leave ordinary development services alone. Run the runner without options for the full existing Phase 1–3/authentication/API-restart regression sequence.
+
+See [the design system](docs/DESIGN_SYSTEM.md) and [the coverage and verification record](docs/UX_REDESIGN_PLAN.md). Generated screenshots, comparison pages and logs stay under ignored `artifacts/`.

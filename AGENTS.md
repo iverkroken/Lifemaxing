@@ -1,5 +1,7 @@
 # LIFEMAXING Agent Instructions
 
+AGENTS_POLICY_VERSION: 2026.09.13.1
+
 ## Project
 
 LIFEMAXING is a long term personal operating system for planning, execution, progress tracking and structured life data.
@@ -279,19 +281,21 @@ Do not weaken authentication, authorization, CSRF protection or validation simpl
 
 ## Git
 
-Do not commit.
-
-Do not push.
-
-Do not create branches.
-
-Do not modify Git remotes.
-
-Do not force reset repository history.
-
-The repository owner handles Git operations unless explicitly instructed otherwise.
+Without explicit permission, do not commit, amend, push, merge, create or switch branches, modify Git remotes, reset, or rewrite repository history.
 
 You may inspect Git status and diffs to understand current changes.
+
+Before finishing a task, review all changed and unversioned files.
+
+Add reviewed new project files to Git tracking using explicit paths. This includes source code, components, styles, maintained tests, migrations, necessary scripts, documentation, configuration without secrets, required resources, and license files. `git add` for these files is permitted and expected.
+
+Keep secrets, local environment files containing secrets, User Secrets, temporary screenshots, test results, coverage, build output, caches, logs, IDE state, node_modules, bin, and obj outside Git.
+
+Update `.gitignore` when recurring generated files require it. An ignore rule does not resolve a secret that is already tracked; report it without exposing its value.
+
+Inspect unknown files before considering deletion. Do not stage unrelated existing changes. Preserve existing staging outside the task. Do not use `git add .` indiscriminately.
+
+End the Git review with `git status`. Confirm that necessary new project files are tracked, local/generated files and secrets have not been added, and no project files remain unexplained as unversioned.
 
 
 ## Implementation workflow
@@ -302,12 +306,13 @@ Work on one implementation phase at a time.
 
 Do not automatically continue into the next phase.
 
-Before starting implementation:
+Before every implementation task:
 
-1. Read `docs/IMPLEMENTATION_STATUS.md`.
-2. Inspect the relevant repository files.
-3. Read the relevant architecture and product documentation.
-4. Check the existing implementation before replacing anything.
+1. Read the entire current `AGENTS.md` again, including applicable subordinate agent instructions. Instructions remembered from an earlier task do not replace reading the current file.
+2. Verify `AGENTS_POLICY_VERSION` from the file. Stop if the policy version cannot be verified.
+3. Read `docs/IMPLEMENTATION_STATUS.md`, then the relevant architecture and product documentation.
+4. Inspect the existing implementation and relevant repository files before making assumptions or replacing anything.
+5. Check Git status before making changes.
 
 During implementation:
 
@@ -326,6 +331,30 @@ After implementation:
 5. Inspect failures and resolve issues caused by the change.
 6. Update `docs/IMPLEMENTATION_STATUS.md`.
 7. Stop after the requested phase or task is complete.
+
+## Required final report
+
+Use the following structure for implementation tasks:
+
+### Completed
+
+Two to five short bullets describing work actually completed.
+
+### Verification
+
+Tests, builds, and checks actually run, with their results. Do not claim tests, manual verification, or instruction reading that did not take place.
+
+### Git
+
+Important new files added to tracking, relevant files kept outside Git, any unexpected unversioned files, and confirmation that no commit or push occurred without permission.
+
+### Remaining
+
+Only real limitations, failed checks, or necessary manual verification. Omit this section if nothing remains.
+
+End the report with `Instructions checked: AGENTS.md` followed by the policy version verified from the file actually read. For this version, the final line is:
+
+Instructions checked: AGENTS.md 2026.09.13.1
 
 
 ## Development commands

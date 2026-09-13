@@ -1,0 +1,5 @@
+.reward { min-height: 18rem; }
+.identity { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); color: var(--color-text-muted); padding-block: var(--space-4); }
+.reward[data-state='ready'] { border-color: var(--color-accent); background: var(--color-mission); }
+.reward[data-state='ready'] .identity, .reward[data-state='claimed'] .identity { color: var(--color-accent); }
+.reward[data-state='claimed'] { background: var(--color-surface-muted); }
