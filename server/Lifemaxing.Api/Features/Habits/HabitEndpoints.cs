@@ -12,6 +12,7 @@ public static class HabitEndpoints
     public static void MapHabitEndpoints(this RouteGroupBuilder api)
     {
         var habits = api.MapGroup("/habits");
+        habits.MapHabitWeek();
         habits.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, Guid? areaId, bool? archived, int? page, int? pageSize, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();

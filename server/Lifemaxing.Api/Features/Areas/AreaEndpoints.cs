@@ -11,6 +11,22 @@ public static class AreaEndpoints
     {
         var areas = app.MapGroup("/api/v1/areas").RequireAuthorization();
 
+        areas.MapGet("/counts", async (ClaimsPrincipal principal, AppDbContext db, CancellationToken ct) =>
+        {
+            var userId = principal.GetUserId();
+            return Results.Ok(await db.LifeAreas.AsNoTracking().Where(area => area.UserId == userId)
+                .Select(area => new
+                {
+                    area.Id,
+                    Tasks = db.Tasks.Count(task => task.UserId == userId && task.LifeAreaId == area.Id &&
+                        task.DeletedAtUtc == null && !task.Completions.Any(completion => completion.ReversedAtUtc == null)),
+                    Goals = db.Goals.Count(goal => goal.UserId == userId && goal.LifeAreaId == area.Id &&
+                        goal.ArchivedAtUtc == null && goal.State == "Active"),
+                    Habits = db.Habits.Count(habit => habit.UserId == userId && habit.LifeAreaId == area.Id &&
+                        habit.ArchivedAtUtc == null && habit.IsActive)
+                }).ToListAsync(ct));
+        });
+
         areas.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, CancellationToken cancellationToken) =>
         {
             var userId = principal.GetUserId();

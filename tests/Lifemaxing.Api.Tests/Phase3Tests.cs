@@ -74,7 +74,17 @@ public sealed class Phase3Tests(TestDatabaseFixture database)
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.GetService<IMigrator>().MigrateAsync("20260912202529_CoreProductivity");
             }
-            var owner = await database.CreateOwnerAsync(app, "legacy");
+            // Seed the historical schema explicitly: the current settings model has
+            // additive columns which did not exist in Phase 2.
+            var owner = (UserId: Guid.NewGuid(), Email: $"legacy-{Guid.NewGuid():N}@example.test", Password: "Legacy-Test!Password-739");
+            await using (var scope = app.Services.CreateAsyncScope())
+            {
+                var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+                var result = await users.CreateAsync(new AppUser { Id = owner.UserId, Email = owner.Email, UserName = owner.Email, EmailConfirmed = true }, owner.Password);
+                Assert.True(result.Succeeded);
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"UserSettings\" (\"UserId\", \"TimeZoneId\", \"Locale\", \"CreatedAtUtc\") VALUES ({owner.UserId}, 'Europe/Oslo', 'nb-NO', {DateTimeOffset.UtcNow})");
+            }
             var taskId = Guid.NewGuid(); var completionId = Guid.NewGuid(); var now = DateTimeOffset.UtcNow;
             await using (var scope = app.Services.CreateAsyncScope())
             {
