@@ -19,10 +19,38 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Features.Goals.Goal> Goals => Set<Features.Goals.Goal>();
     public DbSet<Features.Goals.GoalProgressEntry> GoalProgressEntries => Set<Features.Goals.GoalProgressEntry>();
 
+    public DbSet<Features.Progression.XpEntry> XpEntries => Set<Features.Progression.XpEntry>();
+    public DbSet<Features.Progression.ActivityEvent> ActivityEvents => Set<Features.Progression.ActivityEvent>();
+    public DbSet<Features.Progression.CommandReceipt> CommandReceipts => Set<Features.Progression.CommandReceipt>();
+    public DbSet<Features.Progression.Reward> Rewards => Set<Features.Progression.Reward>();
+    public DbSet<Features.Progression.RewardClaim> RewardClaims => Set<Features.Progression.RewardClaim>();
+    public DbSet<Features.Progression.FocusSession> FocusSessions => Set<Features.Progression.FocusSession>();
+
+    private void CheckAppendOnlyHistory()
+    {
+        foreach (var entry in ChangeTracker.Entries())
+            if (entry.Entity is Features.Progression.XpEntry or Features.Progression.ActivityEvent or Features.Progression.CommandReceipt
+                && entry.State is EntityState.Modified or EntityState.Deleted)
+                throw new InvalidOperationException("Progression history is append only.");
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        CheckAppendOnlyHistory();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        CheckAppendOnlyHistory();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
         ProductivityModel.Configure(builder);
+        ProgressionModel.Configure(builder);
 
         builder.Entity<UserSettings>(settings =>
         {

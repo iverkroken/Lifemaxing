@@ -43,6 +43,28 @@ Sekvensen er: React visning → feature hook → felles fetch klient → API end
 
 API prefiks er /api/v1. V1 og V2 bruker samme API major når kontrakten bare utvides. Ressurser bruker GET liste, GET per id, POST, PATCH og DELETE når handlingen passer. Handlinger som fullføring bruker POST /{id}/complete og POST /{id}/reopen; GET endrer aldri tilstand. Lister bruker pageSize, cursor eller page og filtrering; begrens standard og maksimal pageSize. Feil bruker Problem Details med stabile maskinlesbare feilkoder, gyldige HTTP statuser og feltfeil for validering. 401 er uinnlogget, 403 avvist handling, 404 også for fremmede eller manglende eierressurser, 409 ved konflikt, 400 for ugyldig input. Klientens Query keys inkluderer bruker og filter, og tømmes helt ved utlogging.
 
+### Phase 3 API additions
+
+All routes below use the existing authenticated `/api/v1` group, CSRF filter and owner transaction lock. Level/rank/cap calculations live in the concrete ProgressionRules class; Focus reuses TaskEndpoints.Complete for task completion within the same transaction.
+
+| Route | Contract |
+| --- | --- |
+| GET `/progress` | Server-derived progress (total XP, level, rank, XP into level, next transition, percentage, rule version), active task/habit completion counts and ended non-cancelled focus seconds |
+| GET `/progress/ledger?page=&pageSize=` | Paged signed XP entries with source, original-entry reference, calendar bucket and rule version |
+| GET `/activity?page=&pageSize=&kind=` | Paged owner history, newest first; optional exact event-kind filter |
+| GET/POST `/rewards`, GET/PATCH/DELETE `/rewards/{id}` | Title and requiredLevel (1–100000); list supports page/pageSize and archived. Responses include claim date and current eligibility. DELETE archives |
+| POST `/rewards/{id}/claim` | One eligible claim per reward; retained through later XP corrections |
+| GET `/focus-sessions`, GET `/focus-sessions/active` | Paged history and `{ session: ... or null }`; session DTO includes serverNow, elapsedSeconds and persisted running/accumulated timestamps |
+| POST `/focus-sessions` | `{ taskId: UUID or null }`; at most one unfinished session per owner |
+| POST `/focus-sessions/{id}/pause`, `/resume` | Server-timed transitions; no focus XP |
+| POST `/focus-sessions/{id}/stop` | `{ outcome: "Stopped" | "Completed" | "Cancelled", completeTask: false }`; completeTask true requires a linked task and Completed outcome |
+
+Task complete/reopen, habit log/revoke, reward claim and all focus commands require a non-empty UUID **ClientActionId HTTP header** (400 if absent/invalid). This is the documented client-action identity represented as a header, leaving existing Phase 2 resource bodies intact. Repeating the same operation/body/key returns the saved status and response, including its original progression feedback; using that key for another request returns 409. Different keys cannot create multiple active task completions, habit/date logs, claims or focus sessions. Habit duplicate dates and already claimed rewards return 409; repeated task completion with a new key is a successful no-op with 0 XP.
+
+Successful command DTOs retain their resource fields and add `progression: { xpChange, progress, levelUp }`. The query layer refreshes all dependent productivity queries after success; transport/server failures retain the action identity for an explicit retry. CSRF-token refresh also preserves it. Navigation/reload reconstructs persisted task/focus/progression state from the server. No local timer or optimistic points become a persisted source of truth.
+
+Goal progress accepts the same optional ClientActionId header for replay protection; the current client always supplies it. Older Phase 2 callers without that header retain append-entry behavior. Goal progress and transitions to Completed create meaningful activity but no XP. Task, habit and reward command identities remain mandatory as specified above.
+
 ## Autentisering og sikkerhet
 
 Bruk ASP.NET Core Identity med IdentityUser<Guid> og SignInManager. Lag kun egne login, logout, me og CSRF endepunkter; ingen offentlig register rute. MapIdentityApi registrerer også /register og passer derfor ikke uten særskilt sperring. [Microsofts Identity API dokumentasjon](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-api-authorization?view=aspnetcore-10.0) viser endepunktene. Eieren opprettes én gang av en dokumentert lokal eller administrativ engangskommando med hemmelighet utenfor Git, ikke gjennom et internettvendt standardpassord. Identity håndterer passordhash, lockout og sesjoner; login får rate limit. Alle private endepunkter krever autentisering og slår opp eier fra innlogget identitet, aldri fra body. Ved hver referanse til en annen ressurs må begge tilhøre samme eier.

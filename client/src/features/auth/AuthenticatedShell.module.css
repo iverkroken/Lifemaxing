@@ -30,3 +30,9 @@
   .content { padding: var(--space-12) var(--space-12) var(--space-16); }
   .mobileHeader, .dock { display: none; }
 }
+
+.progressionNav { margin-top: var(--space-4); font-size: var(--text-sm); color: var(--color-text-muted); }
+.progressionNav summary { padding: var(--space-3); cursor: pointer; }
+.focusing { display: block; }
+.focusing .sidebar, .focusing .dock, .focusing .mobileHeader { display: none; }
+.focusing .content { padding-bottom: var(--space-12); }
