@@ -1,9 +1,14 @@
-.page { min-height: 100dvh; display: grid; place-items: center; padding: var(--space-6); }
-.login { width: min(100%, 28rem); }
-.brand { color: var(--color-accent); font-size: var(--text-lg); font-weight: 600; text-decoration: none; }
-.eyebrow { color: var(--color-accent); font-size: var(--text-sm); font-weight: 500; margin: var(--space-12) 0 var(--space-3); }
-.login h1 { font-size: var(--text-2xl); line-height: 1.15; margin: 0; }
-.intro { color: var(--color-text-muted); margin: var(--space-3) 0 var(--space-8); }
-.form { display: grid; gap: var(--space-6); }
-.error { color: var(--color-danger); margin: 0; }
+﻿.page { min-height: 100dvh; display: grid; place-items: center; padding: var(--space-8) var(--space-6); }
+.login { width: min(100%, var(--form-width)); }
+.brand { display: flex; align-items: center; gap: var(--space-2); color: var(--color-accent); font-size: var(--text-sm); font-weight: 600; text-decoration: none; margin-bottom: var(--space-8); }
+.surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-8); }
+.login h1 { font-size: var(--text-page-title); line-height: 1.15; letter-spacing: -0.035em; margin: 0; }
+.intro { color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-3) 0 var(--space-6); }
+.form { display: grid; gap: var(--space-4); }
+.visibility { justify-self: end; margin-top: calc(-1 * var(--space-3)); }
+.remember { display: flex; gap: var(--space-3); align-items: center; min-height: var(--control-height); cursor: pointer; font-size: var(--text-sm); }
+.remember input { width: var(--space-4); height: var(--space-4); accent-color: var(--color-accent); flex-shrink: 0; }
+.hint { margin: calc(-1 * var(--space-3)) 0 var(--space-2); color: var(--color-text-muted); font-size: var(--text-sm); }
+.error { color: var(--color-danger); margin: 0; font-size: var(--text-sm); }
 .notice { background: var(--color-surface-muted); border-radius: var(--radius-control); padding: var(--space-3); margin: 0 0 var(--space-6); }
+@media (max-width: 767px) { .page { padding-inline: var(--space-4); } .surface { padding: var(--space-6); } .login h1 { font-size: var(--text-2xl); } }
