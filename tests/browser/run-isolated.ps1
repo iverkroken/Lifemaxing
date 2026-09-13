@@ -52,7 +52,7 @@ try {
   $viteProcess = Start-Process node -ArgumentList 'node_modules/vite/bin/vite.js client --config client/vite.config.js --port 5174' -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-vite.log -RedirectStandardError artifacts/browser-vite-error.log
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   Wait-Ready 'http://127.0.0.1:5174/start'
-  npm run test:smoke -- foundation.spec.js phase1.spec.js phase2.spec.js
+  npm run test:smoke -- foundation.spec.js phase1.spec.js phase2.spec.js ux.spec.js
   if ($LASTEXITCODE -ne 0) { throw 'Browser checks failed.' }
   Stop-Process -Id $apiProcess.Id
   $apiProcess.WaitForExit()
