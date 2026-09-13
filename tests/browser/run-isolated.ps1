@@ -1,4 +1,6 @@
-param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '')
+param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '', [switch] $UxRefresh, [switch] $Redesign,
+  [ValidateSet('chromium', 'firefox')][string] $BrowserEngine = 'chromium',
+  [ValidateSet('', 'before', 'after')][string] $PerformanceStage = '')
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 Set-Location -LiteralPath $repoRoot
@@ -9,7 +11,7 @@ $viteProcess = $null
 $created = $false
 $variables = @('ConnectionStrings__Database', 'ASPNETCORE_ENVIRONMENT', 'ASPNETCORE_URLS', 'ASPNETCORE_CONTENTROOT',
   'OwnerProvisioning__Email', 'OwnerProvisioning__Password', 'SMOKE_EMAIL', 'SMOKE_PASSWORD', 'SMOKE_BASE_URL',
-  'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default', 'REFERENCE_STAGE')
+  'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default', 'REFERENCE_STAGE', 'PERFORMANCE_STAGE', 'SMOKE_BROWSER')
 $previous = @{}
 foreach ($name in $variables) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 function Wait-Ready([string] $url) {
@@ -42,6 +44,9 @@ try {
   $env:SMOKE_PASSWORD = $env:OwnerProvisioning__Password
   dotnet server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll --provision-owner
   if ($LASTEXITCODE -ne 0) { throw 'Disposable owner provisioning failed.' }
+  # Keep regression copy deterministic; language switching is tested separately.
+  'UPDATE "UserSettings" SET "Locale" = ''en-GB'';' | docker compose exec -T db psql -U lifemaxing -d $testDatabase -v ON_ERROR_STOP=1
+  if ($LASTEXITCODE -ne 0) { throw 'Fictional owner language setup failed.' }
   Remove-Item Env:OwnerProvisioning__Email, Env:OwnerProvisioning__Password
   $env:ASPNETCORE_URLS = 'http://127.0.0.1:5082'
   $env:ASPNETCORE_CONTENTROOT = Join-Path $repoRoot 'server/Lifemaxing.Api'
@@ -50,9 +55,28 @@ try {
   $env:SMOKE_RESTART = '0'
   New-Item -ItemType Directory -Path artifacts -Force | Out-Null
   $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-api.log -RedirectStandardError artifacts/browser-api-error.log
-  $viteProcess = Start-Process node -ArgumentList 'node_modules/vite/bin/vite.js client --config client/vite.config.js --port 5174' -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-vite.log -RedirectStandardError artifacts/browser-vite-error.log
+  $viteArguments = 'node_modules/vite/bin/vite.js client --config client/vite.config.js --port 5174'
+  if ($PerformanceStage -or $Redesign) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
+  $viteProcess = Start-Process node -ArgumentList $viteArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-vite.log -RedirectStandardError artifacts/browser-vite-error.log
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   Wait-Ready 'http://127.0.0.1:5174/start'
+  if ($Redesign) {
+    $env:SMOKE_BROWSER = $BrowserEngine
+    npm run test:smoke -- redesign.spec.js
+    if ($LASTEXITCODE -ne 0) { throw 'Full redesign checks failed.' }
+    return
+  }
+  if ($PerformanceStage) {
+    $env:PERFORMANCE_STAGE = $PerformanceStage
+    npm run test:smoke -- performance.spec.js
+    if ($LASTEXITCODE -ne 0) { throw 'Production performance checks failed.' }
+    return
+  }
+  if ($UxRefresh) {
+    npm run test:smoke -- ux-refresh.spec.js
+    if ($LASTEXITCODE -ne 0) { throw 'UX refresh checks failed.' }
+    return
+  }
   if ($ReferenceStage) {
     $env:REFERENCE_STAGE = $ReferenceStage
     npm run test:smoke -- reference.spec.js
