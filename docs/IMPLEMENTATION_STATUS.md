@@ -2,9 +2,9 @@
 
 ## Current Phase
 
-Phase 1: Authentication and database — complete (12 September 2026).
+Phase 2: Core productivity — complete and verified (13 September 2026).
 
-Phase 2 has not started.
+Resumed the clean `wip/phase-2-interrupted` checkpoint at `91ff123`. The checkpoint already contained the Phase 2 implementation, migration, API documentation and tests; this status file had not been updated. Existing work was retained and audited rather than regenerated. Phase 3 has not started.
 
 ## Completed
 
@@ -32,54 +32,59 @@ Phase 1:
 - Added React Hook Form, Zod and the documented resolver only where Phase 1 forms require them.
 - Updated README with migration, owner provisioning, authenticated development and integration/browser test procedures.
 
-## Current State
+Phase 2:
 
-The Phase 1 browser → API → PostgreSQL authentication and owner-data flow works. The local development database has the first migration applied and deliberately has no owner account yet, so the repository owner can provision the intended private credentials using the documented one-time command.
+- Tasks support title-only Quick Add, details, area/goal links, size, priority, planned/due dates, estimates, filtering, pagination, editing, archival and completion/reopen history.
+- Inbox consistently includes only unfinished, unarchived tasks without a planned date, regardless of other API filters. A due date or area/goal link alone does not remove a task from Inbox.
+- Today is the authenticated landing screen and combines the daily mission, commitments, overdue/planned tasks, expected habits and Quick Add. Planning and logging use the owner's configured time zone and server date.
+- Daily commitments preserve started-day plans and cancellation history. Future moves cancel the former plan. Mission selection is unique per owner/day and creates a commitment. Cancelled commitments can be restored directly from Today.
+- Habits support create/edit/archive, active state, Daily/SelectedWeekdays/WeeklyCount schedules, forward-only schedule periods, historical logs and reversible completions. Duplicate active daily logs are rejected.
+- Goals support qualitative and measured outcomes, editable state and targets, archive and append-style progress history. Existing measurements retain their original unit, baseline and direction.
+- All private routes derive ownership from Identity and validate related owners. Cookie authentication and CSRF protection remain intact. Planning mutations serialize per owner within a transaction.
+- Existing React/JSX, TanStack Query, React Hook Form/Zod and shared design tokens remain in use. No major redesign, TypeScript, Tailwind or global state library was introduced.
 
-Only Identity, UserSettings and LifeArea data exist. No Task, Habit, Goal, Today, XP or later-phase functionality has been implemented.
+## Resume Gap Analysis and Fixes
 
-Local credentials are stored in ignored `.env` / `.env.container` files and ASP.NET Core User Secrets, outside tracked source and the image build context. No Git commits, branches or pushes were made.
+- COMPLETE on inspection, then reverified: core entities, endpoint groups, owner scoping, historical persistence, route wiring, create/edit forms, migration and isolated test infrastructure.
+- PARTIAL / fixed: Inbox could include completed or archived tasks when combined with status filters; several date filters and mission deletion lacked the documented date bounds; cancelled Today plans had no direct restore action; dependent queries in habit/task forms lacked visible loading/error/retry feedback.
+- MISSING / completed: accurate Phase 2 status reporting and a fresh full verification pass. Added regression coverage for Inbox/date bounds and browser coverage for habit editing, goal completion and mobile commitment cancellation/restoration.
+- Existing browser runner and restart test are intentional, useful verification tools and were retained.
 
-## Next Step
+## Current State and Next Step
 
-Await an explicit request for Phase 2. That phase adds Tasks, Inbox, Daily Commitments, Today and Daily Mission, Habits with versioned schedules and logs, Goals with progress history, and their real UI/API flows. XP and progression remain Phase 3 work.
+The Phase 2 browser → API → PostgreSQL flows are implemented and verified. Tasks, plans, missions, habits, schedule/log history, goals and progress history persist. Private local user records were not used as fixtures or deleted; integration and browser writes used isolated databases and fictional owners.
 
-## Known Issues
+Stop after Phase 2. Await an explicit next task. XP, levels, ranks, rewards, Activity History, Focus Mode and scoring are not implemented. Phase 2 is not the complete V1 milestone.
 
-No unresolved Phase 1 implementation failures or unverified acceptance checks.
+## Verification — 13 September 2026
 
-Environment note: the machine's system `dotnet` installation is still .NET 9. SDK 10.0.401 was installed per-user at `%LOCALAPPDATA%\Microsoft\dotnet`; select it in Rider or prepend that directory to the terminal PATH as documented in README. No global toolchain settings were changed.
+- Locked .NET restore and local EF tool restore passed using SDK 10.0.401 from `%LOCALAPPDATA%\Microsoft\dotnet`.
+- `npm ci` passed: 0 reported vulnerabilities. A running repository Vite process initially locked a native dependency; it was stopped for restore and restarted on port 5173.
+- Final `dotnet build -c Release --no-restore`: 0 warnings, 0 errors. An intermediate overlapping build hit a Windows test-process file lock; the final build was repeated after those processes exited and passed cleanly.
+- `dotnet test -c Release --no-build`: 27 passed, 0 failed, 0 skipped. Includes all 13 foundation/Phase 1 cases and 14 Phase 2 cases, running against real PostgreSQL. Coverage includes authentication, CSRF, owner isolation, completion/mission/log concurrency, Inbox, plans, schedule history, DST/ISO weeks, goal history, archival and task persistence after application restart.
+- `npm run lint`: passed.
+- `npm run test -- --run`: 6 passed across 5 files, including Quick Add failure/retry/input preservation and server-date Today behavior.
+- `npm run build`: passed.
+- `tests/browser/run-isolated.ps1`: 4 browser tests passed, then 1 additional persistence test passed after an API process restart. No skipped tests. The final run included Phase 1 login/settings/areas/logout regressions, Task editing and reload, Mission completion/reopen, Habit editing/schedules/log reversal, Goal completion/progress history, Quick Add and mobile commitment cancellation/restoration.
+- Browser checks used real PostgreSQL, an isolated Release API and Vite, checked 375/768/1440 px layouts, and reported no page errors or horizontal overflow. Today screenshots were inspected. Generated screenshots/logs remain under ignored `artifacts/`.
+- The isolated browser databases and processes created by the runner were removed/stopped in its cleanup. Existing unrelated local databases were preserved.
+- `git diff --check`: passed. No secrets or generated output are tracked or untracked commit candidates. Existing ignored secret files, dependency/build output and verification artifacts remain ignored. No staging, commits, branch changes or pushes were performed.
 
-An API-only development run can warn that `wwwroot` is absent; Vite supplies the development client. The Docker build supplies and verifies `wwwroot` for production serving. TLS, persisted Data Protection keys and public deployment remain Phase 8 work; the production cookie intentionally requires HTTPS.
+## Database and Migration Status
 
-## Frontend Build Status
+PostgreSQL 18.6 is healthy in Compose with loopback-only access and its existing persistent volume.
 
-Passed after Phase 1: clean `npm ci`, `npm run build`, and clean Linux client build with `npm ci` in Docker.
+Both migrations are present and applied to the configured local development database:
 
-## Backend Build Status
+- `20260912173928_InitialIdentityAndAreas`
+- `20260912202529_CoreProductivity`
 
-Passed after Phase 1: locked .NET 10 restore, local EF tool restore, solution build with zero warnings/errors, and clean Release publish in Docker.
+The existing CoreProductivity migration was reviewed and retained unchanged. `database update` reported the development database was already up to date; isolated integration/browser databases successfully applied the migrations from scratch. EF reports no pending model changes. No duplicate migration, schema rewrite or local data deletion was necessary. Ordinary application startup still does not run migrations.
 
-## Test Status
+## Scope Clarifications and Known Issues
 
-Passed:
+No unresolved Phase 2 acceptance failures.
 
-- `npm run lint`.
-- `npm run test -- --run`: 4 frontend interaction/API-client tests across 3 files, covering connection loading/refresh, failure/retry, login validation and expired-CSRF refresh/retry.
-- `dotnet test`: 13 passing cases, reverified against PostgreSQL 18 during the repository audit. Phase 1 cases use an isolated real PostgreSQL database and cover migration application, wrong/right password, lockout, login rate limit, missing CSRF and an invalid token with a foreign Origin header, JSON 401, login/logout, settings validation, owner isolation and absent registration routes. The temporary test database is removed after the suite.
-- `npm run test:smoke`: 3 browser checks through Vite against a temporary real PostgreSQL database and provisioned disposable owner. They cover actual status JSON, protected-route redirect, login, ten areas, area/settings persistence, refresh, a second page using the persistent cookie, logout, unknown API JSON 404, and no horizontal overflow at 375/768/1440 px. The temporary owner, database and credential file were removed afterward.
-- `git diff --check`.
+The checkpoint's documented scope clarifications remain: minimal TaskCompletion history is introduced in Phase 2 because completion/reopen depends on it; XP/Activity/CommandReceipt remain Phase 3. Transaction boundaries provide the later attachment points without unused hook abstractions. The compact responsive navigation remains until the dedicated UX pass. See `PHASE2_API.md` for the detailed contracts.
 
-## Database Status
-
-PostgreSQL 18 is healthy in Compose using `postgres:18-bookworm` (verified server version 18.6). The fresh `lifemaxing_postgres18-data` volume is mounted at `/var/lib/postgresql`; the previous `lifemaxing_postgres-data` volume is preserved and is no longer mounted. Before the switch, the previous database had zero users, settings and areas. The PostgreSQL 18 development database contains the ten expected Phase 1 tables and no owner account.
-
-The repository audit reverified locked backend restore, build with zero warnings/errors, migration application, no pending EF model changes, and all 13 backend/database tests against PostgreSQL 18. The earlier browser and production-container checks listed above were performed before this database upgrade; they were not repeated during the audit.
-
-## Migration Status
-
-`20260912173928_InitialIdentityAndAreas` created and applied successfully. Its generated SQL was reviewed, EF reports no pending model changes, and integration tests apply it to a clean isolated database. Normal startup does not call `Migrate()`; README documents explicit transactional local application and idempotent script generation.
-
-## Docker Status
-
-Passed after Phase 1: healthy Compose database, `docker build -t lifemaxing:phase1 .`, built SPA refresh at `/areas`, JSON API 404 behavior and real database status from the container. No deployment or public exposure was performed.
+The system-wide dotnet installation remains .NET 9; use the documented per-user .NET 10 SDK. The local npm configuration emits a non-blocking `min-release-age` warning. API-only development can warn about absent `wwwroot`, since Vite serves the client. Production TLS, persisted deployment Data Protection keys, backup/restore and public deployment remain Phase 8; the Phase 1 Docker image verification was not repeated in this Phase 2 pass.

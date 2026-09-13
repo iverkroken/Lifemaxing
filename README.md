@@ -1,6 +1,6 @@
 # LIFEMAXING
 
-A personal operating system for planning, execution and progress. Phase 1 adds the private owner account, cookie authentication, persisted settings and the first editable Life Areas to the Phase 0 application foundation.
+A personal operating system for planning, execution and progress. Phase 2 adds Today, Tasks, Inbox, Daily Commitments and Mission, Habits with schedule/log history, Goals with progress history, and Quick Add to the private Phase 1 foundation.
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. `/` checks `/api/v1/auth/me` and sends an anonymous visitor to `/login` or the authenticated owner to `/areas`. Sign in with the provisioned account. Vite proxies `/api/v1` and `/health` to port 5080; the client always uses relative URLs. No CORS setup or frontend secrets are needed.
+Open `http://127.0.0.1:5173`. `/` checks `/api/v1/auth/me` and sends an anonymous visitor to `/login` or the authenticated owner to `/today`. Sign in with the provisioned account. Vite proxies `/api/v1` and `/health` to port 5080; the client always uses relative URLs. No CORS setup or frontend secrets are needed.
 
 The browser stores only HttpOnly Identity and antiforgery cookies. The request token remains in memory and is refreshed across authentication changes. In production, both cookies use the `__Host-` prefix, `Secure`, and `SameSite=Strict`; development uses HTTP-compatible names on localhost. Login is limited to ten requests per IP per minute, and five failed passwords lock the account for five minutes.
 
@@ -171,4 +171,15 @@ For a host publish without Docker, run `npm run build`, `dotnet publish server/L
 - `tests/Lifemaxing.Api.Tests`: focused API and PostgreSQL integration tests.
 - `docs`: product and engineering source of truth; current progress is in `IMPLEMENTATION_STATUS.md`.
 
-Phase 2 adds Tasks, Inbox, Daily Commitments, Today, Daily Mission, Habits and schedules/logs, Goals and progress entries. XP and progression remain Phase 3 work.
+Phase 2 routes are `/today`, `/inbox`, `/tasks`, `/tasks/new`, `/tasks/:id`, `/habits`, `/habits/:id`, `/goals` and `/goals/:id`. Areas and Settings remain available. Detailed API contracts, validation and historical planning rules are in [docs/PHASE2_API.md](docs/PHASE2_API.md). XP and progression remain Phase 3 work.
+
+On this Windows/Compose development setup, the complete browser checks can run without touching the private owner's data:
+
+```powershell
+dotnet build -c Release
+powershell -NoProfile -ExecutionPolicy Bypass -File tests/browser/run-isolated.ps1
+```
+
+The runner uses the existing User Secrets database connection, creates a uniquely named temporary PostgreSQL database, applies migrations and provisions a fictional owner. It starts a separate Release API on 5082 and Vite on 5174, runs Phase 0/1/2 browser flows, restarts the API and verifies the stored task, habit/schedule/log and goal history again. It removes its database and stops its processes in `finally`. Ports 5082 and 5174 must be free. Development services on 5080/5173 are left running. `LIFEMAXING_API_TARGET` overrides the Vite proxy only for this isolated run; the normal default remains 5080.
+
+Browser checks edit records and must use a disposable owner. The isolated runner is the preferred full-suite workflow. Restart any already-running development API after rebuilding to load new endpoint code.

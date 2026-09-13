@@ -26,11 +26,11 @@ export function LoginPage() {
     mutationFn: login,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: currentUserKey })
-      navigate(location.state?.from || '/areas', { replace: true })
+      navigate(location.state?.from || '/today', { replace: true })
     },
   })
 
-  if (currentUser.isSuccess) return <Navigate to="/areas" replace />
+  if (currentUser.isSuccess) return <Navigate to={location.state?.from || '/today'} replace />
 
   const submit = form.handleSubmit(values => mutation.mutate(values))
   const errorMessage = mutation.error instanceof ApiError

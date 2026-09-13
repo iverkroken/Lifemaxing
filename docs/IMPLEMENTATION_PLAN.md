@@ -42,6 +42,8 @@ Implementer: Task CRUD med Inbox, planlagt dato og forfall; DailyCommitment når
 
 Entities: Task, DailyCommitment, DailyMission, Habit, HabitSchedulePeriod, HabitLog, Goal, GoalProgressEntry.
 
+Avklaring under implementering: Phase 2 inkluderer også den minimale TaskCompletion-historikken (uten AwardedXp), slik at complete/reopen kan bruke den dokumenterte sannhetskilden. Phase 3 utvider den med XP, Activity og CommandReceipt. Konkrete dato-, historikk- og API-regler er dokumentert i PHASE2_API.md.
+
 API:
 1. GET /api/v1/today?date=YYYY-MM-DD, GET /api/v1/tasks med filter, POST /api/v1/tasks, GET /api/v1/tasks/{id}, PATCH /api/v1/tasks/{id}, DELETE /api/v1/tasks/{id}, POST /api/v1/tasks/{id}/complete, POST /api/v1/tasks/{id}/reopen.
 2. POST /api/v1/daily-commitments og DELETE /api/v1/daily-commitments/{id}; PUT /api/v1/daily-mission/{date}, DELETE /api/v1/daily-mission/{date}.

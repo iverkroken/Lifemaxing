@@ -32,9 +32,14 @@ export function AuthenticatedShell() {
   return <div className={styles.shell}>
     <a href="#main-content" className={styles.skipLink}>Skip to content</a>
     <aside className={styles.sidebar}>
-      <NavLink to="/areas" className={styles.brand}>LIFEMAXING</NavLink>
+      <NavLink to="/today" className={styles.brand}>LIFEMAXING</NavLink>
       <p className={styles.tagline}>Your personal operating system.</p>
       <nav className={styles.navigation} aria-label="Main navigation">
+        <NavLink to="/today" className={navClass}>Today</NavLink>
+        <NavLink to="/inbox" className={navClass}>Inbox</NavLink>
+        <NavLink to="/tasks" className={navClass}>Tasks</NavLink>
+        <NavLink to="/habits" className={navClass}>Habits</NavLink>
+        <NavLink to="/goals" className={navClass}>Goals</NavLink>
         <NavLink to="/areas" className={navClass}>Areas</NavLink>
         <NavLink to="/settings" className={navClass}>Settings</NavLink>
       </nav>

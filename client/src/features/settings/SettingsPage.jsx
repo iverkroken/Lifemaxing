@@ -29,6 +29,7 @@ export function SettingsPage() {
     mutationFn: updateSettings,
     onSuccess: saved => {
       queryClient.setQueryData(queryKey, saved)
+      queryClient.invalidateQueries({ queryKey: ['productivity'] })
       form.reset(saved)
     },
   })

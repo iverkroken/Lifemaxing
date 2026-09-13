@@ -28,6 +28,8 @@ DailyCommitment er en liten, bevisst historisk plan, nødvendig for å kunne reg
 
 ## Progression og Activity, fase 3
 
+Phase 2 avklaring: `TaskCompletion` introduseres med Id, UserId, TaskId, CompletedAtUtc og ReversedAtUtc allerede i Phase 2, fordi task-status skal avledes fra aktiv fullføring og Phase 2 krever complete/reopen. AwardedXp og transaksjonell XP/Activity/CommandReceipt kommer først i Phase 3. Habit.XpPerLog kommer også i Phase 3. Se `PHASE2_API.md` for den konkrete Phase 2-kontrakten; ingen XP eller Activity-strøm bygges i Phase 2.
+
 | Entity | Viktige felt | Relasjoner og invariant |
 | --- | --- | --- |
 | TaskCompletion | Id, UserId, TaskId, CompletedAtUtc, AwardedXp, ReversedAtUtc? | Delvis unik aktiv TaskId; hver syklus er identifiserbar; AwardedXp er historisk beløp |

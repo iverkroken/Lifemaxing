@@ -8,8 +8,8 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      '/api/v1': 'http://localhost:5080',
-      '/health': 'http://localhost:5080',
+      '/api/v1': process.env.LIFEMAXING_API_TARGET || 'http://localhost:5080',
+      '/health': process.env.LIFEMAXING_API_TARGET || 'http://localhost:5080',
     },
   },
   test: {

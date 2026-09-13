@@ -9,10 +9,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<LifeArea> LifeAreas => Set<LifeArea>();
+    public DbSet<Features.Tasks.TaskItem> Tasks => Set<Features.Tasks.TaskItem>();
+    public DbSet<Features.Tasks.TaskCompletion> TaskCompletions => Set<Features.Tasks.TaskCompletion>();
+    public DbSet<Features.Today.DailyCommitment> DailyCommitments => Set<Features.Today.DailyCommitment>();
+    public DbSet<Features.Today.DailyMission> DailyMissions => Set<Features.Today.DailyMission>();
+    public DbSet<Features.Habits.Habit> Habits => Set<Features.Habits.Habit>();
+    public DbSet<Features.Habits.HabitSchedulePeriod> HabitSchedulePeriods => Set<Features.Habits.HabitSchedulePeriod>();
+    public DbSet<Features.Habits.HabitLog> HabitLogs => Set<Features.Habits.HabitLog>();
+    public DbSet<Features.Goals.Goal> Goals => Set<Features.Goals.Goal>();
+    public DbSet<Features.Goals.GoalProgressEntry> GoalProgressEntries => Set<Features.Goals.GoalProgressEntry>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        ProductivityModel.Configure(builder);
 
         builder.Entity<UserSettings>(settings =>
         {

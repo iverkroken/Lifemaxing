@@ -9,6 +9,11 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Lifemaxing.Api.Common;
+using Lifemaxing.Api.Features.Tasks;
+using Lifemaxing.Api.Features.Today;
+using Lifemaxing.Api.Features.Habits;
+using Lifemaxing.Api.Features.Goals;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +38,7 @@ builder.Services.AddAntiforgery(options =>
         : CookieSecurePolicy.Always;
 });
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -131,6 +137,11 @@ app.MapSystemEndpoints();
 app.MapAuthEndpoints();
 app.MapSettingsEndpoints();
 app.MapAreaEndpoints();
+var productivity = app.MapGroup("/api/v1").RequireAuthorization().AddEndpointFilter<ProductivityWriteFilter>();
+productivity.MapTaskEndpoints();
+productivity.MapTodayEndpoints();
+productivity.MapHabitEndpoints();
+productivity.MapGoalEndpoints();
 
 // Reserve API and health paths: even unknown routes must never return the SPA.
 app.Map("/api/{**path}", () => Results.Problem(statusCode: 404, title: "Endpoint not found."));

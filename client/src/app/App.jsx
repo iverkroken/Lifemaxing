@@ -8,11 +8,16 @@ import { SettingsPage } from '../features/settings/SettingsPage.jsx'
 import { StartPage } from '../features/system/StartPage.jsx'
 import { PageHeader } from '../shared/ui/PageHeader.jsx'
 import styles from './App.module.css'
+import { TodayPage } from '../features/today/TodayPage.jsx'
+import { TasksPage } from '../features/tasks/TasksPage.jsx'
+import { NewTaskPage, TaskDetailPage } from '../features/tasks/TaskDetailPage.jsx'
+import { HabitsPage, HabitDetailPage } from '../features/habits/HabitsPage.jsx'
+import { GoalsPage, GoalDetailPage } from '../features/goals/GoalsPage.jsx'
 
 function HomeRoute() {
   const user = useCurrentUser()
   if (user.isPending) return <main className={styles.centered}>Checking your session…</main>
-  return <Navigate to={user.isSuccess ? '/areas' : '/login'} replace />
+  return <Navigate to={user.isSuccess ? '/today' : '/login'} replace />
 }
 
 function NotFoundPage() {
@@ -29,6 +34,15 @@ export function App() {
       <Route path="login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedShell />}>
+          <Route path="today" element={<TodayPage />} />
+          <Route path="inbox" element={<TasksPage key="inbox" inbox />} />
+          <Route path="tasks" element={<TasksPage key="tasks" />} />
+          <Route path="tasks/new" element={<NewTaskPage />} />
+          <Route path="tasks/:id" element={<TaskDetailPage />} />
+          <Route path="habits" element={<HabitsPage />} />
+          <Route path="habits/:id" element={<HabitDetailPage />} />
+          <Route path="goals" element={<GoalsPage />} />
+          <Route path="goals/:id" element={<GoalDetailPage />} />
           <Route path="areas" element={<AreaPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
