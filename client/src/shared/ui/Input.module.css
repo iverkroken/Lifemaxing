@@ -1,5 +1,5 @@
-.field { display: grid; gap: var(--space-2); }
-.field label { font-weight: 500; }
+.field { display: grid; align-content: start; gap: var(--space-2); min-width: 0; }
+.field label { font-weight: 500; font-size: var(--text-sm); }
 .field label span, .hint { color: var(--color-text-muted); font-size: var(--text-sm); }
 .hint, .error { margin: 0; }
 .input { width: 100%; min-height: var(--control-height); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-surface); color: var(--color-text); }
