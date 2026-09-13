@@ -65,7 +65,7 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await page.getByRole('button', { name: 'Save future schedule' }).click()
   await expect(page.getByText('Future schedule saved.')).toBeVisible()
   await page.reload()
-  await expect(page.getByText('3 times per week')).toBeVisible()
+  await expect(page.getByText('3/week', { exact: true })).toBeVisible()
   await expect(page.getByText('Mon, Wed, Fri')).toBeVisible()
   const habitRoute = new URL(page.url()).pathname
   await page.getByRole('button', { name: 'Edit habit', exact: true }).click()
@@ -104,7 +104,7 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await page.getByRole('button', { name: 'Save goal', exact: true }).click()
   await expect(page.getByText('Goal saved.', { exact: true })).toBeVisible()
   await page.reload()
-  await expect(page.getByText('Completed goal', { exact: true })).toBeVisible()
+  await expect(page.getByText('Goal · Completed', { exact: true })).toBeVisible()
 
   for (const width of [375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 })

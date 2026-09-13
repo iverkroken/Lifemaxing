@@ -31,12 +31,12 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   await expect(fitness.getByText('Changes saved.')).toBeVisible()
 
   await page.getByRole('link', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Language & time' }).click()
   const timeZone = page.getByLabel('Time zone')
   const useBudapest = await timeZone.inputValue() !== 'Europe/Budapest'
   const updatedTimeZone = useBudapest ? 'Europe/Budapest' : 'Europe/Oslo'
-  const updatedLocale = useBudapest ? 'hu-HU' : 'nb-NO'
   await timeZone.fill(updatedTimeZone)
-  await page.getByLabel('Locale').fill(updatedLocale)
+  await page.getByLabel('Regional format', { exact: true }).selectOption('en-GB')
   await page.getByRole('button', { name: 'Save settings' }).click()
   await expect(page.getByText('Settings saved.')).toBeVisible()
   await page.reload()
@@ -50,6 +50,7 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   await anotherPage.close()
 
   await page.getByRole('button', { name: 'Sign out', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Sign out of this device?' }).getByRole('button', { name: 'Sign out', exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
   await page.goto('/areas')
   await expect(page).toHaveURL(/\/login$/)

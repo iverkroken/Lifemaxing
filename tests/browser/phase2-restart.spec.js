@@ -10,7 +10,7 @@ test('productivity records survive an API process restart', async ({ page }) => 
   await expect(page.getByRole('link', { name: 'Mobile captured action' })).toBeVisible()
   await page.getByRole('link', { name: 'Habits', exact: true }).click()
   await page.getByRole('region', { name: 'Habit library' }).getByRole('link', { name: 'Read a chapter', exact: true }).click()
-  await expect(page.getByText('3 times per week')).toBeVisible()
+  await expect(page.getByText('3/week', { exact: true })).toBeVisible()
   await expect(page.getByText('Mon, Wed, Fri')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Undo completion' })).toBeVisible()
   await page.getByRole('link', { name: 'Goals', exact: true }).click()
