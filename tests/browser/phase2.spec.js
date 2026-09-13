@@ -13,6 +13,7 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
   await expect(page.getByLabel('Plan date')).toHaveValue(/^\d{4}-\d{2}-\d{2}$/)
   const date = await page.getByLabel('Plan date').inputValue()
+  await page.screenshot({ path: 'artifacts/ux-today-empty.png', fullPage: true })
   await page.getByLabel('Task title').fill('Prepare weekly plan')
   await page.getByRole('button', { name: 'Add to Inbox' }).click()
   await expect(page.getByText('Task captured.')).toBeVisible()
@@ -31,7 +32,7 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await expect(page.getByLabel('Title', { exact: false })).toHaveValue('Prepare weekly plan carefully')
   await expect(page.getByLabel('Planned date')).toHaveValue(date)
   await page.getByRole('link', { name: 'Today', exact: true }).click()
-  await page.getByText('Choose a mission or add an existing task').click()
+  await page.getByRole('button', { name: 'Choose a mission', exact: true }).click()
   await page.getByLabel('Task to plan').selectOption({ label: 'Prepare weekly plan carefully' })
   await page.getByRole('button', { name: 'Set Daily Mission' }).click()
   await expect(page.getByRole('region', { name: 'Daily Mission' }).getByRole('link', { name: 'Prepare weekly plan carefully' })).toBeVisible()
@@ -43,6 +44,7 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await expect(page.getByText('Mission completed.')).toBeVisible()
 
   await page.getByRole('link', { name: 'Habits', exact: true }).click()
+  await page.getByRole('button', { name: 'New habit', exact: true }).click()
   await page.getByLabel('Habit title').fill('Read a chapter')
   await page.getByLabel('Schedule pattern').selectOption('WeeklyCount')
   await page.getByLabel('Weekly target').fill('3')
@@ -55,6 +57,7 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await page.getByRole('button', { name: 'Log completion', exact: true }).click()
   const future = new Date(`${date}T12:00:00Z`)
   future.setUTCDate(future.getUTCDate() + 1)
+  await page.getByRole('button', { name: 'Change future schedule' }).click()
   await page.getByLabel('Schedule starts').fill(future.toISOString().slice(0, 10))
   await page.getByLabel('Schedule pattern').selectOption('SelectedWeekdays')
   await page.getByRole('button', { name: 'Save future schedule' }).click()
@@ -62,14 +65,18 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await page.reload()
   await expect(page.getByText('3 times per week')).toBeVisible()
   await expect(page.getByText('Mon, Wed, Fri')).toBeVisible()
+  const habitRoute = new URL(page.url()).pathname
+  await page.getByRole('button', { name: 'Edit habit', exact: true }).click()
   await page.getByLabel('Habit title').fill('Read a chapter thoughtfully')
   await page.getByRole('button', { name: 'Save habit', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Read a chapter thoughtfully', exact: true })).toBeVisible()
   await page.getByLabel('Habit title').fill('Read a chapter')
   await page.getByRole('button', { name: 'Save habit', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Read a chapter', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Close dialog' }).click()
 
   await page.getByRole('link', { name: 'Goals', exact: true }).click()
+  await page.getByRole('button', { name: 'New goal', exact: true }).click()
   await page.getByLabel('Goal title').fill('Read ten chapters')
   await page.getByLabel('Goal type').selectOption('measured')
   await page.getByLabel('Baseline value').fill('0')
@@ -89,18 +96,21 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await expect(page.getByText('First reading update', { exact: true })).toBeVisible()
   await expect(page.getByText('Corrected reading update', { exact: true })).toBeVisible()
 
+  const goalRoute = new URL(page.url()).pathname
+  await page.getByRole('button', { name: 'Edit goal', exact: true }).click()
   await page.getByLabel('Goal state').selectOption('Completed')
   await page.getByRole('button', { name: 'Save goal', exact: true }).click()
   await expect(page.getByText('Goal saved.', { exact: true })).toBeVisible()
   await page.reload()
-  await expect(page.getByLabel('Goal state')).toHaveValue('Completed')
+  await expect(page.getByText('Completed goal', { exact: true })).toBeVisible()
 
   for (const width of [375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 })
-    for (const route of ['/today', '/inbox', '/tasks', '/habits', '/goals', '/areas', '/settings']) {
+    for (const route of ['/today', '/inbox', '/tasks', '/tasks/new', '/habits', habitRoute, '/goals', goalRoute, '/areas', '/settings']) {
       await page.goto(route)
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+      await page.screenshot({ path: `artifacts/ux-${route.split('/')[1]}-${route.split('/').length > 2 ? 'detail-' : ''}${width}.png`, fullPage: true })
     }
   }
   // Carry out a write on the narrow screen, not just a layout check.
@@ -111,6 +121,7 @@ test('plans and completes real tasks, habits and goals across responsive screens
   await expect(page.getByRole('link', { name: 'Mobile captured action' })).toBeVisible()
   const mobileTask = page.getByRole('listitem').filter({ has: page.getByRole('link', { name: 'Mobile captured action', exact: true }) })
   await mobileTask.getByRole('button', { name: 'Cancel plan' }).click()
+  await page.getByText(/Completed & changed plans/).click()
   await expect(mobileTask.getByText('Cancelled', { exact: false })).toBeVisible()
   await mobileTask.getByRole('button', { name: 'Commit to this day' }).click()
   await expect(mobileTask.getByRole('button', { name: 'Cancel plan' })).toBeVisible()

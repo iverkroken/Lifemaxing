@@ -65,4 +65,4 @@ Task is named `TaskItem` in C# to avoid collision with the asynchronous Task typ
 
 Completion, habit log and goal progress handlers have explicit transaction boundaries where Phase 3 will attach Activity/XP. No unused event bus, no-op service, or Activity table was added.
 
-The Phase 2 shell uses a compact wrapping navigation on mobile and a sidebar on larger screens, exposing only implemented routes. The documented final mobile navigation and broader layout polish remain for the dedicated UX pass. `/today` is now the authenticated landing page.
+The dedicated UX pass retains `/today` as the authenticated landing page and exposes only implemented routes through a desktop sidebar and a mobile/tablet dock with a More dialog. See `DESIGN_SYSTEM.md` for the completed navigation and interaction patterns. API contracts are unchanged by that pass.
