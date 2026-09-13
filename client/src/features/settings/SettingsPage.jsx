@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { useOutletContext } from 'react-router'
+import { Link, useOutletContext } from 'react-router'
 import { z } from 'zod'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Card } from '../../shared/ui/Card.jsx'
@@ -35,12 +35,15 @@ export function SettingsPage() {
   })
 
   return <>
-    <PageHeader title="Settings" description="Calendar dates use your saved time zone and locale." />
+    <Link to="/today">← Back to Today</Link>
+    <div className={styles.header}><PageHeader eyebrow="Make yourself at home" title="Settings" description="A few preferences to keep your days in sync." /></div>
     {settings.isPending && <p aria-live="polite">Loading settings…</p>}
     {settings.isError && <Card><p role="alert" className={styles.error}>Settings could not be loaded.</p>
       <Button variant="secondary" onClick={() => settings.refetch()}>Try again</Button></Card>}
-    {settings.isSuccess && <Card>
+    {settings.isSuccess && <section className={styles.layout} aria-label="Regional preferences">
+      <div><h2>Time & place</h2><p className={styles.intro}>Your time zone determines when a new day begins for plans and habits. Earlier records keep their original dates.</p></div>
       <form className={styles.form} onSubmit={form.handleSubmit(values => mutation.mutate(values))} noValidate>
+        <fieldset disabled={mutation.isPending} className={styles.form}>
         <Input label="Time zone" hint="Use an IANA identifier such as Europe/Oslo." required
           error={form.formState.errors.timeZoneId?.message || mutation.error?.errors?.timeZoneId?.[0]}
           {...form.register('timeZoneId')} />
@@ -50,7 +53,8 @@ export function SettingsPage() {
         {mutation.isError && !mutation.error.errors && <p role="alert" className={styles.error}>{mutation.error.message}</p>}
         {mutation.isSuccess && <p role="status" className={styles.saved}>Settings saved.</p>}
         <Button type="submit" loading={mutation.isPending} disabled={!form.formState.isDirty}>Save settings</Button>
+        </fieldset>
       </form>
-    </Card>}
+    </section>}
   </>
 }

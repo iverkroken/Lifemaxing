@@ -29,7 +29,7 @@ export function GoalForm({ goal, onSaved }) {
   }))}>
     <fieldset disabled={action.isPending} className={styles.formFields}>
     <Input label="Goal title" required error={form.formState.errors.title?.message} {...form.register('title')} />
-    <Input label="Description" error={form.formState.errors.description?.message} {...form.register('description')} />
+    <Input label="Description" multiline rows={3} error={form.formState.errors.description?.message} {...form.register('description')} />
     <div className={styles.fields}>
       <Select label="Life Area" {...form.register('lifeAreaId')}><option value="">No area</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{x.displayName}</option>)}</Select>
       <Select label="Goal state" {...form.register('state')}>{['Active', 'Paused', 'Completed'].map(x => <option key={x}>{x}</option>)}</Select>

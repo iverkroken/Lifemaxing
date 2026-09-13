@@ -2,7 +2,7 @@ import { Button } from './Button.jsx'
 import styles from './Productivity.module.css'
 
 export function QueryFeedback({ query }) {
-  if (query.isPending) return <p role="status">Loading…</p>
+  if (query.isPending) return <p role="status" className={styles.loading}>Loading…</p>
   if (query.isError) return <div><p role="alert" className={styles.error}>{query.error.message}</p>
     <Button variant="secondary" onClick={() => query.refetch()}>Try again</Button></div>
   return null
@@ -13,7 +13,7 @@ export function ActionFeedback({ action, success = 'Saved.' }) {
     <p>{action.error.message}</p>
     {Object.entries(action.error.errors || {}).map(([key, messages]) => <p key={key}>{messages.join(' ')}</p>)}
   </div>
-  return action.isSuccess ? <p role="status">{success}</p> : null
+  return action.isSuccess ? <p role="status" className={styles.feedback}>{success}</p> : null
 }
 
 export function Pagination({ data, setPage }) {

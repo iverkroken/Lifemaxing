@@ -10,6 +10,8 @@
   --color-danger: #9A3F46;
   --color-warning: #87531D;
   --color-focus: #235F95;
+  --color-scrim: #1B292360;
+  --shadow-dialog: 0 24px 64px #1B292326;
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -34,7 +36,8 @@
   --radius-featured: 1.5rem;
   --radius-pill: 999px;
   --control-height: 2.75rem;
-  --sidebar-width: 15.5rem;
+  --sidebar-width: 14rem;
+  --dock-height: 5rem;
   --content-width: 70rem;
   --motion-fast: 160ms;
 }

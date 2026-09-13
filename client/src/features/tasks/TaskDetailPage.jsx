@@ -5,7 +5,6 @@ import { z } from 'zod'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
-import { Card } from '../../shared/ui/Card.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
 import { Select } from '../../shared/ui/Select.jsx'
 import { PageHeader } from '../../shared/ui/PageHeader.jsx'
@@ -27,15 +26,20 @@ function TaskForm({ task }) {
   const selectedGoal = useWatch({ control: form.control, name: 'goalId' })
   const save = useProductivityAction(saved => navigate(`/tasks/${saved.id}`, { replace: true }))
   const action = useProductivityAction()
-  return <Card><form className={styles.form} noValidate onSubmit={form.handleSubmit(values => save.mutate({
+  return <form className={styles.form} noValidate onSubmit={form.handleSubmit(values => save.mutate({
     path: task ? `/tasks/${task.id}` : '/tasks', method: task ? 'PATCH' : 'POST', body: { ...values,
       details: values.details || null, lifeAreaId: values.lifeAreaId || null, goalId: values.goalId || null,
       plannedDate: values.plannedDate || null, dueDate: values.dueDate || null, estimateMinutes: values.estimateMinutes ? Number(values.estimateMinutes) : null },
   }))}>
     <fieldset disabled={save.isPending || action.isPending || Boolean(task?.deletedAtUtc)} className={styles.formFields}>
+    <div className={styles.split}>
+    <div>
+    <p className={styles.eyebrow}>{task?.deletedAtUtc ? 'Archived' : task?.isCompleted ? 'Completed' : 'Define the action'}</p>
+    <fieldset className={styles.formSection}>
     <Input label="Title" required error={form.formState.errors.title?.message} {...form.register('title')} />
-    <Input label="Details" error={form.formState.errors.details?.message} {...form.register('details')} />
-    <div className={styles.fields}>
+    <Input label="Details" multiline rows={6} placeholder="A little context, a clear next step…" error={form.formState.errors.details?.message} {...form.register('details')} />
+    </fieldset>
+    <fieldset className={styles.formSection}><legend>Connect it to your life</legend>
       <Select label="Life Area" {...form.register('lifeAreaId')}><option value="">No area</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{x.displayName}</option>)}</Select>
       <div className={styles.form}>
         <Select label="Goal" {...form.register('goalId')}><option value="">No goal</option>
@@ -44,32 +48,38 @@ function TaskForm({ task }) {
         </Select>
         <Pagination data={goals.data} setPage={setGoalPage} />
       </div>
+    </fieldset>
+    </div>
+    <fieldset className={`${styles.formSection} ${styles.surface}`}><legend>Make a plan</legend>
       <Input label="Planned date" type="date" hint="Creates a daily commitment. Leave empty for Inbox." {...form.register('plannedDate')} />
       <Input label="Due date" type="date" {...form.register('dueDate')} />
       <Select label="Priority" {...form.register('priority')}>{['Low', 'Normal', 'High'].map(x => <option key={x}>{x}</option>)}</Select>
       <Select label="Task size" {...form.register('tier')}>{['Tiny', 'Small', 'Medium', 'Large', 'Epic'].map(x => <option key={x}>{x}</option>)}</Select>
       <Input label="Estimate (minutes)" type="number" min="1" max="10080" {...form.register('estimateMinutes')} />
+    </fieldset>
     </div>
     <QueryFeedback query={areas} /><QueryFeedback query={goals} />
-    {task?.deletedAtUtc ? <p>This task is archived. Its plans and completions are retained.</p> : <div className={styles.actions}>
+    {task?.deletedAtUtc ? <p>This task is archived. Its plans and completions are retained.</p> : <div className={styles.formFooter}>
+      <div className={styles.actions}>
       <Button type="submit" loading={save.isPending} disabled={action.isPending}>{task ? 'Save task' : 'Create task'}</Button>
       {task && <>
         <Button variant="secondary" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}/${task.isCompleted ? 'reopen' : 'complete'}` })}>{task.isCompleted ? 'Reopen task' : 'Complete task'}</Button>
-        <Button variant="danger" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}`, method: 'DELETE' })}>Archive task</Button>
       </>}
+      </div>
+      {task && <details><summary>Archive task</summary><p>Plans and completion history are preserved.</p><Button variant="danger" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}`, method: 'DELETE' })}>Archive task</Button></details>}
     </div>}
     <ActionFeedback action={save} success="Task saved." /><ActionFeedback action={action} />
     </fieldset>
-  </form></Card>
+  </form>
 }
 
 export function NewTaskPage() {
-  return <div className={styles.stack}><PageHeader title="New task" description="Define the next useful action." /><TaskForm /></div>
+  return <div className={styles.stack}><Link to="/tasks">← All tasks</Link><PageHeader eyebrow="From intention to action" title="New task" description="Define the next useful action." /><TaskForm /></div>
 }
 export function TaskDetailPage() {
   const { id } = useParams()
   const task = useProductivity(`/tasks/${id}`)
-  return <div className={styles.stack}><PageHeader title="Task details" action={<Link to="/tasks">All tasks</Link>} />
+  return <div className={styles.stack}><Link to="/tasks">← All tasks</Link><PageHeader eyebrow="Organize → commit → complete" title="Task details" description="Give this action a place in your day." />
     <QueryFeedback query={task} />{task.data && <TaskForm key={task.data.id} task={task.data} />}
   </div>
 }

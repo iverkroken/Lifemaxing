@@ -19,7 +19,8 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   expect(authCookie.sameSite).toBe('Strict')
   expect(authCookie.expires).toBeGreaterThan(0)
 
-  const fitness = page.locator('section').filter({ hasText: 'fitness' })
+  const fitness = page.getByRole('region', { name: /Fitness/ })
+  await fitness.getByText('Edit Life Area', { exact: true }).click()
   const displayName = fitness.getByLabel('Display name')
   const updatedName = await displayName.inputValue() === 'Movement & Fitness'
     ? 'Movement & Fitness II'
@@ -43,6 +44,7 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   const anotherPage = await context.newPage()
   await anotherPage.goto('/areas')
   await expect(anotherPage.getByRole('heading', { level: 1, name: 'Life Areas' })).toBeVisible()
+  await anotherPage.getByText('Edit Life Area', { exact: true }).first().click()
   await expect(anotherPage.getByLabel('Display name').first()).toHaveValue(updatedName)
   await anotherPage.close()
 

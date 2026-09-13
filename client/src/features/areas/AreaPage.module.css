@@ -1,10 +1,14 @@
-.grid { display: grid; gap: var(--space-4); }
-.editor { display: grid; gap: var(--space-4); }
-.areaTitle { display: flex; align-items: start; justify-content: space-between; gap: var(--space-4); }
-.areaTitle h2 { font-size: var(--text-lg); margin: 0; }
-.areaTitle p { color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
-.toggle { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-height); font-weight: 500; }
-.toggle input { width: 1.25rem; height: 1.25rem; accent-color: var(--color-accent); }
-.error { color: var(--color-danger); margin: 0; }
-.saved { color: var(--color-accent); margin: 0; }
-@media (min-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); } }
+﻿.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }
+.area { min-width: 0; border-top: 1px solid var(--color-border); padding-top: var(--space-6); }
+.area h2 { font-size: var(--text-xl); font-weight: 500; letter-spacing: -0.025em; margin: var(--space-6) 0 var(--space-3); }
+.areaTop { display: flex; justify-content: space-between; align-items: center; color: var(--color-accent); }
+.areaTop span { color: var(--color-text-muted); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.description { color: var(--color-text-muted); font-size: var(--text-sm); min-height: var(--space-12); }
+.links { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-6); }
+.links a { min-height: var(--control-height); display: inline-flex; align-items: center; font-size: var(--text-sm); text-decoration: none; }
+.links a:hover { text-decoration: underline; }
+.editor { display: grid; gap: var(--space-4); margin-top: var(--space-3); padding: var(--space-4); background: var(--color-surface-muted); border-radius: var(--radius-control); }
+.toggle { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-height); }
+.toggle input { width: var(--space-6); height: var(--space-6); }
+@media (max-width: 1199px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) { .grid { grid-template-columns: minmax(0, 1fr); } }
