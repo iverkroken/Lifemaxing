@@ -13,7 +13,7 @@ Money er decimal og numeric(18,2) med ISO valutakode på konti og transaksjoner.
 | Entity | Viktige felt | Relasjoner og invariant |
 | --- | --- | --- |
 | AppUser | Identity felter, Guid Id | Eier alle private data; kun administrativ opprettelse i V1 |
-| UserSettings | UserId, TimeZoneId, Locale, CreatedAtUtc | 1:1 med bruker; start Europe/Oslo, nb-NO |
+| UserSettings | UserId, TimeZoneId, Locale, UiLanguage, Theme, Density, CreatedAtUtc | 1:1 med bruker; start Europe/Oslo, nb-NO; separat grensesnittspråk, systemtema og normal tetthet |
 | LifeArea | Id, UserId, Key, DisplayName, IsActive, SortOrder | Unik (UserId, Key); 10 seedede områder per bruker; nøkkel endres ikke |
 | Task | Id, UserId, LifeAreaId?, GoalId?, Title, Details?, Tier, Priority, PlannedDate?, DueDate?, EstimateMinutes?, CreatedAtUtc, UpdatedAtUtc, DeletedAtUtc? | Goal og Area må tilhøre samme bruker; Task uten PlannedDate ligger i Inbox; fullført status avledes av aktiv TaskCompletion |
 | DailyCommitment | Id, UserId, TaskId, LocalDate, TimeZoneId, CommittedAtUtc, RemovedAtUtc? | Unik (UserId, TaskId, LocalDate); oppstår når brukeren velger en Task for dato; etter dagens start fjernes ikke historisk forpliktelse ved flytting |

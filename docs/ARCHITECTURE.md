@@ -97,3 +97,12 @@ Første aktuelle driftskandidat er Railway med én app container og PostgreSQL, 
 ## Framtidige koblinger
 
 V3 kan legge til Integrations feature med separat adapter per leverandør, brukerforbindelse, tokenlagring, kildeidentitet, importjobb og konfliktstatus. Domenet mottar validerte normaliserte data gjennom en vanlig service; frontend kjenner ikke leverandørens tokens. Automatisering som må være pålitelig lagres som jobbtilstand og kan kjøres med BackgroundService når behovet oppstår. Ingen tabeller, OAuth klienter, køer eller generelle plugin grensesnitt for dette i V1.
+
+
+## Interface preferences and bounded presentation reads — September 2026
+
+The redesign preserves the modular monolith and Phase 1–3 commands. GET/PATCH `/api/v1/settings` adds independent `uiLanguage` (en/nb/sv/da), `theme` (light/dark/system) and `density` (normal/compact). PATCH changes only supplied fields; existing Locale and TimeZoneId keep their meaning. An additive migration derives the initial language from existing Locale. Authenticated settings remain authoritative; only these three non-sensitive display choices have guarded local memory and synchronous prepaint application. No credentials or private domain data enter web storage.
+
+GET `/api/v1/areas/counts` projects all owned areas and actual open-task, active-goal and active-habit totals without client page-size truncation. GET `/api/v1/habits/week?date=&areaId=&page=` returns 12 habits per page with seven real schedule/log states. Relevant schedule intervals and grouped corrections are read only for the selected week/page. Neither read endpoint changes XP, schedules or historical records. Both inherit authentication and owner filtering.
+
+Feature routes are lazy-loaded. Task list query parameters retain filters/page; desktop navigation can render the existing detail form in a non-modal side panel over its background location. Direct URLs, refresh and smaller viewports use the full route. Shared TanStack Query data and existing ClientActionId command identities remain the persistence boundary.
