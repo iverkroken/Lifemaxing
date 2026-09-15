@@ -17,7 +17,7 @@ import { AppearanceSettings } from './AppearanceSettings.jsx'
 import styles from './SettingsPage.module.css'
 
 const schema = z.object({ timeZoneId: z.string().min(1), locale: z.string().min(1), uiLanguage: z.enum(['en', 'nb', 'sv', 'da']) })
-const sections = [['account', 'personal'], ['preferences', 'settings'], ['appearance', 'style'], ['security', 'shield']]
+const sections = [['account', 'personal'], ['preferences', 'languageTime'], ['appearance', 'appearance'], ['security', 'shield']]
 const zones = ['UTC', ...Intl.supportedValuesOf('timeZone')]
 
 export function SettingsPage() {
@@ -50,14 +50,14 @@ export function SettingsPage() {
     form.reset(saved)
     queryClient.removeQueries({ queryKey: draftKey })
   } })
-  return <div lang={language}>
-    <PageHeader title={t('settings')} description={t('settingsIntro')} />
-    <div className={styles.layout}>
-      <nav className={styles.navigation} aria-label={t('settings')}>
+  return <div className={styles.page} lang={language}>
+    <PageHeader editorial title={t('settings')} description={t('settingsIntro')} />
+    <div className={styles.layout} data-detail={params.has("section")}>
+      <nav className={styles.navigation} aria-label={t('Settings sections')}>
         {sections.map(([key, icon]) => <button key={key} aria-current={section === key ? 'page' : undefined}
           onClick={() => setParams({ section: key })}><Icon name={icon} />{t(key)}</button>)}
       </nav>
-      <div className={styles.content}>
+      <div className={styles.content}><Button variant="ghost" className={styles.back} onClick={() => setParams({})}><Icon name="back" />{t("Settings sections")}</Button>
         {section === 'account' && <section className={styles.panel} aria-labelledby="account-heading">
           <div className={styles.accountBanner}><span className={styles.avatar}><Icon name="personal" size={28} /></span><span>{t('privateAccount')}</span></div>
           <div className={styles.panelBody}><h2 id="account-heading">{t('account')}</h2><p>{t('accountHint')}</p>
@@ -97,8 +97,8 @@ export function SettingsPage() {
           </div></section>
           <section className={`${styles.panel} ${styles.danger}`} aria-labelledby="session-controls"><div className={styles.panelBody}>
             <h2 id="session-controls">{t('danger')}</h2>
-            <div className={styles.sessionRow}><div><h3>{t('signOut')}</h3><p>{t('outHint')}</p></div><Button variant="danger" onClick={() => setSignOut('device')}>{t('signOut')}</Button></div>
-            <div className={styles.sessionRow}><div><h3>{t('everywhere')}</h3><p>{t('everywhereHint')}</p></div><Button variant="danger" onClick={() => setSignOut('everywhere')}>{t('everywhere')}</Button></div>
+            <div className={styles.sessionRow}><div><h3>{t('signOut')}</h3><p>{t('outHint')}</p></div><Button variant="dangerQuiet" onClick={() => setSignOut('device')}>{t('signOut')}</Button></div>
+            <div className={styles.sessionRow}><div><h3>{t('everywhere')}</h3><p>{t('everywhereHint')}</p></div><Button variant="dangerQuiet" onClick={() => setSignOut('everywhere')}>{t('everywhere')}</Button></div>
           </div></section>
         </>}
       </div>
