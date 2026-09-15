@@ -1,5 +1,7 @@
+const { navigateTo, captureTask } = require('./navigation-helpers.cjs')
 const { test, expect } = require('@playwright/test')
 const fs = require('node:fs')
+const artifactRoot = process.env.VISUAL_ARTIFACT_ROOT ? `${process.env.VISUAL_ARTIFACT_ROOT}/redesign` : 'artifacts/full-redesign'
 
 async function login(page) {
   await page.goto('/login')
@@ -27,12 +29,12 @@ async function capture(page, name, width, browserName) {
   await page.setViewportSize({ width, height: 1000 })
   await ready(page)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), name).toBe(true)
-  await page.screenshot({ path: `artifacts/full-redesign/${browserName}/${name}-${width}.png`, fullPage: true })
+  await page.screenshot({ path: `${artifactRoot}/${browserName}/${name}-${width}.png`, fullPage: true })
 }
 
 test('real empty, small and busy data; every surface in light/dark; execution and corrections', async ({ page, browserName }) => {
   test.setTimeout(240000)
-  fs.mkdirSync(`artifacts/full-redesign/${browserName}`, { recursive: true })
+  fs.mkdirSync(`${artifactRoot}/${browserName}`, { recursive: true })
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
   await login(page)
@@ -81,7 +83,12 @@ test('real empty, small and busy data; every surface in light/dark; execution an
   await expect(page.getByText('Paused · time is not counting')).toBeVisible()
   await page.reload()
   await page.getByRole('button', { name: 'Resume focus' }).click()
+  await expect(page.getByRole('button', { name: 'Pause focus' })).toBeEnabled()
   await expect(page.getByRole('timer')).toBeVisible()
+  const finish = page.getByRole('button', { name: 'Complete task & finish' })
+  await finish.hover()
+  await expect(finish).toHaveCSS('background-color', 'rgb(28, 44, 36)')
+  await expect(finish).toHaveCSS('color', 'rgb(155, 189, 176)')
   await capture(page, 'focus-running', 375, browserName)
   await page.getByRole('button', { name: 'Complete task & finish' }).click()
   await expect(page.getByRole('button', { name: 'Start focus', exact: true })).toBeVisible()
@@ -140,7 +147,7 @@ test('four languages preserve formatting, fields, dialogs and server preferences
     await expect(page.locator('dialog[open]')).toBeVisible()
     await page.keyboard.press('Escape')
     await page.goto('/tasks')
-    await page.getByRole('button', { name: create, exact: true }).click()
+    await page.getByRole('button', { name: create, exact: true }).first().click()
     const dialog = page.locator('dialog[open]')
     await dialog.getByRole('button', { name: inbox, exact: true }).click()
     await expect(dialog).toContainText(required)
@@ -172,8 +179,8 @@ test('four languages preserve formatting, fields, dialogs and server preferences
   // Unsaved regional values survive changing sections and leaving Settings.
   await page.goto('/settings?section=preferences')
   await page.locator('select[name="locale"]').selectOption('en-US')
-  await page.getByRole('link', { name: 'Tasks', exact: true }).click()
-  await page.getByRole('link', { name: 'Settings', exact: true }).click()
+  await navigateTo(page, 'Tasks')
+  await navigateTo(page, 'Settings')
   await page.getByRole('button', { name: 'Language & time' }).click()
   await expect(page.locator('select[name="locale"]')).toHaveValue('en-US')
   await page.getByRole('button', { name: 'Save settings', exact: true }).click()
@@ -219,12 +226,12 @@ test('task panel preserves list filters, scroll and keyboard context; direct and
   await page.getByLabel('Search tasks').focus()
   await page.keyboard.press('Control+k')
   await expect(page.locator('dialog[open]')).toHaveCount(0)
-  await page.getByRole('button', { name: /Quick actions/ }).click()
-  const command = page.getByRole('dialog', { name: 'Quick actions' })
+  await page.getByRole('button', { name: 'Search', exact: true }).click()
+  const command = page.getByRole('dialog', { name: 'Search' })
   await command.getByRole('textbox').fill('unfindable-action')
   await expect(command).toContainText('No matching actions')
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('button', { name: /Quick actions/ })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeFocused()
 })
 
 test('contrast roles, enlarged text, translated public login and confirmation dialogs', async ({ page, browserName }) => {
@@ -244,21 +251,22 @@ test('contrast roles, enlarged text, translated public login and confirmation di
         const components = [0, 2, 4].map(index => parseInt(hex.slice(index, index + 2), 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
         return components[0] * 0.2126 + components[1] * 0.7152 + components[2] * 0.0722
       }
-      return [['text', 'surface', 4.5], ['text-muted', 'canvas', 4.5], ['text-muted', 'surface', 4.5], ['text-muted', 'surface-muted', 4.5], ['accent', 'surface', 4.5], ['accent', 'accent-soft', 4.5], ['on-accent', 'accent', 4.5], ['on-danger', 'danger', 4.5], ['warning', 'surface', 4.5], ['control-border', 'surface', 3], ['focus', 'surface', 3]].map(([fg, bg, minimum]) => {
+      return [['text', 'surface', 4.5], ['text-muted', 'canvas', 4.5], ['text-muted', 'surface', 4.5], ['text-muted', 'surface-muted', 4.5], ['accent', 'surface', 4.5], ['accent', 'accent-soft', 4.5], ['on-accent', 'action', 4.5], ['on-danger', 'danger-fill', 4.5], ['warning', 'surface', 4.5], ['control-border', 'surface', 3], ['focus', 'surface', 3]].map(([fg, bg, minimum]) => {
         const a = luminance(fg), b = luminance(bg)
         return { fg, bg, minimum, ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) }
       })
     })
     contrast.push({ theme, ratios })
     for (const value of ratios) expect(value.ratio, `${theme}: ${value.fg}/${value.bg}`).toBeGreaterThanOrEqual(value.minimum)
-    await page.getByRole('button', { name: 'Sign out', exact: true }).click()
+    await page.getByRole('button', { name: 'Menu', exact: true }).click()
+    await page.getByRole('dialog', { name: 'LIFEMAXING', exact: true }).getByRole('button', { name: 'Sign out', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Sign out of this device?' })
     await expect(dialog.getByRole('button', { name: 'Stay signed in' })).toBeFocused()
     await capture(page, theme + '-logout', 375, browserName)
     await page.keyboard.press('Escape')
     await page.setViewportSize({ width: 1440, height: 1000 })
   }
-  fs.writeFileSync(`artifacts/full-redesign/${browserName}/contrast.json`, JSON.stringify(contrast, null, 2))
+  fs.writeFileSync(`${artifactRoot}/${browserName}/contrast.json`, JSON.stringify(contrast, null, 2))
   for (const route of ['/today', '/tasks', '/areas', '/settings?section=appearance', '/habits']) {
     await page.goto(route)
     await ready(page)
