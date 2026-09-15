@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { Dialog } from '../../shared/ui/Dialog.jsx'
 import { useLanguage } from '../settings/language.js'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -26,8 +28,11 @@ const descriptions = {
   food: 'Nourishment and the joy of cooking.', creative: 'Ideas, experiments and things you make.', travel: 'Places to discover and experiences to plan.', personal: 'The things that are simply yours.',
 }
 
-function AreaEditor({ area, queryKey, index, counts }) {
+const artwork = { finance: '/images/Money.png', style: '/images/Rolex.png' }
+
+function AreaEditor({ area, queryKey, counts }) {
   const { t, areaName, errorMessage } = useLanguage()
+  const [editing, setEditing] = useState(false)
   const queryClient = useQueryClient()
   const form = useForm({ resolver: zodResolver(areaSchema), defaultValues: { displayName: area.displayName, sortOrder: area.sortOrder, isActive: area.isActive } })
   const mutation = useMutation({
@@ -40,12 +45,14 @@ function AreaEditor({ area, queryKey, index, counts }) {
     },
   })
   return <section className={styles.area} data-area={area.key} data-active={area.isActive} aria-label={areaName(area)}>
-    <div className={styles.artwork}><AreaArtwork areaKey={area.key} /></div>
-    <div className={styles.areaTop}><span className={styles.areaIcon}><Icon name={area.key} size={26} /></span><span>{area.isActive ? t("Active") : t("Inactive")} · {String(index + 1).padStart(2, '0')}</span></div>
+    <div className={styles.artwork}>{artwork[area.key] ? <img src={artwork[area.key]} alt="" loading="lazy" /> : <AreaArtwork areaKey={area.key} />}</div>
+    <div className={styles.areaTop}>{!area.isActive && <span>{t("Inactive")}</span>}<Button variant="ghost" size="small" aria-label={`${t("Edit Life Area")}: ${areaName(area)}`} onClick={() => setEditing(true)}><Icon name="more" /></Button></div>
+    <div className={styles.content}>
     <h2><Link to={`/tasks?areaId=${area.id}`}>{areaName(area)}</Link></h2><p className={styles.description}>{t(descriptions[area.key] || 'A meaningful part of your life.')}</p>
     <div className={styles.links}>{['tasks', 'goals', 'habits'].map(kind =>
-      <Link key={kind} to={`/${kind}?areaId=${area.id}`}>{t('areaCount_' + kind, { count: counts?.[kind] ?? '—' })} <span aria-hidden="true">→</span></Link>)}</div>
-    <details><summary>{t("Edit Life Area")}</summary>
+      <Link key={kind} to={`/${kind}?areaId=${area.id}`}>{t('areaCount_' + kind, { count: counts?.[kind] ?? '—' })} <Icon name="arrow" size={16} /></Link>)}</div>
+    </div>
+    <Dialog open={editing} onClose={() => setEditing(false)} title={t("Edit Life Area")}>
       <form className={styles.editor} onSubmit={form.handleSubmit(values => mutation.mutate(values))} noValidate>
         <fieldset disabled={mutation.isPending} className={shared.formFields}>
           <Input label={t("Display name")} required error={form.formState.errors.displayName} {...form.register('displayName')} />
@@ -56,7 +63,7 @@ function AreaEditor({ area, queryKey, index, counts }) {
           <Button type="submit" variant="secondary" loading={mutation.isPending} disabled={!form.formState.isDirty}>{t("Save changes")}</Button>
         </fieldset>
       </form>
-    </details>
+    </Dialog>
   </section>
 }
 
@@ -67,11 +74,11 @@ export function AreaPage() {
   const areas = useQuery({ queryKey, queryFn: ({ signal }) => getAreas(signal) })
   const counts = useProductivity('/areas/counts')
   return <div className={shared.stack}>
-    <PageHeader eyebrow={t("Your life, organised")} title={t("Life Areas")} description={t("Find the tasks, goals and routines that belong to each part of your life.")} />
-    {areas.isSuccess && <div className={styles.overview}><span><strong>{areas.data.filter(area => area.isActive).length}</strong>{t("active areas")}</span><p>{t("Choose an area to work in. Edit its name, order or active status as your priorities change.")}</p></div>}
+    <PageHeader editorial title={t("Life Areas")} description={t("Find the tasks, goals and routines that belong to each part of your life.")} />
+    {areas.isSuccess && <div className={styles.overview}><span><strong>{areas.data.filter(area => area.isActive).length}</strong>{t("active areas")}</span></div>}
     <QueryFeedback query={areas} />
     <QueryFeedback query={counts} />
     {areas.isSuccess && areas.data.length === 0 && <p>{t("No Life Areas are available for this account.")}</p>}
-    {areas.isSuccess && <div className={styles.grid}>{areas.data.map((area, index) => <AreaEditor key={area.id} area={area} queryKey={queryKey} index={index} counts={counts.isSuccess ? counts.data.find(value => value.id === area.id) : undefined} />)}</div>}
+    {areas.isSuccess && <div className={styles.grid}>{areas.data.map(area => <AreaEditor key={area.id} area={area} queryKey={queryKey} counts={counts.isSuccess ? counts.data.find(value => value.id === area.id) : undefined} />)}</div>}
   </div>
 }
