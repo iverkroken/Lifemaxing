@@ -21,7 +21,7 @@ export function LanguageProvider({ children }) {
       document.documentElement.dataset.theme = theme === 'system' ? media.matches ? 'dark' : 'light' : theme
       document.documentElement.dataset.density = density
       document.documentElement.lang = language
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', document.documentElement.dataset.theme === 'dark' ? '#171C1A' : '#F7F8FA')
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--color-canvas').trim())
     }
     apply()
     media.addEventListener('change', apply)

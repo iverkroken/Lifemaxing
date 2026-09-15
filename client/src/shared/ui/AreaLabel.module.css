@@ -1,0 +1,5 @@
+.label { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); line-height: var(--line-body); color: var(--color-area-sage-mark); min-width: 0; }
+.label[data-area='university'], .label[data-area='career'], .label[data-area='travel'] { color: var(--color-area-blue-mark); }
+.label[data-area='finance'], .label[data-area='home'], .label[data-area='food'] { color: var(--color-area-sand-mark); }
+.label[data-area='style'], .label[data-area='creative'] { color: var(--color-area-rose-mark); }
+.label svg { flex-shrink: 0; }

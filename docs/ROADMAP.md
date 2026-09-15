@@ -24,6 +24,16 @@ V1.5 er ikke en egen teknisk versjon. Gjentakende Tasks, oppgavemaler, deloppgav
 
 Etter lansering bør eksport av brukerdata, rutine for gjenoppretting, regelmessige avhengighetsoppdateringer og faktisk gjennomgang av aktivitetsloggen få høyere prioritet enn nye livsområder.
 
+## Experience Evolution etter Phase 3
+
+Eieren har godkjent en navngitt forbedringsserie P0–P11, avgrenset i [EXPERIENCE_EVOLUTION_PLAN.md](EXPERIENCE_EVOLUTION_PLAN.md). P-numrene er oppgaver, ikke nye produktversjoner eller en omnummerering av Phase 0–8. V1/V2-grensene i fasetabellen står fast. P0 er dokumentasjon/analyse; senere P-oppgaver starter bare ved eget oppdrag.
+
+Retningen omfatter grafitt/varm stein med rubinhandlinger, bronseprogresjon og semantisk skoggrønt (designrevisjon 14. september 2026), Today med en gjennomarbeidet 3D-signatur, illustrasjoner/ikoner, kontekstuell hjelp/programguide, Inbox som ubehandlet og Backlog som behandlet uten plan, valgfrie arbeidsdager/perioder/frister, intern kalender med Task-tidsblokker, avgrenset AI-registrering og selvstendig rank atskilt fra level. Eksisterende fire språk, temaer, tetthet, hurtigmeny og Phase 1–3 videreføres.
+
+Dette prioriterer intern kalender uten synk etter Phase 3 og gjør et uttrykkelig, avgrenset unntak fra tidligere AI-utsettelse til V4. P8 tillater bare godkjente registreringsforslag, med runtime-samtykke og budsjett før eksterne kall; se ADR 14. Ekstern kalendersynk forblir V3 og generell Intelligence forblir V4. Ingen passkeys, Life Score/original Phase 4, spesialiserte V2-moduler eller autonome agenter inngår. Rangmodellen skal ikke avhenge av Life Score.
+
+P1 må få visuell eiergodkjenning før P2. P9 må få tallmodellen godkjent etter simulering før P10. Implementeringsgodkjenningen gir ikke tillatelse til kostnader, ekstern deling av privat innhold, migrering av eierens database eller publisering. Ingen senere funksjon er erklært ferdig gjennom denne scopeavklaringen.
+
 ## Skal vente
 
 | Versjon | Første verdifulle leveranse | Forutsetning | Skal ikke bygges på forskudd |

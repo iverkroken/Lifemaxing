@@ -1,9 +1,9 @@
 .progress { margin-block: var(--space-4); }
-.value { font-size: var(--text-3xl); line-height: 1.15; font-weight: 500; letter-spacing: -0.04em; margin: 0; font-variant-numeric: tabular-nums; }
+.value { font-size: var(--text-2xl); line-height: 1.15; font-weight: 500; letter-spacing: -0.03em; margin: 0; font-variant-numeric: tabular-nums; }
 .value span { font-size: var(--text-base); font-weight: 400; letter-spacing: normal; color: var(--color-text-muted); }
 .caption { font-size: var(--text-sm); color: var(--color-text-muted); margin-block: var(--space-2); }
-.progress progress { display: block; width: 100%; height: var(--space-2); border: 0; border-radius: var(--radius-pill); overflow: hidden; background: var(--color-border); accent-color: var(--color-accent); margin-top: var(--space-4); }
+.progress progress { display: block; width: 100%; max-width: 32rem; height: var(--space-1); border: 0; border-radius: var(--radius-pill); overflow: hidden; background: var(--color-border); accent-color: var(--color-info); margin-top: var(--space-4); }
 .progress progress::-webkit-progress-bar { background: var(--color-border); }
-.progress progress::-webkit-progress-value { background: var(--color-accent); }
-.progress progress::-moz-progress-bar { background: var(--color-accent); }
+.progress progress::-webkit-progress-value { background: var(--color-info); }
+.progress progress::-moz-progress-bar { background: var(--color-info); }
 .note { white-space: pre-wrap; color: var(--color-text-muted); font-size: var(--text-base); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

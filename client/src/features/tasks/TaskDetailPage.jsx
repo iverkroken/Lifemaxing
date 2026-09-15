@@ -11,6 +11,7 @@ import { Select } from '../../shared/ui/Select.jsx'
 import { PageHeader } from '../../shared/ui/PageHeader.jsx'
 import { ActionFeedback, Pagination, QueryFeedback } from '../../shared/ui/ProductivityFeedback.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
+import pageStyles from './TasksPage.module.css'
 
 const schema = z.object({ title: z.string().trim().min(1, 'Enter a title.').max(200), details: z.string().max(10000),
   lifeAreaId: z.string(), goalId: z.string(), tier: z.string(), priority: z.string(), plannedDate: z.string(), dueDate: z.string(), estimateMinutes: z.string() })
@@ -32,15 +33,15 @@ function TaskForm({ task }) {
   })
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction()
-  return <form className={styles.form} noValidate onSubmit={form.handleSubmit(values => save.mutate({
+  return <form className={`${styles.form} ${pageStyles.taskForm}`} noValidate onSubmit={form.handleSubmit(values => save.mutate({
     path: task ? `/tasks/${task.id}` : '/tasks', method: task ? 'PATCH' : 'POST', body: { ...values,
       details: values.details || null, lifeAreaId: values.lifeAreaId || null, goalId: values.goalId || null,
       plannedDate: values.plannedDate || null, dueDate: values.dueDate || null, estimateMinutes: values.estimateMinutes ? Number(values.estimateMinutes) : null },
   }))}>
     <fieldset disabled={save.isPending || action.isPending || Boolean(task?.deletedAtUtc)} className={styles.formFields}>
-    <div className={styles.split}>
+    <div className={pageStyles.formLayout}>
     <div>
-    <p className={styles.eyebrow}>{task?.deletedAtUtc ? t("Archived") : task?.isCompleted ? t("Completed") : t("Define the action")}</p>
+    <h2 className={styles.sectionTitle}>{task?.deletedAtUtc ? t("Archived") : task?.isCompleted ? t("Completed") : t("Define the action")}</h2>
     <fieldset className={styles.formSection}>
     <Input label={t("Title")} required error={form.formState.errors.title} {...form.register('title')} />
     <Input label={t("Details")} multiline rows={6} placeholder={t("A little context, a clear next step…")} error={form.formState.errors.details} {...form.register('details')} />
@@ -56,7 +57,7 @@ function TaskForm({ task }) {
       </div>
     </fieldset>
     </div>
-    <fieldset className={`${styles.formSection} ${styles.surface}`}><legend>{t("Make a plan")}</legend>
+    <fieldset className={`${styles.formSection} ${pageStyles.planning}`}><legend>{t("Make a plan")}</legend>
       <Input label={t("Planned date")} type="date" hint={t("Creates a daily commitment. Leave empty for Inbox.")} {...form.register('plannedDate')} />
       <Input label={t("Due date")} type="date" {...form.register('dueDate')} />
       <Select label={t("Priority")} {...form.register('priority')}>{['Low', 'Normal', 'High'].map(x => <option key={x} value={x}>{t(x)}</option>)}</Select>
@@ -82,14 +83,14 @@ function TaskForm({ task }) {
 
 export function NewTaskPage() {
   const { t } = useLanguage()
-  return <div className={styles.stack}><Link to="/tasks">{t("← All tasks")}</Link><PageHeader eyebrow={t("From intention to action")} title={t("New task")} description={t("Define the next useful action.")} /><TaskForm /></div>
+  return <div className={styles.stack}><Link to="/tasks">{t("← All tasks")}</Link><PageHeader title={t("New task")} description={t("Define the next useful action.")} /><TaskForm /></div>
 }
 export function TaskDetailPage({ taskId, panel = false }) {
   const { t } = useLanguage()
   const params = useParams()
   const id = taskId || params.id
   const task = useProductivity(`/tasks/${id}`)
-  return <div className={styles.stack}>{!panel && <Link to="/tasks">{t("← All tasks")}</Link>}<PageHeader eyebrow={t("Organize → commit → complete")} title={t("Task details")} description={t("Give this action a place in your day.")} />
+  return <div className={styles.stack}>{!panel && <Link to="/tasks">{t("← All tasks")}</Link>}<PageHeader title={t("Task details")} description={t("Give this action a place in your day.")} />
     <QueryFeedback query={task} />{task.data && <TaskForm key={task.data.id} task={task.data} />}
   </div>
 }

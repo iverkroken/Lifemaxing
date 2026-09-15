@@ -2,6 +2,16 @@
 
 Dette er den operative byggeordren for Astra i Rider. Ikke bygg hele prosjektet i ett steg. For hver fase implementeres én gjennomgående flyt, kjøres mot PostgreSQL og avsluttes med testen og Definition of Done nedenfor. Alle private ruter under /api/v1 krever autentisering hvis ikke annet er uttrykkelig nevnt. CRUD i tabellene betyr liste, hent én, opprett, endre og arkiver eller slett etter reglene i DATABASE.md; konkrete unntak er angitt. HTTP API major 1 dekker både produkt V1 og V2.
 
+## Navngitt forbedringsserie etter Phase 3
+
+[EXPERIENCE_EVOLUTION_PLAN.md](EXPERIENCE_EVOLUTION_PLAN.md) er arbeidsoversikten for P0–P11. Serien endrer ikke faseordenen eller produktgrensen: Phase 3 avslutter V1-kjernen; Phase 4 starter V2-analyse. P0 er bare dokumentasjon og analyse. Arbeid på én eksplisitt bestilt P-oppgave om gangen, med status, avhengigheter og porter i tabellen; ikke fortsett automatisk.
+
+P1 leverer faktiske visuelle alternativer og en gjennomførbar ressursprøve, med eiergodkjenning før P2. P6 avklarer og prøver Inbox/Backlog, arbeidsdag/periode, separat frist og historiske DailyCommitments før eventuell additiv migrasjon. P7s interne kalender og P8s begrensede AI-registrering er uttrykkelige scopeunntak, ikke en start på V3/V4. P9 simulerer en selvstendig rank uten Life Score og får eksakte tall godkjent før P10 implementerer dem. P11 samler regresjonene; hver tidligere oppgave leverer egne relevante tester, fire språk, begge temaer og tilgjengelige tilstander.
+
+De eksisterende Phase 2/3-beskrivelsene nedenfor beskriver leverte opprinnelige regler. Inbox- og levelrank-semantikk endres først når P6 respektive P10 er implementert og verifisert, med eksplisitte produktregler i PROJECT_SPEC og overgangskontrakter i arbeidsoversikten. Bevar XP, level, rewards, historikk, ClientActionId, Focus og autentisering. Ingen passkeys, authombygging, ekstern synk, original Phase 4 eller spesialiserte V2-moduler er forutsetninger for serien.
+
+P0 oppretter ingen migrasjon. Senere nødvendige skjemaendringer skal være additive, testes mot isolert PostgreSQL med fiktiv historikk og leveres med gjennomgått oppgraderingsfremgangsmåte. Ingen ny migrasjon på eierens private database uten særskilt tillatelse. Eksterne AI-kall krever runtime-samtykke og håndhevet kostnadsramme selv om funksjonen er godkjent; se ADR 14.
+
 ## Phase 0: Foundation
 
 Mål: et fungerende vertikalt skall i en ren eller allerede eksisterende repo. Les AGENTS.md og prosjektet før valg av filer. Bruk en LIFEMAXING.sln som Rider kan åpne.

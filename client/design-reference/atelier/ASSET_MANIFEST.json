@@ -1,0 +1,260 @@
+{
+  "study": "Nordic Atelier, 2026-09-14",
+  "resources": [
+    {
+      "path": "assets/career-dark.webp",
+      "bytes": 71956,
+      "sha256": "72b2c807da24895c912548053ac969f842b76dba83db34996330363ed90bdbdc"
+    },
+    {
+      "path": "assets/career-light.webp",
+      "bytes": 70852,
+      "sha256": "e74114d2645766c436336e45efb63ca36f7b4c1d167aa3d7aee412e2bc2eca75"
+    },
+    {
+      "path": "assets/fitness-dark.webp",
+      "bytes": 72880,
+      "sha256": "98c7a8d7a2b9237db14e1552d31ca83cfbba8730a03bee2a0e0e481076ac73d0"
+    },
+    {
+      "path": "assets/fitness-light.webp",
+      "bytes": 68356,
+      "sha256": "9613f4a1f10e98e176547ec9f31acb607ff8ee4deae265155408358e9c3cdfba"
+    },
+    {
+      "path": "assets/fold-dark.webp",
+      "bytes": 69896,
+      "sha256": "0e330ecf149163dddabb8b29c662911061057dc679e50d7712b865facfc7f84b"
+    },
+    {
+      "path": "assets/fold-light.webp",
+      "bytes": 65406,
+      "sha256": "1b633007e477844410ba9cc45ddacf4ba8fb215a618ed2b108b5a95cd9c1eb1b"
+    },
+    {
+      "path": "assets/fold.svg",
+      "bytes": 120,
+      "sha256": "1f3da31a5ce7484bbafc567b6fb0c346cf5cfda8d6e7d015476ea11439b66219"
+    },
+    {
+      "path": "assets/icons/LICENSE",
+      "bytes": 1071,
+      "sha256": "b5b1f1da112d18ea2147decfd48ddc1bf2b5aeb6c265381579340e95b15a2bb2"
+    },
+    {
+      "path": "assets/icons/SOURCE.md",
+      "bytes": 258,
+      "sha256": "e5ebcc17a9a1e5e31aba56e2de5595b1315dabf37a896f771cdb787b4c7fc75e"
+    },
+    {
+      "path": "assets/icons/arrow-left.svg",
+      "bytes": 248,
+      "sha256": "3c2001cf957d182fc54927e4b286cc8cf66dd97830f441ca2650d42a63a9006a"
+    },
+    {
+      "path": "assets/icons/arrow-right.svg",
+      "bytes": 245,
+      "sha256": "e45bc4a12592b8723110db42c6deffdf177e4fe7704cf50324963fa0a59b2d74"
+    },
+    {
+      "path": "assets/icons/arrows-clockwise.svg",
+      "bytes": 503,
+      "sha256": "2e80fbc9c5c37553934c9ebbd6324bf7fabe9a4b4d7c2445d99edfce55cc22df"
+    },
+    {
+      "path": "assets/icons/barbell.svg",
+      "bytes": 545,
+      "sha256": "ac26822fad254eec2de1aaccbaccb24ee31368f5116192439bba41f4f3a306f5"
+    },
+    {
+      "path": "assets/icons/book-open.svg",
+      "bytes": 396,
+      "sha256": "b38cdb3a15dcf00cfa4811e318b021e25c6a87b47acbb11888e16d107a5642da"
+    },
+    {
+      "path": "assets/icons/briefcase.svg",
+      "bytes": 496,
+      "sha256": "c908360aa8ffeff3b78be469066aa9faf7df2eda8f34a3596c44157dddc96453"
+    },
+    {
+      "path": "assets/icons/calendar-blank.svg",
+      "bytes": 327,
+      "sha256": "6268583ae0ea04e93fd24f1e70d47a8e8d79c88fc304af397b95b318980215d6"
+    },
+    {
+      "path": "assets/icons/caret-down.svg",
+      "bytes": 214,
+      "sha256": "53f0cf2d0b144ac3cb07e353e0cd0853ffb3ed432d741460ce288edfcb0924b1"
+    },
+    {
+      "path": "assets/icons/caret-right.svg",
+      "bytes": 219,
+      "sha256": "e6dec01e074807965b7f3146b976a9b5e82c31d9c2c88aeb52e77cc2ab16c1d7"
+    },
+    {
+      "path": "assets/icons/chart-bar.svg",
+      "bytes": 282,
+      "sha256": "d161e503af4f5386a370ffd742d19d85e98625fd6d6eadbabbdb36d58dcca22c"
+    },
+    {
+      "path": "assets/icons/check-square.svg",
+      "bytes": 350,
+      "sha256": "69fc9a39cab4af71874d4cc56eaa6d8943962f2619f5c9a7e2e38d01e232c928"
+    },
+    {
+      "path": "assets/icons/check.svg",
+      "bytes": 215,
+      "sha256": "cbb89a8c42f283d4f846eb935e05d88c1be04462f16480e068c0f82b9ce40b12"
+    },
+    {
+      "path": "assets/icons/clock-counter-clockwise.svg",
+      "bytes": 409,
+      "sha256": "06aa1cb0d2664789232f4addb1c5932c8ce14e48465c8e8fb09a651b619b44e3"
+    },
+    {
+      "path": "assets/icons/crosshair.svg",
+      "bytes": 620,
+      "sha256": "c67106293edf30ae075fcff13042179a201afc4b9f1abd4ed541000507de3cc0"
+    },
+    {
+      "path": "assets/icons/desktop.svg",
+      "bytes": 349,
+      "sha256": "875a31fd2dc493c6ba9aa5187a91e0364de6704876704e1bf81ef4b7e785ad79"
+    },
+    {
+      "path": "assets/icons/dots-three.svg",
+      "bytes": 237,
+      "sha256": "ca4e748007101155641ec3041cd129bb03a8030d0eed16e313b9dd75e6beac77"
+    },
+    {
+      "path": "assets/icons/gift.svg",
+      "bytes": 908,
+      "sha256": "07d48f577b1f377ea58df3620f78616199f24c431c3c86975c74159cb2d8699c"
+    },
+    {
+      "path": "assets/icons/globe.svg",
+      "bytes": 856,
+      "sha256": "3b53d207c09fc72de699c8b2149892e065b570b3ae144412ae53244b0a0f7977"
+    },
+    {
+      "path": "assets/icons/magnifying-glass.svg",
+      "bytes": 243,
+      "sha256": "f9fa2561978a9a3291e8ae0ebfcb651104f5069fade8f84871627bca68889cde"
+    },
+    {
+      "path": "assets/icons/map-trifold.svg",
+      "bytes": 430,
+      "sha256": "2de856029430ca68cfd9c1d8c8c45255c8d998d7716630d362c1eec153548da6"
+    },
+    {
+      "path": "assets/icons/moon.svg",
+      "bytes": 467,
+      "sha256": "5c91f82aea4e7b53305bf29628caebc22a1198ba9fa46c62eef13fb8b3c3f21d"
+    },
+    {
+      "path": "assets/icons/palette.svg",
+      "bytes": 702,
+      "sha256": "f16925171ff434d8e8768da0d06867d77cd50d9e78932ab12af65bccac7a1375"
+    },
+    {
+      "path": "assets/icons/pause.svg",
+      "bytes": 320,
+      "sha256": "7a9a8fe311234262b85c6e332f77db4ba9a59b6ca4292c41d327977cf61a2fc9"
+    },
+    {
+      "path": "assets/icons/play.svg",
+      "bytes": 293,
+      "sha256": "885b3ed2095889c4ff063dac35dc424cb9f6c00273ab44e2f90dc9dadbee661a"
+    },
+    {
+      "path": "assets/icons/plus.svg",
+      "bytes": 212,
+      "sha256": "d688feb9dd2e41c1721d6906a05a2a42e18cd774762fe706d72b2bdfd91cddc4"
+    },
+    {
+      "path": "assets/icons/shield-check.svg",
+      "bytes": 536,
+      "sha256": "bb04d552c0baaaabd90f7eb60760cb0c7ddb7e9f47e4b76e9599ddd7dfd8eaa7"
+    },
+    {
+      "path": "assets/icons/sign-out.svg",
+      "bytes": 346,
+      "sha256": "511fe7958ef31f8904185631fd7045c11f35c8034a2a64ccb3bdcc4dfa81df77"
+    },
+    {
+      "path": "assets/icons/sliders-horizontal.svg",
+      "bytes": 360,
+      "sha256": "1d937baa3bc51ec4052364edf30cf8991d550920534f5d413eb9f60535cc1916"
+    },
+    {
+      "path": "assets/icons/squares-four.svg",
+      "bytes": 552,
+      "sha256": "f70d6b20e08e028ab5b1714077681910a2431092cf7a23b82366ddaec554ab87"
+    },
+    {
+      "path": "assets/icons/sun.svg",
+      "bytes": 685,
+      "sha256": "8df1c7b747774f8b2c1fe353b1b785c74aac35bfa50f2ed7d8d9a85a4191b2ac"
+    },
+    {
+      "path": "assets/icons/target.svg",
+      "bytes": 343,
+      "sha256": "7a99698f0610001a199629de58b8df97f67020a65c808ab4af1969a6cc0142d8"
+    },
+    {
+      "path": "assets/icons/tray.svg",
+      "bytes": 414,
+      "sha256": "2fbf5c1b17b8b0aa58445720164692b2220092a4f61be440c54d83f7e16ceebd"
+    },
+    {
+      "path": "assets/icons/x.svg",
+      "bytes": 284,
+      "sha256": "7397b15e1fa66eaf6ff9b59fe91d483cb5c3bcf75b2fe052097ab6f0593b513a"
+    },
+    {
+      "path": "assets/meridian-dark.webp",
+      "bytes": 80708,
+      "sha256": "17cdb39f2d195b2bb110717c4a3e7b5c25e0dc3437e9cba88756cfd9a5439678"
+    },
+    {
+      "path": "assets/meridian-light.webp",
+      "bytes": 77410,
+      "sha256": "b064abf9fb62a8389fda95d0b7c4c83d066f1a93a0a01712699e91ece421ce3c"
+    },
+    {
+      "path": "assets/meridian.svg",
+      "bytes": 184,
+      "sha256": "f9e3a3d3c59bee7dcfef301008be775b0b5c98a2b84d920074688a0cdc25dad3"
+    },
+    {
+      "path": "assets/travel-dark.webp",
+      "bytes": 38088,
+      "sha256": "4086f5f78c2534239b4a095f41b1c54b04af3b68f16c613e4b18140d1537ff3c"
+    },
+    {
+      "path": "assets/travel-light.webp",
+      "bytes": 36304,
+      "sha256": "3dd817b39e4e618fb04af01dab65adf702b389f21475db499d85b8e4d3c98c69"
+    },
+    {
+      "path": "assets/university-dark.webp",
+      "bytes": 57064,
+      "sha256": "bda5760327e3bf15b6dfbc36a024f981b3313c6c647ab456eefd771ef8289214"
+    },
+    {
+      "path": "assets/university-light.webp",
+      "bytes": 52470,
+      "sha256": "909f5aed20892d8dd2a977f89435832d6c5619429c6c3a5843a80df72e3a6c29"
+    },
+    {
+      "path": "studio/atelier-studio.blend",
+      "bytes": 317005,
+      "sha256": "2eaca7038d67b0d8b7ca81ef7ddb72dc230d816917591375adf128f465442559"
+    },
+    {
+      "path": "studio/render.py",
+      "bytes": 12253,
+      "sha256": "0adaa7682d7c95830511db9cc7163900a23a99da3b7ccb306e87c955eff44c23"
+    }
+  ]
+}

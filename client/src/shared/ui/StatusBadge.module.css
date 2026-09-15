@@ -1,0 +1,4 @@
+.badge { display: inline-flex; align-items: center; gap: var(--space-1); border-radius: var(--radius-row); padding: var(--space-1) var(--space-2); background: var(--color-interactive); color: var(--color-text-secondary); font-size: var(--text-sm); font-weight: var(--weight-control); line-height: var(--line-control); }
+.badge[data-tone='success'] { background: var(--color-success-soft); color: var(--color-success); }
+.badge[data-tone='info'] { background: var(--color-info-soft); color: var(--color-info); }
+.badge[data-tone='earned'] { color: var(--color-brand-bronze); }

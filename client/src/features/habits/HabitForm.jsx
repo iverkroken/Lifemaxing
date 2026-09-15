@@ -9,6 +9,7 @@ import { Input } from '../../shared/ui/Input.jsx'
 import { Select } from '../../shared/ui/Select.jsx'
 import { ActionFeedback, QueryFeedback } from '../../shared/ui/ProductivityFeedback.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
+import pageStyles from './HabitsPage.module.css'
 
 const schema = z.object({ title: z.string().trim().min(1, 'Enter a habit title.').max(200), lifeAreaId: z.string(), isActive: z.boolean(), xpPerLog: z.coerce.number().int().min(1).max(25) })
 
@@ -23,7 +24,7 @@ export function HabitForm({ habit, onSaved }) {
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: habit?.title || '', lifeAreaId: habit?.lifeAreaId || '', isActive: habit?.isActive ?? true, xpPerLog: habit?.xpPerLog ?? 10 } })
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction(saved => { if (!habit) form.reset(); onSaved?.(saved) })
-  return <form className={styles.form} noValidate onSubmit={form.handleSubmit(values => action.mutate({ path: habit ? `/habits/${habit.id}` : '/habits', method: habit ? 'PATCH' : 'POST', body: { ...values, lifeAreaId: values.lifeAreaId || null,
+  return <form className={`${styles.form} ${pageStyles.form}`} noValidate onSubmit={form.handleSubmit(values => action.mutate({ path: habit ? `/habits/${habit.id}` : '/habits', method: habit ? 'PATCH' : 'POST', body: { ...values, lifeAreaId: values.lifeAreaId || null,
     ...(!habit && { schedule: { effectiveFromDate: from || today.data?.currentLocalDate, pattern, daysOfWeek: pattern === 'SelectedWeekdays' ? days : null, weeklyTarget: pattern === 'WeeklyCount' ? Number(target) : null } }),
   } }))}>
     <fieldset disabled={action.isPending} className={styles.formFields}>

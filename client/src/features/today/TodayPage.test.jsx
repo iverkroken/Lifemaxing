@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -7,6 +7,29 @@ import { clearCsrfToken } from '../../shared/api/client.js'
 import { TodayPage } from './TodayPage.jsx'
 
 afterEach(() => { clearCsrfToken(); vi.unstubAllGlobals() })
+
+test('keeps the current-day hero when the workspace date changes and renders the entrance before data', async () => {
+  const fetchMock = vi.fn(async path => {
+    if (path.endsWith('/areas')) return Response.json([])
+    if (path.endsWith('/focus-sessions/active')) return Response.json({ session: null })
+    if (path.endsWith('/progress')) return Response.json({})
+    const historical = path.includes('date=2026-03-28')
+    return Response.json({ localDate: historical ? '2026-03-28' : '2026-03-29', currentLocalDate: '2026-03-29', timeZoneId: 'Europe/Oslo', inboxCount: 1,
+      mission: { taskId: historical ? 'past' : 'now' }, tasks: [{ id: historical ? 'past' : 'now', title: historical ? 'Yesterday priority' : 'Current priority', isCompleted: false }], commitments: [], habits: [] })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(<QueryClientProvider client={client}><MemoryRouter><Routes><Route element={<Outlet context={{ user: { id: 'owner' }, openCapture: vi.fn() }} />}>
+    <Route index element={<TodayPage />} /></Route></Routes></MemoryRouter></QueryClientProvider>)
+  const hero = screen.getByRole('region', { name: 'Today' })
+  expect(within(hero).getByRole('heading', { level: 1, name: 'Today' })).toBeVisible()
+  expect(within(hero).getByRole('link', { name: 'Open your day' })).toHaveAttribute('href', '#daily-workspace')
+  expect(await within(hero).findByText('Current priority')).toBeVisible()
+  fireEvent.change(screen.getByLabelText('Plan date'), { target: { value: '2026-03-28' } })
+  expect(await screen.findByRole('link', { name: 'Yesterday priority' })).toBeVisible()
+  expect(within(hero).getByText('Current priority')).toBeVisible()
+  expect(within(hero).queryByText('Yesterday priority')).not.toBeInTheDocument()
+})
 
 test('uses server local day, displays mission and habit state, and sends completion to the API', async () => {
   let completed = false

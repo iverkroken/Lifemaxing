@@ -1,15 +1,31 @@
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; background: var(--color-canvas); color: var(--color-text); font-family: var(--font-sans); font-size: var(--text-base); line-height: 1.5; }
+body { margin: 0; min-width: 320px; background: var(--color-canvas); color: var(--color-text); font-family: var(--font-sans); font-size: var(--text-base); line-height: var(--line-body); font-weight: var(--weight-body); }
 button, input, textarea, select { font: inherit; }
-a { color: var(--color-accent); }
-:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
+a { color: var(--color-accent); text-underline-offset: var(--space-1); }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
 button, input, a { -webkit-tap-highlight-color: transparent; }
-html { scroll-padding-bottom: calc(var(--dock-height) + var(--space-6)); }
-button, input, textarea, select, summary { accent-color: var(--color-accent); }
+html { background: var(--color-canvas); scroll-padding-bottom: calc(var(--dock-height) + var(--space-6)); }
+button, input, textarea, select, summary { accent-color: var(--color-action); }
 button svg, a svg { flex-shrink: 0; }
 summary { cursor: pointer; min-height: var(--control-height); padding-block: var(--space-3); color: var(--color-accent); font-size: var(--text-sm); font-weight: 500; }
 details[open] > summary { margin-bottom: var(--space-4); }
 textarea { resize: vertical; }
 input, select, textarea { min-width: 0; }
 h1, h2, h3, p, a { overflow-wrap: anywhere; }
-::selection { background: var(--color-accent-soft); color: var(--color-text); }
+::selection { background: var(--color-selected); color: var(--color-text); }
+
+/* Native scrolling stays intact on the document and app containers. */
+html, body, #root, #root * { scrollbar-width: none; scrollbar-gutter: auto; }
+html::-webkit-scrollbar, body::-webkit-scrollbar, #root *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+html { scroll-padding-top: calc(var(--header-height) + var(--space-6)); }
+img { max-width: 100%; }
+progress, time { font-variant-numeric: tabular-nums; }
+button, a, input, select, textarea { touch-action: manipulation; }
+@media (forced-colors: active) {
+  :focus-visible { outline-color: Highlight; }
+  [aria-current='page'] { outline: 1px solid Highlight; outline-offset: -1px; }
+}
+
+h1, h2, h3 { font-weight: var(--weight-heading); line-height: var(--line-section); }
+h1 { line-height: var(--line-heading); }
+input, textarea { caret-color: var(--color-text); }

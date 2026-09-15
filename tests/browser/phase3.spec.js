@@ -1,3 +1,4 @@
+const { navigateTo, captureTask } = require('./navigation-helpers.cjs')
 const { test, expect } = require('@playwright/test')
 
 test('progression, lost-response retry, rewards and persisted focus work across screen sizes', async ({ page }) => {
@@ -61,7 +62,7 @@ test('progression, lost-response retry, rewards and persisted focus work across 
   await expect(page.getByText('Completed: Phase 3 deliberate work (+100 XP)', { exact: true })).toHaveCount(2)
   await expect(page.getByText('Reopened: Phase 3 deliberate work (-100 XP)', { exact: true })).toBeVisible()
   await page.goto('/focus')
-  await page.getByLabel('Focus task', { exact: true }).selectOption('')
+  await page.getByRole('radio', { name: 'Unstructured focus', exact: true }).check()
   await page.getByRole('button', { name: 'Start focus' }).click()
   await page.getByRole('button', { name: 'Pause focus' }).click()
   await expect(page.getByRole('button', { name: 'Resume focus', exact: true })).toBeVisible()
@@ -83,7 +84,7 @@ test('progression, lost-response retry, rewards and persisted focus work across 
     await page.keyboard.press('Enter')
     await expect(page.getByRole('heading', { name: 'Today', exact: true })).toBeVisible()
     if (width < 1200) {
-      await page.getByRole('button', { name: 'More', exact: true }).click()
+      await page.getByRole('button', { name: 'Menu', exact: true }).click()
       await page.getByRole('dialog').getByRole('link', { name: 'Progress', exact: true }).click()
       await expect(page.getByRole('heading', { name: 'Progress', exact: true })).toBeVisible()
     }
