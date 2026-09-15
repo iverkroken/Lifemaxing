@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Dialog } from '../../shared/ui/Dialog.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
@@ -9,18 +9,27 @@ import styles from './AuthenticatedShell.module.css'
 export function CommandMenu({ open, onClose, destinations, openCapture, session }) {
   const { t } = useLanguage()
   const [search, setSearch] = useState('')
+  const listRef = useRef(null)
   const navigate = useNavigate()
   const actions = [
-    ...['task', 'habit', 'goal'].map(kind => ({ name: t('create_' + kind), icon: 'plus', run: () => openCapture({ kind, date: null }) })),
-    ...(session ? [{ name: t('continueFocus'), icon: 'focus', run: () => navigate('/focus') }] : []),
     ...destinations.map(([path]) => ({ name: t(path), icon: path, run: () => navigate('/' + path) })),
+    ...(session ? [{ name: t('continueFocus'), icon: 'focus', run: () => navigate('/focus') }] : []),
+    ...['task', 'habit', 'goal'].map(kind => ({ name: t('create_' + kind), icon: 'plus', run: () => openCapture({ kind, date: null }) })),
   ].filter(action => action.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
   const choose = action => { onClose(); setSearch(''); action.run() }
-  return <Dialog open={open} onClose={() => { setSearch(''); onClose() }} title={t('commandMenu')}>
-    <Input label={t('findAction')} value={search} onChange={event => setSearch(event.target.value)}
-      onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing && actions[0]) { event.preventDefault(); choose(actions[0]) } }} />
+  return <Dialog open={open} onClose={() => { setSearch(''); onClose() }} title={t('Search')}>
+    <Input label={t('Search pages and actions')} value={search} onChange={event => setSearch(event.target.value)}
+      onKeyDown={event => {
+        if (event.nativeEvent.isComposing) return
+        if (event.key === 'Enter' && actions[0]) { event.preventDefault(); choose(actions[0]) }
+        if (['ArrowDown', 'ArrowUp'].includes(event.key) && actions.length) {
+          event.preventDefault()
+          const buttons = listRef.current.querySelectorAll('button')
+          buttons[event.key === 'ArrowDown' ? 0 : buttons.length - 1]?.focus()
+        }
+      }} />
     <p className={styles.commandHint}>{t('commandHint')}</p>
-    <ul className={styles.commandList} onKeyDown={event => {
+    <ul ref={listRef} className={styles.commandList} onKeyDown={event => {
       if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return
       const buttons = [...event.currentTarget.querySelectorAll('button')]
       const index = buttons.indexOf(document.activeElement)

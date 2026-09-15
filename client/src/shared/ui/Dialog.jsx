@@ -4,7 +4,7 @@ import { Button } from './Button.jsx'
 import { Icon } from './Icon.jsx'
 import styles from './Dialog.module.css'
 
-export function Dialog({ open, onClose, title, children, initialFocusRef }) {
+export function Dialog({ open, onClose, title, children, initialFocusRef, placement = 'center' }) {
   const { t } = useLanguage()
   const ref = useRef(null)
   const titleId = useId()
@@ -18,6 +18,12 @@ export function Dialog({ open, onClose, title, children, initialFocusRef }) {
     }
     if (!open && dialog.open) dialog.close()
   }, [open, initialFocusRef])
+  useEffect(() => {
+    if (!open) return
+    const previous = document.documentElement.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    return () => { document.documentElement.style.overflow = previous }
+  }, [open])
   const containTab = event => {
     if (event.key !== 'Tab') return
     const controls = [...ref.current.querySelectorAll('button, a[href], input, select, textarea, summary, [tabindex]')]
@@ -27,9 +33,14 @@ export function Dialog({ open, onClose, title, children, initialFocusRef }) {
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
     if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
   }
-  return <dialog ref={ref} className={styles.dialog} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onClose() }} onClose={onClose} onKeyDown={containTab}>
+  return <dialog ref={ref} className={styles.dialog} data-placement={placement} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); onClose() }} onClose={onClose} onKeyDown={containTab}
+    onClick={event => {
+      if (placement !== 'drawer' || event.target !== event.currentTarget) return
+      const bounds = event.currentTarget.getBoundingClientRect()
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose()
+    }}>
     <header className={styles.heading}><h2 id={titleId}>{title}</h2>
-      <Button variant="quiet" aria-label={t("Close dialog")} onClick={onClose}><Icon name="close" /></Button>
+      <Button variant="ghost" aria-label={t("Close dialog")} onClick={onClose}><Icon name="close" /></Button>
     </header>
     {open && children}
   </dialog>
