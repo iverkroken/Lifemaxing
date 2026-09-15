@@ -1,0 +1,19 @@
+.views { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.views button { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); min-height: var(--control-height); border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+.views button:hover { background: var(--color-hover); }
+.views button[aria-current] { background: var(--color-selected); border-color: var(--color-border-strong); color: var(--color-text); font-weight: 600; }
+.today { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(0, 3fr); gap: var(--space-8); padding: var(--space-8); background: var(--color-surface-muted); border-radius: var(--radius-card); }
+.todayHeading h2 { margin: 0 0 var(--space-2); font-size: var(--text-section-title); letter-spacing: -0.025em; }
+.todayContent { min-width: 0; }
+.todayContent .embeddedEmpty { padding-block: 0; margin-block: 0; }
+.todayContent > ul > li:first-child { padding-top: 0; }
+.todayContent > ul > li:last-child { border-bottom: 0; padding-bottom: 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-block: var(--space-4) var(--space-6); }
+.toolbar > div { flex: 0 1 18rem; min-width: min(100%, 12rem); }
+.detail { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--space-8); align-items: start; }
+.detail > * { min-width: 0; }
+.scheduleHistory { padding: var(--space-6); background: var(--color-surface-muted); border-radius: var(--radius-card); }
+.form { max-width: 52rem; }
+.form > fieldset { gap: var(--space-5); }
+@media (max-width: 999px) { .today { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); } .todayHeading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: var(--space-3); } }
+@media (max-width: 767px) { .today, .scheduleHistory { padding: var(--space-4); } .detail { grid-template-columns: minmax(0, 1fr); } .toolbar > div { flex: 1; } }
