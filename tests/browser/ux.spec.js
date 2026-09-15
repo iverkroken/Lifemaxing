@@ -1,3 +1,4 @@
+const { navigateTo, captureTask } = require('./navigation-helpers.cjs')
 const { test, expect } = require('@playwright/test')
 
 test('capture, keyboard dialogs, mobile navigation and recoverable failures work', async ({ page }) => {
@@ -14,7 +15,8 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
 
   for (const width of [375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 })
-    const capture = page.getByRole('button', { name: width < 1200 ? 'Capture' : 'Quick Add', exact: true })
+    await page.goto('/tasks')
+    const capture = page.getByRole('button', { name: 'Capture a task', exact: true }).first()
     await capture.click()
     const dialog = page.getByRole('dialog', { name: 'Capture a task' })
     await expect(dialog.getByLabel('Task title', { exact: false })).toBeFocused()
@@ -31,17 +33,17 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
     await expect(dialog).not.toBeVisible()
     await expect(capture).toBeFocused()
     if (width < 1200) {
-      await page.getByRole('button', { name: 'More', exact: true }).click()
-      await page.getByRole('dialog', { name: 'Your workspace' }).getByRole('link', { name: 'Habits', exact: true }).click()
+      await page.getByRole('button', { name: 'Menu', exact: true }).click()
+      await page.getByRole('dialog', { name: 'LIFEMAXING' }).getByRole('link', { name: 'Habits', exact: true }).click()
       await expect(page.getByRole('heading', { name: 'Habits', exact: true })).toBeVisible()
-      await page.getByRole('button', { name: 'More', exact: true }).click()
-      await page.getByRole('dialog', { name: 'Your workspace' }).getByRole('link', { name: 'Life Areas', exact: true }).click()
+      await page.getByRole('button', { name: 'Menu', exact: true }).click()
+      await page.getByRole('dialog', { name: 'LIFEMAXING' }).getByRole('link', { name: 'Life Areas', exact: true }).click()
       await expect(page.getByRole('heading', { name: 'Life Areas' })).toBeVisible()
     }
   }
 
   await page.setViewportSize({ width: 375, height: 900 })
-  await page.getByRole('button', { name: 'Capture', exact: true }).click()
+  await captureTask(page)
   const captureDialog = page.getByRole('dialog', { name: 'Capture a task' })
   await captureDialog.getByLabel('Task title', { exact: false }).fill('Captured from anywhere')
   await page.route('**/api/v1/tasks', route => route.request().method() === 'POST'
@@ -75,11 +77,11 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
   await page.getByRole('button', { name: 'Edit goal', exact: true }).click()
   await page.getByText('Archive this goal', { exact: true }).click()
   await page.getByRole('button', { name: 'Archive goal', exact: true }).click()
-  await expect(page.getByText('Goal · Archived', { exact: true })).toBeVisible()
+  await expect(page.getByText('Archived', { exact: true })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Progress history' }).getByText('A first step, recorded on mobile')).toBeVisible()
 
   await page.goto('/habits')
-  await page.getByRole('button', { name: 'New habit', exact: true }).click()
+  await page.getByRole('button', { name: 'New habit', exact: true }).first().click()
   await page.getByLabel('Habit title').fill('A short daily pause')
   await page.getByRole('button', { name: 'Create habit', exact: true }).click()
   await page.getByRole('button', { name: 'Log completion', exact: true }).click()
@@ -87,7 +89,7 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
   await page.getByRole('button', { name: 'Edit habit', exact: true }).click()
   await page.getByText('Archive this habit', { exact: true }).click()
   await page.getByRole('button', { name: 'Archive habit', exact: true }).click()
-  await expect(page.getByText('Archived routine', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Completion log' }).getByText('Archived', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Undo completion', exact: true })).toBeVisible()
 
   await page.route('**/api/v1/today', route => route.fulfill({ status: 503, contentType: 'application/problem+json', body: JSON.stringify({ title: 'Daily plan unavailable.' }) }))
