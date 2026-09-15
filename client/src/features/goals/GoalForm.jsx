@@ -9,6 +9,7 @@ import { Input } from '../../shared/ui/Input.jsx'
 import { Select } from '../../shared/ui/Select.jsx'
 import { ActionFeedback, QueryFeedback } from '../../shared/ui/ProductivityFeedback.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
+import pageStyles from './GoalsPage.module.css'
 
 const schema = z.object({ title: z.string().trim().min(1, 'Enter a goal title.').max(200), description: z.string().max(10000),
   lifeAreaId: z.string(), state: z.string(), targetDate: z.string(), targetValue: z.string(), baselineValue: z.string(), unit: z.string(), direction: z.string() })
@@ -22,7 +23,7 @@ export function GoalForm({ goal, onSaved }) {
     targetValue: goal?.targetValue?.toString() || '', baselineValue: goal?.baselineValue?.toString() || '', unit: goal?.unit || '', direction: goal?.direction || 'Increase' } })
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction(onSaved)
-  return <form className={styles.form} noValidate onSubmit={form.handleSubmit(values => action.mutate({
+  return <form className={`${styles.form} ${pageStyles.form}`} noValidate onSubmit={form.handleSubmit(values => action.mutate({
     path: goal ? `/goals/${goal.id}` : '/goals', method: goal ? 'PATCH' : 'POST', body: { ...values,
       description: values.description || null, lifeAreaId: values.lifeAreaId || null, targetDate: values.targetDate || null,
       targetValue: measured && values.targetValue !== '' ? Number(values.targetValue) : null,
