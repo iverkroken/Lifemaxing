@@ -1,31 +1,29 @@
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--space-6); align-items: start; }
-.overview { display: flex; align-items: center; gap: var(--space-8); padding: var(--space-4) var(--space-6); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface-muted); }
-.overview > span { white-space: nowrap; color: var(--color-accent); font-size: var(--text-sm); }
-.overview strong { font-size: var(--text-xl); margin-right: var(--space-2); }
-.overview p { font-size: var(--text-sm); color: var(--color-text-muted); margin: 0; }
-.area { --area-tone: var(--color-area-sage); min-width: 0; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); padding: var(--space-6); transition: border-color var(--motion-fast); }
-.area:hover, .area:focus-within { border-color: var(--color-accent); }
-.area[data-area='university'], .area[data-area='career'], .area[data-area='travel'] { --area-tone: var(--color-area-blue); }
-.area[data-area='finance'], .area[data-area='home'], .area[data-area='food'] { --area-tone: var(--color-area-sand); }
-.area[data-area='style'], .area[data-area='creative'] { --area-tone: var(--color-area-rose); }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); align-items: stretch; }
+.overview { display: flex; align-items: center; gap: var(--space-8); }
+.overview > span { color: var(--color-text-secondary); font-size: var(--text-sm); }
+.overview strong { font-size: var(--text-xl); margin-right: var(--space-2); font-variant-numeric: tabular-nums; }
+.area { --area-tone: var(--color-area-sage); --area-mark: var(--color-area-sage-mark); position: relative; display: flex; flex-direction: column; min-width: 0; border-radius: var(--radius-card); background: var(--color-surface); overflow: hidden; }
+.area[data-area='university'], .area[data-area='career'], .area[data-area='travel'] { --area-tone: var(--color-area-blue); --area-mark: var(--color-area-blue-mark); }
+.area[data-area='finance'], .area[data-area='home'], .area[data-area='food'] { --area-tone: var(--color-area-sand); --area-mark: var(--color-area-sand-mark); }
+.area[data-area='style'], .area[data-area='creative'] { --area-tone: var(--color-area-rose); --area-mark: var(--color-area-rose-mark); }
 .area[data-active='false'] { background: var(--color-surface-muted); }
-.area h2 { font-size: var(--text-section-title); font-weight: 600; letter-spacing: -0.025em; margin: var(--space-4) 0 var(--space-2); }
-.areaTop { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
-.areaTop > span:last-child { color: var(--color-text-muted); font-size: var(--text-xs); }
-.areaIcon { display: inline-flex; align-items: center; justify-content: center; width: var(--space-12); height: var(--space-12); background: var(--area-tone); color: var(--color-accent); border-radius: var(--radius-button); }
-.description { color: var(--color-text-muted); font-size: var(--text-sm); min-height: var(--space-8); margin: 0; }
-.links { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-4); border-top: 1px solid var(--color-border); padding-top: var(--space-2); }
-.links a { min-height: var(--control-height); display: inline-flex; align-items: center; font-size: var(--text-sm); text-decoration: none; font-weight: 500; }
+.content { padding: var(--space-5) var(--space-6) var(--space-4); display: flex; flex-direction: column; flex: 1; }
+.area h2 { font-size: var(--text-section-title); font-weight: 600; letter-spacing: -0.025em; margin: 0 0 var(--space-2); }
+.areaTop { position: absolute; top: var(--space-3); right: var(--space-3); display: flex; align-items: center; gap: var(--space-2); color: var(--color-text); background: var(--color-surface); border-radius: var(--radius-control); }
+.areaTop > span { padding-left: var(--space-3); font-size: var(--text-xs); }
+.description { color: var(--color-text-secondary); font-size: var(--text-sm); line-height: 1.6; margin: 0 0 var(--space-5); max-width: 38ch; }
+.links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin-top: auto; border-top: 1px solid var(--color-border); padding-top: var(--space-2); }
+.links a { min-height: var(--control-height); display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); text-decoration: none; font-weight: 500; }
 .links a:hover { text-decoration: underline; }
-.area > details { border-top: 1px solid var(--color-border); margin-top: var(--space-2); }
-.area > details > summary { color: var(--color-text-muted); }
-.editor { display: grid; gap: var(--space-4); margin-top: var(--space-3); padding: var(--space-4); background: var(--color-surface-muted); border-radius: var(--radius-control); }
+.editor { display: grid; gap: var(--space-4); margin-top: var(--space-3); }
 .toggle { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-height); }
 .toggle input { width: var(--space-6); height: var(--space-6); }
-.artwork { margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-6)) var(--space-4); background: var(--area-tone); color: var(--color-area-ink); border-radius: var(--radius-card) var(--radius-card) 0 0; overflow: hidden; }
-.artwork svg { display: block; width: 100%; height: 7rem; }
+.artwork { height: 10rem; background: var(--area-tone); color: var(--area-mark); overflow: hidden; }
+.artwork svg { display: block; width: 100%; height: 100%; padding: var(--space-5); }
+.artwork img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.area[data-area='finance'] .artwork img { object-position: 50% 47%; }
+.area[data-area='style'] .artwork img { object-position: 50% 20%; }
 .area h2 a { color: var(--color-text); text-decoration: none; }
-.area h2 a:hover { color: var(--color-accent); }
-.links { gap: var(--space-3); justify-content: space-between; }
-.links a { gap: var(--space-1); }
-@media (max-width: 767px) { .grid { grid-template-columns: minmax(0, 1fr); } .overview { flex-wrap: wrap; gap: var(--space-3); } }
+.area h2 a:hover { color: var(--color-accent); text-decoration: underline; }
+@media (max-width: 1199px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 639px) { .grid { grid-template-columns: minmax(0, 1fr); } .content { padding-inline: var(--space-5); } .artwork { height: 9rem; } .overview { flex-wrap: wrap; gap: var(--space-3); } }

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLanguage } from './language.js'
 import { updateSettings } from './settingsApi.js'
 import { Button } from '../../shared/ui/Button.jsx'
+import { ThemePreview } from './ThemePreview.jsx'
 import styles from './SettingsPage.module.css'
 
 export function AppearanceSettings({ userId }) {
@@ -19,7 +20,7 @@ export function AppearanceSettings({ userId }) {
     <h2>{t('appearance')}</h2><p>{t('appearanceHint')}</p>
     <fieldset className={styles.choices} disabled={save.isPending}><legend>{t('theme')}</legend>
       {['light', 'dark', 'system'].map(theme => <label key={theme} className={styles.themeChoice}>
-        <span className={styles.themePreview} data-preview={theme} aria-hidden="true"><span /><span><i /><i /><i /></span></span>
+        <ThemePreview theme={theme} />
         <span><input type="radio" name="theme" value={theme} checked={preferences.theme === theme}
           onChange={() => change({ theme, density: preferences.density })} /> {t(theme)}</span>
       </label>)}
