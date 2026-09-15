@@ -1,3 +1,4 @@
+const { navigateTo, captureTask } = require('./navigation-helpers.cjs')
 const { test, expect } = require('@playwright/test')
 
 test('owner signs in, persists settings and areas, refreshes, and signs out', async ({ page, context }) => {
@@ -21,7 +22,7 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   expect(authCookie.expires).toBeGreaterThan(0)
 
   const fitness = page.getByRole('region', { name: /Fitness/ })
-  await fitness.getByText('Edit Life Area', { exact: true }).click()
+  await fitness.getByRole('button', { name: /Edit Life Area/ }).click()
   const displayName = fitness.getByLabel('Display name')
   const updatedName = await displayName.inputValue() === 'Movement & Fitness'
     ? 'Movement & Fitness II'
@@ -29,8 +30,9 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   await displayName.fill(updatedName)
   await fitness.getByRole('button', { name: 'Save changes' }).click()
   await expect(fitness.getByText('Changes saved.')).toBeVisible()
+  await page.keyboard.press('Escape')
 
-  await page.getByRole('link', { name: 'Settings' }).click()
+  await navigateTo(page, 'Settings')
   await page.getByRole('button', { name: 'Language & time' }).click()
   const timeZone = page.getByLabel('Time zone')
   const useBudapest = await timeZone.inputValue() !== 'Europe/Budapest'
@@ -45,11 +47,12 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
   const anotherPage = await context.newPage()
   await anotherPage.goto('/areas')
   await expect(anotherPage.getByRole('heading', { level: 1, name: 'Life Areas' })).toBeVisible()
-  await anotherPage.getByText('Edit Life Area', { exact: true }).first().click()
+  await anotherPage.getByRole('button', { name: /Edit Life Area/ }).first().click()
   await expect(anotherPage.getByLabel('Display name').first()).toHaveValue(updatedName)
   await anotherPage.close()
 
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click()
+  await page.getByRole('button', { name: 'Menu', exact: true }).click()
+  await page.getByRole('dialog', { name: 'LIFEMAXING' }).getByRole('button', { name: 'Sign out', exact: true }).click()
   await page.getByRole('dialog', { name: 'Sign out of this device?' }).getByRole('button', { name: 'Sign out', exact: true }).click()
   await expect(page).toHaveURL(/\/login$/)
   await page.goto('/areas')

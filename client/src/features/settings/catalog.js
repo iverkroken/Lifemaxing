@@ -1,6 +1,22 @@
 // Reviewed interface copy: English | Norwegian Bokmål | Swedish | Danish.
 // Keys are source copy, never user content or server error messages.
 const rows = `
+Choose your focus|Velg fokus|V?lj fokus|V?lg fokus
+An existing task|En eksisterende oppgave|En befintlig uppgift|En eksisterende opgave
+Plan|Plan|Planera|Plan
+Menu|Meny|Meny|Menu
+Search|S?k|S?k|S?g
+Your life|Livet ditt|Ditt liv|Dit liv
+Full navigation|Full navigasjon|Fullst?ndig navigering|Fuld navigation
+Plan navigation|Plannavigasjon|Plannavigering|Plannavigation
+Search pages and actions|S?k etter sider og handlinger|S?k efter sidor och ?tg?rder|S?g efter sider og handlinger
+Locked|L?st|L?st|L?st
+Rewards on this page|Bel?nninger p? denne siden|Bel?ningar p? den h?r sidan|Bel?nninger p? denne side
+Open your day|?pne dagen din|?ppna din dag|?bn din dag
+Make room for what matters.|Gi plass til det som betyr noe.|Ge plats ?t det som betyder n?got.|Giv plads til det, der betyder noget.
+Task actions|Oppgavehandlinger|Uppgiftsåtgärder|Opgavehandlinger
+Settings sections|Innstillingsseksjoner|Inställningsavsnitt|Indstillingsafsnit
+Habit views|Vanevisninger|Vanevyer|Vanevisninger
 ledgerEntry|{amount} XP · {kind}|{amount} XP · {kind}|{amount} XP · {kind}
 ledgerContext|{kind} · {date} · regler v{version}|{kind} · {date} · regler v{version}|{kind} · {date} · regler v{version}
 areaCount_tasks|{count} oppgaver|{count} uppgifter|{count} opgaver

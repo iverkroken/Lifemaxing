@@ -1,3 +1,4 @@
+const { navigateTo, captureTask } = require('./navigation-helpers.cjs')
 const { test, expect } = require('@playwright/test')
 
 test('productivity records survive an API process restart', async ({ page }) => {
@@ -8,12 +9,13 @@ test('productivity records survive an API process restart', async ({ page }) => 
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page.getByText('Mission completed.')).toBeVisible({ timeout: 15000 })
   await expect(page.getByRole('link', { name: 'Mobile captured action' })).toBeVisible()
-  await page.getByRole('link', { name: 'Habits', exact: true }).click()
+  await navigateTo(page, 'Habits')
+  await page.getByRole('navigation', { name: 'Habit views' }).getByRole('button', { name: 'Your routines' }).click()
   await page.getByRole('region', { name: 'Habit library' }).getByRole('link', { name: 'Read a chapter', exact: true }).click()
   await expect(page.getByText('3/week', { exact: true })).toBeVisible()
   await expect(page.getByText('Mon, Wed, Fri')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Undo completion' })).toBeVisible()
-  await page.getByRole('link', { name: 'Goals', exact: true }).click()
+  await navigateTo(page, 'Goals')
   await page.getByRole('link', { name: 'Read ten chapters', exact: true }).click()
   await expect(page.getByText('First reading update', { exact: true })).toBeVisible()
   await expect(page.getByText('Corrected reading update', { exact: true })).toBeVisible()
