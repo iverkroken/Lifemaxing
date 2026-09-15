@@ -1,20 +1,21 @@
-.page { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: var(--space-12); max-width: 80rem; margin: auto; padding: var(--space-12) var(--space-8); }
-.identity { padding: var(--space-8); color: var(--color-text); }
-.identity svg { width: min(100%, 24rem); stroke: var(--color-accent); stroke-width: 2; }
-.identity h2 { font-size: var(--text-4xl); font-weight: 500; letter-spacing: -0.04em; line-height: 1.15; max-width: 12ch; }
-.identity p { max-width: 36ch; color: var(--color-text-muted); }
-.preferences { display: flex; gap: var(--space-4); margin-top: var(--space-6); flex-wrap: wrap; }
-.preferences > div { flex: 1; min-width: 8rem; }
-.login { width: min(100%, var(--form-width)); }
-.brand { display: flex; align-items: center; gap: var(--space-2); color: var(--color-accent); font-size: var(--text-sm); font-weight: 600; text-decoration: none; margin-bottom: var(--space-8); }
-.surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-control); padding: var(--space-8); }
-.login h1 { font-size: var(--text-page-title); line-height: 1.15; letter-spacing: -0.035em; margin: 0; }
-.intro { color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-3) 0 var(--space-6); }
-.form { display: grid; gap: var(--space-4); }
+.page { min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--color-canvas); }
+.identity { display: flex; flex-direction: column; align-items: start; justify-content: center; min-height: 100dvh; padding: var(--space-16) var(--page-gutter); background: var(--color-dark); color: var(--color-inverse); }
+.identity > svg { margin-bottom: var(--space-16); flex-shrink: 0; }
+.identity h2 { font-size: clamp(3rem, 5vw, 5.5rem); font-weight: 400; letter-spacing: -0.04em; line-height: 1.04; max-width: 11ch; margin: 0 0 var(--space-8); }
+.identity p { max-width: 36ch; color: var(--palette-dark-text-muted); font-size: var(--text-base); line-height: 1.6; margin: 0; }
+.login { align-self: center; width: min(100%, 32rem); padding: var(--space-12) var(--space-8); margin-inline: auto; }
+.brand { display: flex; align-items: center; gap: var(--space-3); color: var(--color-text); font-size: var(--text-sm); font-weight: 500; letter-spacing: 0.035em; text-decoration: none; min-height: var(--control-height); margin-bottom: var(--space-12); }
+.surface { padding-block: var(--space-4); }
+.login h1 { font-size: 3rem; line-height: 1.1; font-weight: 400; letter-spacing: -0.04em; margin: 0; }
+.intro { color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-4) 0 var(--space-8); }
+.form { display: grid; gap: var(--space-5); }
 .visibility { justify-self: end; margin-top: calc(-1 * var(--space-3)); }
 .remember { display: flex; gap: var(--space-3); align-items: center; min-height: var(--control-height); cursor: pointer; font-size: var(--text-sm); }
-.remember input { width: var(--space-4); height: var(--space-4); accent-color: var(--color-accent); flex-shrink: 0; }
+.remember input { width: var(--space-4); height: var(--space-4); accent-color: var(--color-action); flex-shrink: 0; }
 .hint { margin: calc(-1 * var(--space-3)) 0 var(--space-2); color: var(--color-text-muted); font-size: var(--text-sm); }
 .error { color: var(--color-danger); margin: 0; font-size: var(--text-sm); }
-.notice { background: var(--color-surface-muted); border-radius: var(--radius-control); padding: var(--space-3); margin: 0 0 var(--space-6); }
-@media (max-width: 767px) { .page { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: var(--space-8) var(--space-4); } .identity { display: none; } .surface { padding: var(--space-6); } .login h1 { font-size: var(--text-2xl); } }
+.notice { background: var(--color-surface-muted); border-radius: var(--radius-control); padding: var(--space-4); margin: 0 0 var(--space-6); }
+.preferences { display: flex; gap: var(--space-4); margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--color-border); flex-wrap: wrap; }
+.preferences > div { flex: 1; min-width: min(100%, 8rem); }
+@media (max-width: 1000px) { .identity { padding-inline: var(--space-8); } }
+@media (max-width: 767px) { .page { grid-template-columns: minmax(0, 1fr); } .identity { display: none; } .login { padding: var(--space-8) var(--page-gutter); } .brand { margin-bottom: var(--space-8); } .login h1 { font-size: 2.5rem; } }

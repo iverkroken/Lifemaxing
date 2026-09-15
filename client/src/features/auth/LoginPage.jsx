@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { useEffect, useState } from 'react'
 
 import { Button } from '../../shared/ui/Button.jsx'
-import { Icon } from '../../shared/ui/Icon.jsx'
+import { BrandMark } from '../../shared/ui/BrandMark.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
 import { Select } from '../../shared/ui/Select.jsx'
 import { languages, useLanguage } from '../settings/language.js'
@@ -44,11 +44,11 @@ export function LoginPage() {
 
   return <main className={styles.page}>
     <aside className={styles.identity} aria-label={t('workspace')}>
-      <svg viewBox="0 0 360 240" fill="none" aria-hidden="true"><path d="M45 195h270M90 195V85h60v110m30 0V45h60v150M60 130h240" /><circle cx="270" cy="65" r="25" /><path d="M45 195 150 90l75 70 90-100" /></svg>
+      <BrandMark size={32} color="var(--color-inverse)" />
       <h2>{t("Make room for what matters.")}</h2><p>{t("A personal space to turn plans into action and preserve your progress over time.")}</p>
     </aside>
     <div className={styles.login}>
-      <a href="/start" className={styles.brand}><Icon name="leaf" />LIFEMAXING</a>
+      <a href="/start" className={styles.brand}><BrandMark size={20} />LIFEMAXING</a>
       <div className={styles.surface}>
       <h1>{t("Sign in")}</h1>
       <p className={styles.intro}>{t("Open your tasks, habits and daily plan.")}</p>
