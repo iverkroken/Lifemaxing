@@ -1,17 +1,25 @@
-param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '', [switch] $UxRefresh, [switch] $Redesign,
+param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '', [switch] $UxRefresh, [switch] $Redesign, [switch] $SignatureShell, [switch] $Artwork,
   [ValidateSet('chromium', 'firefox')][string] $BrowserEngine = 'chromium',
+  [string] $ArtifactRoot = '', [switch] $Headed, [string] $TestFilter = '',
   [ValidateSet('', 'before', 'after')][string] $PerformanceStage = '')
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 Set-Location -LiteralPath $repoRoot
 $env:PATH = "$env:LOCALAPPDATA\Microsoft\dotnet;$env:PATH"
+$logRoot = Join-Path $repoRoot 'artifacts'
+if ($ArtifactRoot) {
+  $evidencePath = [IO.Path]::GetFullPath((Join-Path $repoRoot $ArtifactRoot))
+  if (!$evidencePath.StartsWith($logRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'ArtifactRoot must be a child of repository artifacts.' }
+  $logRoot = $evidencePath
+}
+New-Item -ItemType Directory -Path $logRoot -Force | Out-Null
 $testDatabase = 'lifemaxing_browser_' + [Guid]::NewGuid().ToString('N')
 $apiProcess = $null
 $viteProcess = $null
 $created = $false
 $variables = @('ConnectionStrings__Database', 'ASPNETCORE_ENVIRONMENT', 'ASPNETCORE_URLS', 'ASPNETCORE_CONTENTROOT',
   'OwnerProvisioning__Email', 'OwnerProvisioning__Password', 'SMOKE_EMAIL', 'SMOKE_PASSWORD', 'SMOKE_BASE_URL',
-  'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default', 'REFERENCE_STAGE', 'PERFORMANCE_STAGE', 'SMOKE_BROWSER')
+  'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default', 'REFERENCE_STAGE', 'PERFORMANCE_STAGE', 'SMOKE_BROWSER', 'VISUAL_ARTIFACT_ROOT')
 $previous = @{}
 foreach ($name in $variables) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 function Wait-Ready([string] $url) {
@@ -22,6 +30,12 @@ function Wait-Ready([string] $url) {
   throw "Test service did not become ready: $url"
 }
 try {
+  if ($ArtifactRoot) { $env:VISUAL_ARTIFACT_ROOT = $logRoot }
+  foreach ($port in @(5082, 5174)) {
+    if (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue) {
+      throw "Test port $port is already occupied; inspect the process and project before retrying."
+    }
+  }
   # Read the existing local secret without printing or copying it into a tracked file.
   $secretFile = Join-Path $env:APPDATA 'Microsoft/UserSecrets/lifemaxing-local-development/secrets.json'
   $secrets = Get-Content -LiteralPath $secretFile -Raw | ConvertFrom-Json
@@ -54,12 +68,29 @@ try {
   $env:SMOKE_BASE_URL = 'http://127.0.0.1:5174'
   $env:SMOKE_RESTART = '0'
   New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-  $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-api.log -RedirectStandardError artifacts/browser-api-error.log
+  $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-error.log')
   $viteArguments = 'node_modules/vite/bin/vite.js client --config client/vite.config.js --port 5174'
-  if ($PerformanceStage -or $Redesign) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
-  $viteProcess = Start-Process node -ArgumentList $viteArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-vite.log -RedirectStandardError artifacts/browser-vite-error.log
+  if ($PerformanceStage -or $Redesign -or $SignatureShell -or $Artwork) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
+  $viteProcess = Start-Process node -ArgumentList $viteArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-vite.log') -RedirectStandardError (Join-Path $logRoot 'browser-vite-error.log')
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   Wait-Ready 'http://127.0.0.1:5174/start'
+  if ($SignatureShell) {
+    $env:SMOKE_BROWSER = $BrowserEngine
+    $browserArguments = @('run', 'test:smoke', '--', 'redesign.spec.js', 'signature-shell.spec.js')
+    if ($Headed) { $browserArguments += '--headed' }
+    npm @browserArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Signature shell checks failed.' }
+    return
+  }
+  if ($Artwork) {
+    $env:SMOKE_BROWSER = $BrowserEngine
+    $browserArguments = @('run', 'test:smoke', '--', 'redesign.spec.js', 'artwork.spec.js', 'signature-shell.spec.js')
+    if ($TestFilter) { $browserArguments += @('--grep', $TestFilter) }
+    if ($Headed) { $browserArguments += '--headed' }
+    & npm @browserArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Artwork redesign checks failed.' }
+    return
+  }
   if ($Redesign) {
     $env:SMOKE_BROWSER = $BrowserEngine
     npm run test:smoke -- redesign.spec.js
@@ -89,7 +120,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Authentication browser checks failed.' }
   Stop-Process -Id $apiProcess.Id
   $apiProcess.WaitForExit()
-  $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput artifacts/browser-api-restart.log -RedirectStandardError artifacts/browser-api-restart-error.log
+  $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api-restart.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-restart-error.log')
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   $env:SMOKE_RESTART = '1'
   npm run test:smoke -- phase2-restart.spec.js phase3-restart.spec.js
