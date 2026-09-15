@@ -13,7 +13,7 @@ Today svarer på «hva skal jeg gjøre nå?». Focus Mode gjør det enklere å s
 ## Produktregler
 
 1. Første skjerm viser én Daily Mission, et håndterlig utvalg planlagte oppgaver og dagens vaner. Analyse må ikke skyve utførelse ut av Today.
-2. Opprettelse skal være rask: Quick Add krever tittel; planlagt dato, område og detaljer kan legges til etterpå. Å velge en planlagt dato lager samtidig en Daily Commitment for datoen. Oppgaver uten dato går til Inbox.
+2. Opprettelse skal være rask: Quick Add krever tittel; planlagt dato, område og detaljer kan legges til etterpå. I levert Phase 2/3 lager valg av planlagt dag en Daily Commitment, og aktive udaterte oppgaver går til Inbox. Experience Evolution P6 endrer behandlings- og periodebegrepene eksplisitt som beskrevet nedenfor; udaterte oppgaver er allerede støttet.
 3. Life Areas organiserer handlinger og analyser. Standardnøkler: fitness, university, career, finance, home, style, food, creative, travel, personal. Brukeren kan endre visningsnavn og deaktivere områder, mens stabile nøkler brukes internt.
 4. En Task er en avgrenset handling. En Habit er en gjentakende forventning med egen logg. Et Goal er et ønsket resultat med målverdi eller dokumentert framdrift. Ikke modeller disse som samme tabell.
 5. Brukeren velger Daily Mission manuelt i V1, høyst én per lokal kalenderdag. Focus Mode kan brukes uten at tid alene automatisk gir XP.
@@ -27,14 +27,15 @@ Today svarer på «hva skal jeg gjøre nå?». Focus Mode gjør det enklere å s
 
 | Begrep | Betydning | Første leveranse |
 | --- | --- | --- |
-| Inbox | Oppgaver uten planlagt dato | V1 |
+| Inbox | Levert V1: aktive oppgaver uten planlagt dato. Etter P6: ubehandlet innhold | V1; nytt behandlingsskille i P6 |
+| Backlog | Behandlet aktiv oppgave uten gjeldende plan; ikke implementert i dag | Experience Evolution P6 |
 | Today | Planlagte og forfalte oppgaver, vaner, Daily Mission og raske handlinger | V1 |
 | Daily Commitment | En oppgave brukeren aktivt plasserer på en bestemt dag; beholdes som historisk plan | V1 |
 | Daily Mission | Dagens ene fremhevede oppgave, valgt blant egne aktive oppgaver | V1 |
 | Focus Session | Registrert start, pauser, gjenopptakelse og stopp av arbeid | V1 |
 | XP | Netto sum av uforanderlige poster for godkjente fullføringer og korreksjoner | V1 |
 | Level | Avledet av netto XP etter versjonert regel | V1 |
-| Rank | Avledet av Level etter versjonert regel | V1 |
+| Rank | Levert V1: avledet av Level. Ny selvstendig oppfølgingsrank venter på modellporten i P9 og implementering i P10 | V1; endring i Experience Evolution |
 | Reward | Brukerdefinert belønning som åpnes ved et level og kan markeres hentet én gang | V1 |
 | Life Score | Dokumentert oppfølgingsgrad for planlagte handlinger i en avgrenset periode | V2 |
 | Metric | Historisk måleserie med enhet og eksplisitt kilde | V2 |
@@ -43,6 +44,19 @@ Today svarer på «hva skal jeg gjøre nå?». Focus Mode gjør det enklere å s
 XP for Task velges ved opprettelse fra Tiny 10, Small 25, Medium 50, Large 100, Epic 200. Brukeren kan endre tier før fullføring; den tildelte verdien lagres på selve fullføringen. Vaner gir 10 XP som standard og høyst 25 XP per registrering. Små oppgaver kan samlet gi høyst 50 XP per lokal dag; vaner kan samlet gi høyst 75 XP per lokal dag. Tak gjelder nye tildelinger og endrer aldri gammel historikk. En Task fullføres én gang per aktiv fullføringssyklus. Gjenåpning lager en egen negativ ledgerpost mot nøyaktig den fullføringen, og ny fullføring oppretter en ny syklus. Ingen XP for å opprette, flytte eller slette planer, for rene fokusminutter, eller automatisk for å markere et Goal fullført. Dette demper insentivet til å lage mange små oppgaver. Et daglig XP tak gjelder ikke Medium, Large og Epic; historikk og brukerens skjønn trengs fortsatt.
 
 Level starter på 1, også dersom korrigeringer midlertidig gjør netto XP negativ; bruk da 0 som grunnlag for level. XP for overgangen fra level N til N + 1 er 500 + 100 × (N − 1). Totalgrensen for level L er summen av alle tidligere overganger, altså 500 × (L − 1) + 50 × (L − 1) × (L − 2). Beregn i én sentral tjeneste fra netto XP, aldri ved å oppdatere Level som sannhetskilde. Ranks: Bronze 1–9, Silver 10–19, Gold 20–29, Platinum 30–39, Diamond 40–49, Apex 50+. Legg regelversjon på XP poster og historiske visninger slik at framtidige justeringer er forståelige. Ingen spendable XP i V1 eller V2.
+
+## Godkjente produktendringer i Experience Evolution
+
+Dette er en forbedringsserie etter Phase 3, ikke nye produktversjoner. [EXPERIENCE_EVOLUTION_PLAN.md](EXPERIENCE_EVOLUTION_PLAN.md) skiller dagens kode fra godkjent retning, anbefalt modell og senere beslutningsporter. Endringene nedenfor er ikke påstander om ferdige funksjoner. XP-/level-/rewardreglene over videreføres; den oppgitte seksdelte levelranken beskriver dagens kode frem til P10.
+
+- Inbox betyr ubehandlet; Backlog betyr behandlet og uten gjeldende plan. Behandling krever ikke dato, livsområde eller frist. En aktiv Task kan være uten plan, ha én arbeidsdag eller en arbeidsperiode. DueDate er separat og valgfri. Et behandlet element blir ikke ubehandlet bare fordi arbeidsdatoen fjernes. P6 definerer kompatibel overgang og filtre uten å gjette tidligere brukerhensikt.
+- Task-perioder har inkluderende siste dag. Perioden skaper ikke daglige kopier, DailyCommitments eller XP-hendelser. En DailyCommitment skal fortsatt representere et eksplisitt dagvalg; P6 må prøve samspillet mellom periode, Mission, tidligere dagvalg, avlysning og gjenoppretting. Historiske rader, tider og soner beholdes, også som mulig fremtidig scoregrunnlag. Dette implementerer ingen score.
+- P7s interne tidsblokker er konkrete reservasjoner knyttet til en Task, med eksplisitt eksklusiv slutt for klokkeintervallet. De er ikke registrert Focus-tid og gir ingen XP eller automatisk Task-fullføring. Kalenderen har ingen ekstern synk. Arbeidsoversikten anbefaler den minste additive modellen og krever DST-/konflikt-/historikkverifisering før levering; DATABASE.md er fortsatt beskrivelsen av eksisterende persistens og opprinnelig blueprint.
+- Level er langsiktig XP uten normal sesongreset. Ny rank skal vise nyere bevisst planoppfølging og må være uavhengig av XP-konvertering, level og en ikke implementert Life Score. Rekkefølgen er Iron, Bronze, Silver, Gold, Platinum, Emerald, Diamond, Master, Grandmaster, Challenger. Iron–Diamond har IV, III, II, I; de siste tre har ingen divisjoner. Ingen skjult MMR, motspillere, finansielle straffer eller offentlig rangering. Poeng, vindu, minste grunnlag, pauser og terskler godkjennes i P9 etter simulering. Gamle receipts, historiske ranknavn og levelstyrte rewardclaims omskrives ikke.
+- P8s AI-hjelp kan bare foreslå ett primært livsområde, størrelse og prioritet. Datoer kan bare tolkes fra uttrykkelige tidsangivelser og krever synlig godkjenning. Tvetydighet kan gi et uavklart felt eller ett kort spørsmål. Manuell registrering fungerer alltid. Ingen modelltrening, vektordatabase, kalenderautomasjon eller fri agent. Eksterne kall krever runtime-samtykke til synlige felt og håndhevet budsjett; implementeringsgodkjenning alene er utilstrekkelig.
+- Grafitt/varm stein, rubinhandlinger, bronseprogresjon og semantisk skoggrønt (godkjent designrevisjon 14. september 2026), senere Today-3D, illustrasjoner/ikoner og kontekstuell hjelp/programguide er godkjent retning. Tidligere grønn referanse kan erstattes. P1 leverer faktiske alternativer med realistisk fiktivt innhold og får visuell godkjenning før P2. Hele flateomfanget, fire språk, lys/mørk/system og begge tettheter videreføres.
+
+Intern kalender og den strengt avgrensede AI-registreringen er eksplisitte unntak fra den opprinnelige prioriteringen, se ADR 13–15. V3 ekstern synk og V4 generell Intelligence er fortsatt utsatt. Passkeys, original Phase 4/Life Score, spesialiserte V2-moduler og generelle autonome agenter inngår ikke. Ingen av endringene krever ny autentiseringsarkitektur.
 
 ## V1: fungerende kjerne
 
