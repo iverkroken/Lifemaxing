@@ -46,16 +46,26 @@ function Shell({ user, panelTaskId }) {
   useEffect(() => {
     if (location.pathname !== '/today') return
     let observer
+    let observedHero
+    let headerHeight
+    const header = document.querySelector('header')
     const observeHero = () => {
       const hero = document.querySelector('[data-app-hero]')
-      if (!hero || observer) return
-      observer = new IntersectionObserver(([entry]) => setHeroState({ key: location.key, past: !entry.isIntersecting }), { rootMargin: `-${document.querySelector('header')?.offsetHeight || 72}px 0px 0px 0px` })
+      const nextHeight = header?.offsetHeight || 72
+      if (!hero || (hero === observedHero && nextHeight === headerHeight)) return
+      observer?.disconnect()
+      observedHero = hero
+      headerHeight = nextHeight
+      // IntersectionObserver margins are fixed at construction; the header changes height on mobile.
+      observer = new IntersectionObserver(([entry]) => setHeroState({ key: location.key, past: !entry.isIntersecting }), { rootMargin: `-${headerHeight}px 0px 0px 0px` })
       observer.observe(hero)
     }
+    const resize = new ResizeObserver(observeHero)
+    if (header) resize.observe(header)
     const mounts = new MutationObserver(observeHero)
     mounts.observe(document.getElementById('root'), { childList: true, subtree: true })
     observeHero()
-    return () => { observer?.disconnect(); mounts.disconnect() }
+    return () => { observer?.disconnect(); resize.disconnect(); mounts.disconnect() }
   }, [location.key, location.pathname])
   const today = useProductivity('/today')
   const activeFocus = useProductivity('/focus-sessions/active')
