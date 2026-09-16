@@ -263,12 +263,45 @@ public sealed class Phase3Tests(TestDatabaseFixture database)
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync($"/api/v1/rewards/{reward}/claim", new { })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync($"/api/v1/REWARDS/{reward}/CLAIM/", new { })).StatusCode);
         var other = await database.CreateOwnerAsync(app, "other-progression"); using var second = app.CreateClient(); await Login(second, other.Email, other.Password);
+        Assert.Equal(HttpStatusCode.NotFound, (await second.GetAsync($"/api/v1/rewards/{reward}")).StatusCode);
+        await SendRequest(second, HttpMethod.Patch, $"/rewards/{reward}", new { title = "Not mine" }, 404);
+        await SendRequest(second, HttpMethod.Delete, $"/rewards/{reward}", null, 404);
         await Send(second, $"/rewards/{reward}/claim", new { }, 404);
+        var unchangedReward = await Get(client, $"/rewards/{reward}");
+        Assert.Equal("Mine", unchangedReward.GetProperty("title").GetString());
+        Assert.Equal(JsonValueKind.Null, unchangedReward.GetProperty("archivedAtUtc").ValueKind);
+        Assert.Equal(JsonValueKind.Null, unchangedReward.GetProperty("claimedAtUtc").ValueKind);
         await Send(second, $"/focus-sessions/{focus}/pause", new { }, 404);
+        Assert.Equal("Running", (await Get(client, "/focus-sessions/active")).GetProperty("session").GetProperty("status").GetString());
+        await Send(client, $"/focus-sessions/{focus}/pause", new { });
+        await Send(second, $"/focus-sessions/{focus}/resume", new { }, 404);
+        Assert.Equal("Paused", (await Get(client, "/focus-sessions/active")).GetProperty("session").GetProperty("status").GetString());
+        await Send(client, $"/focus-sessions/{focus}/resume", new { });
+        await Send(second, $"/focus-sessions/{focus}/stop", new { outcome = "Cancelled" }, 404);
+        var unchangedFocus = (await Get(client, "/focus-sessions/active")).GetProperty("session");
+        Assert.Equal(focus, unchangedFocus.GetProperty("id").GetGuid());
+        Assert.Equal("Running", unchangedFocus.GetProperty("status").GetString());
         Assert.Equal(0, (await Get(second, "/activity")).GetProperty("total").GetInt32());
         Assert.Equal(0, (await Get(second, "/progress/ledger")).GetProperty("total").GetInt32());
         Assert.Equal(0, (await Get(second, "/rewards")).GetProperty("total").GetInt32());
         Assert.Equal(JsonValueKind.Null, (await Get(second, "/focus-sessions/active")).GetProperty("session").ValueKind);
+
+        var sharedActionId = Guid.NewGuid();
+        await Send(client, $"/rewards/{reward}/claim", new { }, key: sharedActionId);
+        var otherReward = (await Send(second, "/rewards", new { title = "Theirs" }, 201)).GetProperty("id").GetGuid();
+        await Send(second, $"/rewards/{otherReward}/claim", new { }, key: sharedActionId);
+        Assert.Equal(reward, (await Send(client, $"/rewards/{reward}/claim", new { }, key: sharedActionId)).GetProperty("id").GetGuid());
+        Assert.Equal(otherReward, (await Send(second, $"/rewards/{otherReward}/claim", new { }, key: sharedActionId)).GetProperty("id").GetGuid());
+        Assert.Equal(1, (await Get(client, "/activity?kind=RewardClaimed")).GetProperty("total").GetInt32());
+        Assert.Equal(1, (await Get(second, "/activity?kind=RewardClaimed")).GetProperty("total").GetInt32());
+        await using (var scope = app.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var receipts = await db.CommandReceipts.Where(x => x.ClientActionId == sharedActionId).ToListAsync();
+            Assert.Equal(2, receipts.Count);
+            Assert.Contains(receipts, x => x.UserId == owner.UserId);
+            Assert.Contains(receipts, x => x.UserId == other.UserId);
+        }
         client.DefaultRequestHeaders.Remove("X-CSRF-TOKEN"); await Send(client, $"/rewards/{reward}/claim", new { }, 400);
     }
 
@@ -290,6 +323,15 @@ public sealed class Phase3Tests(TestDatabaseFixture database)
         using var response = await client.SendAsync(request);
         Assert.True((int)response.StatusCode == expected, $"{path}: {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
         return await response.Content.ReadFromJsonAsync<JsonElement>();
+    }
+    private static async Task SendRequest(HttpClient client, HttpMethod method, string path, object? body, int expected)
+    {
+        using var request = new HttpRequestMessage(method, "/api/v1" + path)
+        {
+            Content = body is null ? null : JsonContent.Create(body)
+        };
+        using var response = await client.SendAsync(request);
+        Assert.True((int)response.StatusCode == expected, $"{method} {path}: {response.StatusCode}: {await response.Content.ReadAsStringAsync()}");
     }
     private sealed class DomainClock : TimeProvider
     {

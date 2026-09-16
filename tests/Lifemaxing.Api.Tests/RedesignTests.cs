@@ -13,6 +13,47 @@ namespace Lifemaxing.Api.Tests;
 public sealed class RedesignTests(TestDatabaseFixture database)
 {
     [Fact]
+    public async Task AreaOrderRequiresAnExactOwnedSetAndPreservesOtherFields()
+    {
+        await using var app = database.CreateApplication();
+        var owner = await database.CreateOwnerAsync(app, "order-owner");
+        var other = await database.CreateOwnerAsync(app, "order-other");
+        var inactiveId = Guid.NewGuid();
+        await using (var scope = app.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.LifeAreas.Add(new LifeArea { Id = inactiveId, UserId = owner.UserId, Key = "creative", DisplayName = "Fictional studio", IsActive = false, SortOrder = 5 });
+            await db.SaveChangesAsync();
+        }
+        using var client = app.CreateClient();
+        using var anonymous = await Send(client, HttpMethod.Put, "/api/v1/areas/order", new { areaIds = new[] { inactiveId, owner.AreaId } });
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        await SignIn(client, owner.Email, owner.Password);
+        using var noCsrf = await client.PutAsJsonAsync("/api/v1/areas/order", new { areaIds = new[] { inactiveId, owner.AreaId } });
+        Assert.Equal(HttpStatusCode.BadRequest, noCsrf.StatusCode);
+        foreach (var ids in new Guid[]?[] { null, [], [owner.AreaId], [owner.AreaId, owner.AreaId], [owner.AreaId, other.AreaId], [owner.AreaId, Guid.NewGuid()] })
+        {
+            using var invalid = await Send(client, HttpMethod.Put, "/api/v1/areas/order", new { areaIds = ids });
+            Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+            var unchanged = await client.GetFromJsonAsync<JsonElement[]>("/api/v1/areas");
+            Assert.Equal(owner.AreaId, unchanged![0].GetProperty("id").GetGuid());
+            Assert.Equal(5, unchanged[1].GetProperty("sortOrder").GetInt32());
+        }
+        using var saved = await Send(client, HttpMethod.Put, "/api/v1/areas/order", new { areaIds = new[] { inactiveId, owner.AreaId } });
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        using var renamed = await Send(client, HttpMethod.Patch, $"/api/v1/areas/{owner.AreaId}", new { displayName = "Renamed fictional area", isActive = true });
+        Assert.Equal(HttpStatusCode.OK, renamed.StatusCode);
+        var persisted = await client.GetFromJsonAsync<JsonElement[]>("/api/v1/areas");
+        Assert.Equal(inactiveId, persisted![0].GetProperty("id").GetGuid());
+        Assert.False(persisted[0].GetProperty("isActive").GetBoolean());
+        Assert.Equal("Fictional studio", persisted[0].GetProperty("displayName").GetString());
+        Assert.Equal(1, persisted[1].GetProperty("sortOrder").GetInt32());
+        await using var verification = app.Services.CreateAsyncScope();
+        var otherArea = await verification.ServiceProvider.GetRequiredService<AppDbContext>().LifeAreas.SingleAsync(area => area.Id == other.AreaId);
+        Assert.Equal(0, otherArea.SortOrder);
+    }
+
+    [Fact]
     public async Task PreferencesAreIndependentValidatedPersistedAndOwnerScoped()
     {
         await using var app = database.CreateApplication();

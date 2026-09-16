@@ -39,6 +39,31 @@ public static class AreaEndpoints
             return Results.Ok(response);
         });
 
+        areas.MapPut("/order", async (UpdateAreaOrderRequest request, ClaimsPrincipal principal, AppDbContext db, CancellationToken ct) =>
+        {
+            var userId = principal.GetUserId();
+            var owned = await db.LifeAreas.Where(area => area.UserId == userId).ToListAsync(ct);
+            var ids = request.AreaIds;
+            if (ids is null || ids.Length != owned.Count || ids.Distinct().Count() != ids.Length ||
+                !ids.ToHashSet().SetEquals(owned.Select(area => area.Id)))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["areaIds"] = ["Supply each of your Life Areas exactly once."]
+                }, extensions: new Dictionary<string, object?> { ["code"] = "validation_failed" });
+
+            var byId = owned.ToDictionary(area => area.Id);
+            // Mark every position modified: a concurrent complete order must never produce a hybrid.
+            for (var index = 0; index < ids.Length; index++)
+            {
+                byId[ids[index]].SortOrder = index;
+                db.Entry(byId[ids[index]]).Property(area => area.SortOrder).IsModified = true;
+            }
+            // EF saves all updates in a single transaction; no names or activation flags are changed.
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(ids.Select(id => byId[id]).Select(area =>
+                new AreaResponse(area.Id, area.Key, area.DisplayName, area.IsActive, area.SortOrder)));
+        }).ValidateAntiforgery();
+
         areas.MapPatch("/{id:guid}", async (Guid id, UpdateAreaRequest request, ClaimsPrincipal principal, AppDbContext db, CancellationToken cancellationToken) =>
         {
             var displayName = request.DisplayName?.Trim();
@@ -69,7 +94,7 @@ public static class AreaEndpoints
             }
 
             area.DisplayName = displayName!;
-            area.SortOrder = request.SortOrder;
+            if (request.SortOrder is { } sortOrder) area.SortOrder = sortOrder;
             area.IsActive = request.IsActive;
             await db.SaveChangesAsync(cancellationToken);
             return Results.Ok(new AreaResponse(area.Id, area.Key, area.DisplayName, area.IsActive, area.SortOrder));
@@ -78,4 +103,5 @@ public static class AreaEndpoints
 }
 
 public sealed record AreaResponse(Guid Id, string Key, string DisplayName, bool IsActive, int SortOrder);
-public sealed record UpdateAreaRequest(string? DisplayName, bool IsActive, int SortOrder);
+public sealed record UpdateAreaRequest(string? DisplayName, bool IsActive, int? SortOrder);
+public sealed record UpdateAreaOrderRequest(Guid[]? AreaIds);
