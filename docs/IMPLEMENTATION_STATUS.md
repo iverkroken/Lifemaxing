@@ -1,8 +1,104 @@
 # LIFEMAXING Implementation Status
 
+## Life Areas filters and whole-card dragging - 17 September 2026
+
+COMPLETE implementation; account-specific live save confirmation remains pending. Filter opens a responsive panel for My layout, localized alphabetical order, most/fewest open tasks, active goals and active habits, plus all/active/inactive and with/without content. Choices use URL parameters, combine without writes, preserve saved order for ties, and can be reset. Unknown counts are not zero; count-dependent controls/views wait for complete counts. Personal is a standard card under automatic sorting and wide in My layout. Customize layout clears viewing filters and edits the complete owned collection.
+
+Drag can start on the image, heading or non-interactive card surface. Native image dragging is disabled in editing; interactive move buttons remain separate, keyboard controls and focus remain available. Touch uses hold-to-drag while quick swipes continue scrolling. Save 404 now explains that the running API lacks layout saving, preserving the draft.
+
+The user's running Debug API predated the order endpoint. Replaced the verified project watcher/API processes with the current Debug API; normal Vite on 5173 now forwards PUT /api/v1/areas/order to an authenticated route (anonymous request returns 401). dev:api now uses watch --no-hot-reload so backend changes restart startup endpoint registration rather than leave a stale route table. Vite HMR remains unchanged. No backend contract/schema/authentication changes. A live authenticated check was attempted using local provisioning credentials, but login returned 401; no password reset, auth bypass or account-data mutation was performed. User was asked to retry Save in their existing session; do not claim that account-specific confirmation was obtained without a response.
+
+Verification: production frontend build and lint passed, frontend 52/52 plus launcher 3/3 passed; Release backend build passed with no warnings and relevant PostgreSQL-backed RedesignTests 4/4 passed. Seven relevant Chromium scenarios passed across the suite and focused rerun: filters/count ordering/missing counts/URL reload, save 503 and 404 recovery/readback, image/text dragging and Escape, touch hold and swipe scrolling, existing all-image/responsive/edit flows, filtered Tasks/Goals/Habits navigation and four-language enlarged text. The first cold login exceeded the old test helper's 5-second navigation wait during concurrent builds; trace showed the login request still pending, so the helper now allows 15 seconds and the focused rerun passed. Desktop/light and mobile/dark filter screenshots were inspected. Evidence is ignored under artifacts/area-filters*. Isolated databases and services were cleaned up; the updated normal development API remains running.
+
+Three new filter UI/logic/test files are tracked. Existing images, layout proportions and prior work are preserved. No commit or push.
+
+## Life Areas layout editor - 17 September 2026
+
+COMPLETE. Customize layout (Tilpass oppsett) opens a local draft with drag handles, a compact overlay, drop markers, translated move-earlier/later controls and Save layout/Cancel. Keyboard and touch users can use the same move buttons; touch dragging uses a short hold. Entry/exit focus, movement announcements, reduced motion, pending-save disabling and retryable errors are handled. Existing navigation and metadata editing return on exit.
+
+The existing default order is preserved, with Personal at the bottom until moved. Ordinary cards reorder freely within the shared grid. Personal can occupy any complete desktop row boundary (before 0, 3, 6 or 9 ordinary cards), including the top; moving ordinary cards preserves that boundary. Its wide presentation now comes from shared areaPresentation.js metadata, alongside the unchanged images and crop positions, instead of a Personal-specific CSS selector. Tablet/mobile retain the same saved sequence and responsive dimensions. Legacy non-boundary positions are normalized only in the draft and persisted only on Save.
+
+PUT /api/v1/areas/order validates the exact complete owned set (including inactive areas), rejects duplicate/missing/foreign/unknown IDs and atomically updates existing SortOrder values. Authentication and CSRF are enforced. Names, activation and other users remain unchanged. No migration. The raw sort-order field was removed from the metadata dialog; optional PATCH compatibility remains. No browser storage of user layout and no duplicate configuration system. @dnd-kit/react is pinned at 0.5.0.
+
+Verification: frontend production build and lint passed; frontend 50/50 and launcher 3/3 passed, with 5 focused layout/translation tests passing again after final copy changes. Backend Release build passed without warnings and PostgreSQL-backed suite passed 56/56, including new order/ownership/authentication/CSRF/invalid-set checks. Six relevant Chromium scenarios passed across the final suite and touch rerun: draft/cancel/failure/retry/reload, every wide row via keyboard, pointer reorder/Escape, touch drag/buttons with dark theme and reduced motion, all image mappings across 320-1920px/both themes, existing editing and filtered navigation, four-language enlarged-text/touch controls. The initial touch test incorrectly moved before the library's hold threshold; it now waits for drag activation and passes. Desktop/light and mobile/light/dark screenshots inspected. No page errors in the tested layout flow; runtime logs contain no application errors (existing split-server static-root and antiforgery cache warnings remain). Physical-device/screen-reader certification was not performed.
+
+Evidence stays ignored under artifacts/area-layout*, with temporary databases/services cleaned up. Five shared source/test files added to tracking; prior work and staging preserved. No commit or push. Do not rebuild this as a second layout system or restore positional hardcoding.
+
+## Personal full-width desktop card - 17 September 2026
+
+COMPLETE. Personal spans all three grid columns from 1200px, with equal image/content halves and a 20rem minimum height. The image fills the left half with existing cover/position metadata; content can grow and reserves room for the upper-right editor, with controls at the bottom. Below 1200px the original stacked card remains. This is a scoped CSS change; all image assignments, other cards, user sorting, routes, counts and shared interactions are preserved.
+
+Verification: production frontend build, lint and diff whitespace check passed. Existing focused Chromium suite passed 5/5 with isolated PostgreSQL: seven widths 320-1920px, both themes, image decoding, editing, filtered navigation and reload, hover without neighbor shifts, keyboard, reduced motion, missing images, four languages with 200% text and touch. Desktop/light, laptop/dark and mobile screenshots inspected; the Personal row spans the desktop grid and mobile stays stacked. Evidence remains ignored in artifacts/area-personal-wide, including artwork/chromium/areas-images-Light-1440.png. Disposable database/services cleaned up. No new project files, backend changes, commit or push; existing staging preserved.
+
+
+## Life Areas interaction and controls - 16 September 2026
+
+COMPLETE. Shared cards now use restrained 1% scaling, 2px lift, soft elevation and area-tone glow for precise-pointer hover and visible keyboard focus. Reduced motion removes transforms/transitions while keeping static feedback; an open editor disables the card effect. Cards remain semantic sections, with no extra click handler or tab stop.
+
+Tasks/Goals/Habits are three equal secondary link controls with translated labels and live counts, zero preserved and unavailable counts shown as a dash. Arrows removed; shared theme/control tokens provide hover, focus and pressed feedback. Existing areaId routes and backend filtering are unchanged; Habits continues opening its filtered library.
+
+As explicitly approved, media height is now 16rem desktop/tablet and 14rem mobile, revealing more of Personal and Fitness while preserving cover scaling, all source assets and positions. Source and position metadata are together in the existing AreaPage artwork map; prior per-area image-position CSS rules were removed. This supersedes earlier media-height and mapping-shape notes.
+
+Verification: frontend 47/47 plus launcher 3/3, lint and production build passed. Four focused Chromium checks passed, plus one additional language/touch check (5 passed across two runs). All ten cards hovered in both themes without neighbor layout shifts; keyboard focus, pressed feedback, reduced motion and dialog suppression passed. Real isolated PostgreSQL fixtures proved Tasks/Fitness, Goals/Travel and Habits/Personal filtering, exclusion of other-area content and selected-filter persistence after reload. All ten images decoded at 1920/1440/1280/1024/768/390/320px in both themes. Desktop, tablet and mobile screenshots inspected, including improved Personal/Fitness crops. Four languages at 320px with 200% text and an emulated touch device passed without overflow. No console errors in tested card flows. Missing artwork remains covered.
+
+Evidence stays ignored in artifacts/area-interaction and artifacts/area-interaction-language; disposable database/services cleaned up. No new project files, assets, API/schema changes or unrelated page redesign. Existing staging preserved; no commit or push.
+
+
+## Home and Personal image replacement - 16 September 2026
+
+COMPLETE. The latest approved mappings supersede the previous locked choices: Home & Plants uses toscana.jpg with object-position 50% 45%; Personal uses personal.jpg with its existing 50% 72% position. The shared AreaPage mapping, 14rem/12rem media heights, cover scaling, grid and all other assignments remain unchanged. Home.jpg and self respect.jpg are retained but now unused, alongside the previously listed unused assets. No API or database changes.
+
+Production frontend build and lint passed. The focused Chromium Life Area test passed 1/1 against production preview and isolated PostgreSQL, verifying all ten mappings, decoded images, no overflow at seven widths (320-1920px), both themes, editing and persistence. No console errors in the image flow. Desktop/light and mobile/dark screenshots visually inspected; house, vineyard, person and computer are visible. Evidence stays ignored in artifacts/area-home-personal; disposable services/database cleaned up. Both new images added to Git tracking; no commit or push.
+
+
+## Life Areas visual follow-up - 16 September 2026
+
+COMPLETE. University now uses the inspected Tesla.jpg in the existing stable-key artwork mapping. Media height increased from 10rem to 14rem (desktop/tablet) and from 9rem to 12rem (mobile below 640px). The 3/2/1 grid, card widths, spacing and text surfaces remain unchanged. Focal positions: University 50% 55%, Personal 50% 72%, Home 50% 30%, Fitness 50% 46%. Other image mappings and positions are preserved. This supersedes the earlier University SVG and media-height notes; the SVG fallback remains available for unmapped keys.
+
+Verification: frontend 47/47 plus launcher 3/3, lint and production build passed. Focused Chromium checks passed 3/3 against production preview and isolated PostgreSQL: ten images loaded at 1920/1440/1280/1024/768/390/320px in both themes, no horizontal overflow or console errors in the image flow; editing/persistence, navigation, keyboard, reduced motion, 200% text and missing images remain covered. Screenshots inspected at large desktop, laptop, tablet and mobile; Tesla, Personal, Home and Fitness subjects are visible and remaining compositions preserved. Evidence remains ignored in artifacts/area-proportions; disposable database/services were cleaned up. Tesla.jpg added to Git tracking without renaming or modifying bytes. No API/schema changes, commit or push.
+
+
+## Life Areas image integration - 16 September 2026
+
+Implemented the approved seven locked mappings in the existing AreaPage artwork map: Food/cooking.jpg, Travel/Polo 1.jpg, Career/Work.jpg, Personal/self respect.jpg, Creative/Tutto passo.png (explicitly approved PNG), Home/Home.jpg and Fitness/Ronaldo.jpg. Finance/Money.png and Style/Rolex.png remain; University retains its SVG. Existing image dimensions, responsive grid, readable content, ownership and functionality are preserved. Per-image focal positions improve cropping. No API/schema/migration changes.
+
+Four supplied assets remain intentionally unused: Micheal jackson.jpg, Polo 2.jpg, Porsche.jpg and no risk no story.jpg. All ten new supplied assets were visually inspected and added to tracking without renaming. The complete assignments and preservation rules are in V2_STATUS.md; current design notes were updated.
+
+- COMPLETE. Verification: frontend 47/47 plus launcher 3/3, lint and production build passed. Focused Chromium browser checks 3/3 passed against production preview and an isolated PostgreSQL database: all nine images decoded at 1440/1024/768/390/320px in both themes; renamed area retained artwork after reload; editing, links, keyboard, reduced motion, 200% text and missing-image behavior passed. No browser console errors in the image flow. Desktop, compact and mobile screenshots inspected; portrait/landscape focal positions adjusted without changing card layout. Evidence stays ignored under artifacts/area-images-final; disposable test database and services cleaned up. No backend code or schema changed.
+
+
+## V2 Prompt 1 — existing-product audit, 16 September 2026
+
+The approved audit is implemented and verified within the documented scope. The shared handoff for Prompt 1/2/3 is [V2_STATUS.md](V2_STATUS.md), including remaining deployment work and historical symptoms not independently reproduced. These prompt numbers do not replace the original roadmap or historical Experience Evolution numbering.
+
+Verified existing capabilities were preserved: artwork-led Today, Plan as Tasks/Goals/Habits/Inbox navigation, top navigation and closed drawer, ten Life Area identities, shared search/dialog/forms, both themes, four languages, persisted Focus, progression/history/rewards, cookie authentication and Remember Me. No new feature phase, public registration, backend contract, schema, migration, dependency or artwork replacement was introduced.
+
+Changes:
+
+- Fixed the shared active-link hover rule that produced a second underline. A browser regression failed before the fix and passed afterward across all five navigation groups, both themes and keyboard focus states.
+- Fixed Today header artwork detection after resizing across the desktop/mobile header-height breakpoint. IntersectionObserver's fixed root margin is rebuilt when the actual header height changes. The 68px boundary test failed before the fix and passed desktop → mobile → desktop afterward. This does not establish the cause of every earlier text-scaling report.
+- Gave the first-task onboarding button its own row below 640px after a 320px screenshot showed compressed, broken-word copy. Kept the existing card, tokens and artwork.
+- Expanded two-account Rewards/Focus tests to verify foreign read/write rejection, unchanged victim state and independent same-key command receipts/replays. No exposed ownership defect was found in the bounded source/API audit.
+- Corrected the existing 0/3/30/300-task browser test: its capture call previously passed viewport width as browser name and never changed the viewport. It now tests actual 390px and 1440px layouts. Screenshot helpers finish animations for stable evidence.
+- Updated the README overview and local-production environment checklist. Historical design studies remain isolated with their builds/tests/licenses; no proven dead production implementation was found for safe deletion.
+
+Fresh verification: frontend 47/47 plus launcher 3/3, lint and production build pass; backend Release build/test 55/55 with no failures/skips; host publish and Docker build pass. Final Chromium built-app suite 15/15; Firefox 14/15 plus the sole failed all-route check passing unchanged on focused rerun (1/1). The initial Firefox local-font warning and trace remain documented, not suppressed. All 11 isolated real-database browser regressions pass, including API/browser restart, Remember Me and historical data persistence. Production container foundation checks pass 2/2, plus liveness, SPA fallback, non-root user, protected key directory and restart connectivity. Public HTTPS authentication/deployment and physical-device certification are not claimed.
+
+Fresh screenshots of main routes and interactive surfaces were inspected; corrected 320px onboarding and actual mobile task-scale captures confirmed in both engines. Semantic contrast checks pass for 134 pairs per theme/density. Independent source/change reviews and the changed-UI detector found no remaining actionable issue. No safe production deletion was identified; supplied PNG bytes remain identical.
+
+Git: the earlier development-command changes and two staged launcher files were preserved. The reviewed V2 ledger was added by explicit path; no unexplained nonignored untracked project files remain. Evidence, disposable test output, local secrets, builds and verification scripts remain ignored. Test-owned databases/container/key volume/services were cleaned up; the user's running API/Vite were preserved. No commit, push or branch operation occurred.
+
 ## Current delivery - complete artwork product redesign, 15 September 2026
 
 The approved full redesign is implemented across the existing application. This replaces the earlier foundation-only delivery below. The current visual authority is [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md); the execution record is [the artwork redesign plan](superpowers/plans/2026-09-15-artwork-product-redesign.md).
+
+### Local development workflow maintenance — 16 September 2026
+
+- Root `npm run dev` now ensures the existing PostgreSQL Compose service is healthy, then owns the ASP.NET Core watch process and Vite together. `Ctrl+C` stops both application processes; the persistent database remains running.
+- `dev:db`, `dev:api` and `dev:client` remain available for isolated work. Fixed ports still fail explicitly when an earlier process is active rather than silently changing origins or terminating unrelated processes.
+- A small launcher resolves the SDK selected by `global.json` from normal and Windows per-user .NET locations. This removes the observed Rider-terminal mismatch where system `dotnet` could not load SDK 10.0.401 even though the SDK was installed for the user.
+- Database migrations remain an explicit reviewed operation and are not run by ordinary development startup.
+- Verification: clean `npm ci` reported zero vulnerabilities; the full stack returned 200 from API health, Vite and proxied health; duplicate startup failed on the fixed port and cleaned up only its new processes; `Ctrl+C` released 5080/5173 while PostgreSQL remained healthy. Frontend lint/build, 3 launcher tests, 47 frontend tests, Release backend build with zero warnings/errors and all 55 backend tests passed.
 
 ### Delivered
 
