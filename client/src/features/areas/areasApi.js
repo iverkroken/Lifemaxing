@@ -7,6 +7,10 @@ export function getAreas(signal) {
 export function updateArea(area) {
   return apiRequest(`/areas/${area.id}`, {
     method: 'PATCH',
-    body: { displayName: area.displayName, isActive: area.isActive, sortOrder: area.sortOrder },
+    body: { displayName: area.displayName, isActive: area.isActive },
   })
+}
+
+export function updateAreaOrder(areaIds) {
+  return apiRequest('/areas/order', { method: 'PUT', body: { areaIds } })
 }
