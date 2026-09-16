@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Dialog } from '../../shared/ui/Dialog.jsx'
 import { useLanguage } from '../settings/language.js'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Link, useOutletContext } from 'react-router'
+import { useOutletContext, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
@@ -15,48 +15,35 @@ import { getAreas, updateArea } from './areasApi.js'
 import styles from './AreaPage.module.css'
 import shared from '../../shared/ui/Productivity.module.css'
 import { useProductivity } from '../../shared/api/productivity.js'
-import { AreaArtwork } from './AreaArtwork.jsx'
+import { AreaCard } from './AreaCard.jsx'
+import { AreaLayoutEditor } from './AreaLayoutEditor.jsx'
+import { AreaFilters } from './AreaFilters.jsx'
+import { filterAreas, hasAreaCounts, needsAreaCounts, readAreaFilters } from './areaFilters.js'
 
 const areaSchema = z.object({
   displayName: z.string().trim().min(1, 'Enter a display name.').max(100, 'Use 100 characters or fewer.'),
-  sortOrder: z.coerce.number().int().min(0).max(999),
   isActive: z.boolean(),
 })
-const descriptions = {
-  fitness: 'Energy, movement and feeling well.', university: 'Learning, curiosity and academic life.', career: 'Meaningful work and what comes next.',
-  finance: 'Clarity and intention with money.', home: 'Care for the spaces you call home.', style: 'How you choose to express yourself.',
-  food: 'Nourishment and the joy of cooking.', creative: 'Ideas, experiments and things you make.', travel: 'Places to discover and experiences to plan.', personal: 'The things that are simply yours.',
-}
 
-const artwork = { finance: '/images/Money.png', style: '/images/Rolex.png' }
-
-function AreaEditor({ area, queryKey, counts }) {
+function AreaEditor({ area, queryKey, counts, compact }) {
   const { t, areaName, errorMessage } = useLanguage()
   const [editing, setEditing] = useState(false)
   const queryClient = useQueryClient()
-  const form = useForm({ resolver: zodResolver(areaSchema), defaultValues: { displayName: area.displayName, sortOrder: area.sortOrder, isActive: area.isActive } })
+  const form = useForm({ resolver: zodResolver(areaSchema), defaultValues: { displayName: area.displayName, isActive: area.isActive } })
   const mutation = useMutation({
     mutationFn: values => updateArea({ id: area.id, ...values }),
     onSuccess: saved => {
       queryClient.setQueryData(queryKey, current => current.map(value => value.id === saved.id ? saved : value)
         .sort((left, right) => left.sortOrder - right.sortOrder || left.key.localeCompare(right.key)))
       queryClient.invalidateQueries({ queryKey: ['productivity'] })
-      form.reset({ displayName: saved.displayName, sortOrder: saved.sortOrder, isActive: saved.isActive })
+      form.reset({ displayName: saved.displayName, isActive: saved.isActive })
     },
   })
-  return <section className={styles.area} data-area={area.key} data-active={area.isActive} aria-label={areaName(area)}>
-    <div className={styles.artwork}>{artwork[area.key] ? <img src={artwork[area.key]} alt="" loading="lazy" /> : <AreaArtwork areaKey={area.key} />}</div>
-    <div className={styles.areaTop}>{!area.isActive && <span>{t("Inactive")}</span>}<Button variant="ghost" size="small" aria-label={`${t("Edit Life Area")}: ${areaName(area)}`} onClick={() => setEditing(true)}><Icon name="more" /></Button></div>
-    <div className={styles.content}>
-    <h2><Link to={`/tasks?areaId=${area.id}`}>{areaName(area)}</Link></h2><p className={styles.description}>{t(descriptions[area.key] || 'A meaningful part of your life.')}</p>
-    <div className={styles.links}>{['tasks', 'goals', 'habits'].map(kind =>
-      <Link key={kind} to={`/${kind}?areaId=${area.id}`}>{t('areaCount_' + kind, { count: counts?.[kind] ?? '—' })} <Icon name="arrow" size={16} /></Link>)}</div>
-    </div>
+  return <AreaCard area={area} counts={counts} compact={compact} editing={editing} action={<Button variant="ghost" size="small" aria-label={`${t("Edit Life Area")}: ${areaName(area)}`} onClick={() => setEditing(true)}><Icon name="more" /></Button>}>
     <Dialog open={editing} onClose={() => setEditing(false)} title={t("Edit Life Area")}>
       <form className={styles.editor} onSubmit={form.handleSubmit(values => mutation.mutate(values))} noValidate>
         <fieldset disabled={mutation.isPending} className={shared.formFields}>
           <Input label={t("Display name")} required error={form.formState.errors.displayName} {...form.register('displayName')} />
-          <Input label={t("Sort order")} type="number" inputMode="numeric" min="0" max="999" required error={form.formState.errors.sortOrder} {...form.register('sortOrder')} />
           <label className={styles.toggle}><input type="checkbox" {...form.register('isActive')} />{t("Active")}</label>
           {mutation.isError && <p role="alert" className={shared.error}>{errorMessage(mutation.error)}</p>}
           {mutation.isSuccess && <p role="status" className={shared.feedback}>{t("Changes saved.")}</p>}
@@ -64,21 +51,47 @@ function AreaEditor({ area, queryKey, counts }) {
         </fieldset>
       </form>
     </Dialog>
-  </section>
+  </AreaCard>
 }
 
 export function AreaPage() {
-  const { t } = useLanguage()
+  const { t, areaName, language } = useLanguage()
+  const [params, setParams] = useSearchParams()
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const filters = readAreaFilters(params)
+  const selectedFilters = Number(filters.sort !== "custom") + Number(filters.status !== "all") + Number(filters.content !== "all")
+  const changeFilter = (key, value) => setParams(current => {
+    const next = new URLSearchParams(current)
+    if (value === "custom" || value === "all") next.delete(key); else next.set(key, value)
+    return next
+  }, { replace: true })
+  const resetFilters = () => setParams(current => {
+    const next = new URLSearchParams(current)
+    for (const key of ["sort", "status", "content"]) next.delete(key)
+    return next
+  }, { replace: true })
   const { user } = useOutletContext()
+  const [layoutEditing, setLayoutEditing] = useState(false)
+  const customizeButton = useRef(null)
+  const closeLayout = () => {
+    setLayoutEditing(false)
+    requestAnimationFrame(() => customizeButton.current?.focus())
+  }
   const queryKey = ['areas', user.id]
   const areas = useQuery({ queryKey, queryFn: ({ signal }) => getAreas(signal) })
   const counts = useProductivity('/areas/counts')
+  const countsReady = counts.isSuccess && hasAreaCounts(areas.data || [], counts.data)
+  const viewReady = !needsAreaCounts(filters) || countsReady
+  const visibleAreas = viewReady ? filterAreas(areas.data || [], counts.data, filters, areaName, language) : []
   return <div className={shared.stack}>
-    <PageHeader editorial title={t("Life Areas")} description={t("Find the tasks, goals and routines that belong to each part of your life.")} />
+    <PageHeader action={!layoutEditing && <div className={styles.layoutActions}><Button variant="secondary" aria-expanded={filtersOpen} aria-controls="area-filters" onClick={() => setFiltersOpen(open => !open)}><Icon name="settings" />{t("areaFilters")}{selectedFilters > 0 && ` (${selectedFilters})`}</Button><Button ref={customizeButton} variant="secondary" disabled={!areas.data?.length} onClick={() => { resetFilters(); setFiltersOpen(false); setLayoutEditing(true) }}><Icon name="settings" />{t("customizeLayout")}</Button></div>} editorial title={t("Life Areas")} description={t("Find the tasks, goals and routines that belong to each part of your life.")} />
     {areas.isSuccess && <div className={styles.overview}><span><strong>{areas.data.filter(area => area.isActive).length}</strong>{t("active areas")}</span></div>}
+    {!layoutEditing && filtersOpen && <AreaFilters filters={filters} change={changeFilter} reset={resetFilters} countsReady={countsReady} />}
+    {!layoutEditing && areas.isSuccess && <p className={styles.layoutStatus} role="status">{viewReady ? t("areaResults", { count: visibleAreas.length, total: areas.data.length }) : t("areaCountsUnavailable")} {selectedFilters > 0 && <Button variant="ghost" size="small" onClick={resetFilters}>{t("areaReset")}</Button>}</p>}
     <QueryFeedback query={areas} />
     <QueryFeedback query={counts} />
     {areas.isSuccess && areas.data.length === 0 && <p>{t("No Life Areas are available for this account.")}</p>}
-    {areas.isSuccess && <div className={styles.grid}>{areas.data.map(area => <AreaEditor key={area.id} area={area} queryKey={queryKey} counts={counts.isSuccess ? counts.data.find(value => value.id === area.id) : undefined} />)}</div>}
+    {!layoutEditing && areas.data?.length > 0 && viewReady && visibleAreas.length === 0 && <p>{t("areaNoResults")}</p>}
+    {areas.isSuccess && (layoutEditing ? <AreaLayoutEditor areas={areas.data} queryKey={queryKey} onClose={closeLayout} /> : <div className={styles.grid}>{visibleAreas.map(area => <AreaEditor compact={filters.sort !== "custom"} key={area.id} area={area} queryKey={queryKey} counts={counts.isSuccess ? counts.data.find(value => value.id === area.id) : undefined} />)}</div>)}
   </div>
 }
