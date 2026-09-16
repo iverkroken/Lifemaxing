@@ -66,6 +66,10 @@
 .steps > div > div { flex: 1; }
 .steps strong { font-size: var(--text-sm); font-weight: 500; }
 .steps p { color: var(--color-text-muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
+@media (max-width: 639px) {
+  .steps > div:first-child { display: grid; grid-template-columns: auto minmax(0, 1fr); }
+  .steps > div:first-child > button { grid-column: 1 / -1; justify-self: start; }
+}
 @container (min-width: 60rem) {
   .layout { grid-template-columns: minmax(0, 1.75fr) minmax(18rem, 1fr); column-gap: var(--space-12); }
   .mission, .pickMission, .work, .history, .feedback { grid-column: 1; }

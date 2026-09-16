@@ -5,7 +5,7 @@
 .primary { display: flex; align-items: center; gap: var(--space-8); }
 .primary a { display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-height); color: inherit; font-size: var(--text-sm); text-decoration: none; border-bottom: 2px solid transparent; }
 .primary a[aria-current='true'] { border-bottom-color: currentColor; font-weight: 600; }
-.primary a:hover { text-decoration: underline; text-underline-offset: var(--space-2); }
+.primary a:not([aria-current='true']):hover { text-decoration: underline; text-underline-offset: var(--space-2); }
 .controls { justify-self: end; display: flex; gap: var(--space-2); }
 .controls button { display: grid; place-items: center; width: var(--control-height); height: var(--control-height); border: 0; border-radius: var(--radius-control); background: transparent; color: inherit; cursor: pointer; }
 .controls button:hover { background: var(--color-hover); color: var(--color-text); }
