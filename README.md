@@ -1,6 +1,6 @@
 # LIFEMAXING
 
-A personal operating system for planning, execution and progress. Phase 2 adds Today, Tasks, Inbox, Daily Commitments and Mission, Habits with schedule/log history, Goals with progress history, and Quick Add to the private Phase 1 foundation.
+A personal operating system for planning, execution and progress. The current private workspace includes Today, Tasks/Inbox, daily commitments and mission, Habits, Goals, Life Areas, persisted Focus, XP/progress, Activity, Rewards and Settings. It uses the approved artwork design with responsive top navigation and a menu drawer. See [implementation status](docs/IMPLEMENTATION_STATUS.md) and the [V2 audit ledger](docs/V2_STATUS.md) for delivered behavior, verification and deliberate future boundaries.
 
 ## Prerequisites
 
@@ -9,14 +9,14 @@ A personal operating system for planning, execution and progress. Phase 2 adds T
 - Docker with a running Linux container engine and Docker Compose v2.
 - Rider can open `LIFEMAXING.sln` and run the API's `http` profile.
 
-On this Windows development machine, .NET 10 was installed per-user at `%LOCALAPPDATA%\Microsoft\dotnet`. Select that `dotnet.exe` in Rider's toolset settings, or prepend it for each PowerShell terminal:
+On this Windows development machine, .NET 10 was installed per-user at `%LOCALAPPDATA%\Microsoft\dotnet`. Select that `dotnet.exe` in Rider's toolset settings, or prepend it for direct PowerShell commands:
 
 ```powershell
 $env:PATH = "$env:LOCALAPPDATA\Microsoft\dotnet;$env:PATH"
 dotnet --version
 ```
 
-On another machine, a normal installation of the matching SDK works. All commands below run from the repository root. Three separate processes are used during development.
+On another machine, a normal installation of the matching SDK works. All commands below run from the repository root. The root development command also checks the normal and per-user .NET locations, so it can find the SDK selected by `global.json` even when an older system installation appears first in `PATH`.
 
 ## 1. Start PostgreSQL
 
@@ -47,12 +47,11 @@ Remove-Variable databasePassword, databaseSecrets
 
 `-MaskInput` requires PowerShell 7. On Windows PowerShell 5.1, enter the connection string through Rider's User Secrets editor instead. Never paste credentials into tracked settings or share secret-store contents. On this machine, the Phase 0 setup already created `.env` and configured User Secrets; preserve those files/settings.
 
-Apply reviewed migrations explicitly before starting the API:
+Apply reviewed migrations explicitly after schema changes:
 
 ```powershell
 dotnet tool restore
 dotnet tool run dotnet-ef database update --project server/Lifemaxing.Api
-dotnet run --project server/Lifemaxing.Api --launch-profile http
 ```
 
 EF applies each migration in a transaction and records it in `__EFMigrationsHistory`. Normal application startup does not run migrations. Review an idempotent SQL script before a shared or production update with:
@@ -92,14 +91,26 @@ dotnet user-secrets remove 'OwnerProvisioning:Email' --project server/Lifemaxing
 
 The command refuses to run if any account already exists. It creates the owner, default `Europe/Oslo` / `nb-NO` settings, and all ten documented Life Areas in one database transaction. It never runs during ordinary startup. On Windows PowerShell 5.1, use Rider's User Secrets editor for the password because `Read-Host -MaskInput` requires PowerShell 7.
 
-## 3. Start the client
+## 3. Start local development
 
-In a separate terminal:
+After the one-time setup above, the normal daily command is:
 
 ```powershell
 npm ci
 npm run dev
 ```
+
+`npm run dev` ensures PostgreSQL is running and healthy, then starts the API with `dotnet watch --no-hot-reload` and the client with Vite in the same terminal. The API compiles once at startup, then rebuilds incrementally and restarts when backend source changes so newly registered endpoints take effect; frontend changes use Vite hot reload and do not rebuild the API. Press `Ctrl+C` in that terminal to stop both application processes. PostgreSQL intentionally remains running in its persistent container.
+
+Use the component commands only when working on one part in isolation:
+
+```powershell
+npm run dev:db
+npm run dev:api
+npm run dev:client
+```
+
+Ports remain fixed at `5080` and `5173`. If startup reports that either port is already in use, an earlier API, Vite or Rider run configuration is still active. Return to the terminal or Rider run window that owns it and press `Ctrl+C` or Stop, then run `npm run dev` again. Do not terminate every `node` or `dotnet` process because Rider and other tools use them too.
 
 Open `http://127.0.0.1:5173`. `/` checks `/api/v1/auth/me` and sends an anonymous visitor to `/login` or the authenticated owner to `/today`. Sign in with the provisioned account. Vite proxies `/api/v1` and `/health` to port 5080; the client always uses relative URLs. No CORS setup or frontend secrets are needed.
 
@@ -166,7 +177,7 @@ To run the public checks against the local production container, set `$env:SMOKE
 The multi-stage Dockerfile builds the client, publishes the API, copies the client into `wwwroot`, and runs as the .NET image's non-root user. Node is only used during the build.
 
 ```powershell
-docker build -t lifemaxing:phase1 .
+docker build -t lifemaxing:local .
 ```
 
 Create an ignored `.env.container` containing a connection string with the local database password (replace the placeholder):
@@ -178,7 +189,7 @@ ConnectionStrings__Database=Host=db;Port=5432;Database=lifemaxing;Username=lifem
 With the database running:
 
 ```powershell
-docker run --rm --name lifemaxing-phase1 --network lifemaxing_default --env-file .env.container --mount type=volume,source=lifemaxing-production-keys,target=/var/lib/lifemaxing/keys -p 127.0.0.1:8080:8080 lifemaxing:phase1
+docker run --rm --name lifemaxing-local --network lifemaxing_default --env-file .env.container --mount type=volume,source=lifemaxing-production-keys,target=/var/lib/lifemaxing/keys -p 127.0.0.1:8080:8080 lifemaxing:local
 ```
 
 Open `http://localhost:8080/start` and refresh it directly. ASP.NET Core serves the app and API on the same origin. `/api/v1/missing` must still return JSON 404. Stop the container with Ctrl+C. This is a local serving check; Phase 8 covers TLS, deployment, backups and operational security before public exposure.
@@ -186,6 +197,8 @@ Open `http://localhost:8080/start` and refresh it directly. ASP.NET Core serves 
 The named key volume is required on every recreation; retain and reuse it. The image contains only an empty key directory owned by the non-root app user, not key material. Use a separate volume for each environment; do not remove the production key volume to troubleshoot login. Authenticated production serving requires HTTPS for Secure cookies; the HTTP diagnostic example does not weaken that policy.
 
 For a host publish without Docker, run `npm run build`, `dotnet publish server/Lifemaxing.Api -c Release -o artifacts/publish`, then copy `client/dist/*` into `artifacts/publish/wwwroot/`. Run `dotnet Lifemaxing.Api.dll` from that publish directory with `ASPNETCORE_URLS=http://localhost:8080` and `ConnectionStrings__Database` set in the process environment. Production does not load development User Secrets.
+
+For a durable host installation, explicitly set `DataProtection__KeyDirectory` to a protected absolute directory outside the repository, retain it across restarts, and run under the same service account. The application appends its environment name to that root. `AllowedHosts` defaults to `localhost;127.0.0.1`; set the actual allowed hostname when hosting elsewhere. The HTTP examples above verify local static/API serving only. Public authentication requires HTTPS, and trusted proxy/header configuration, TLS enforcement, operational password recovery and backup/restore remain deployment work recorded in the V2 ledger.
 
 ## Structure
 
