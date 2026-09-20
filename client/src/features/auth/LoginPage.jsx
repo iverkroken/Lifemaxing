@@ -1,15 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Navigate, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '../../shared/ui/Button.jsx'
-import { BrandMark } from '../../shared/ui/BrandMark.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
-import { Select } from '../../shared/ui/Select.jsx'
-import { languages, useLanguage } from '../settings/language.js'
+import { useLanguage } from '../settings/language.js'
+import { AuthLayout } from './AuthLayout.jsx'
+import { ExternalSignIn } from './ExternalSignIn.jsx'
+import { notifySessionChange } from './sessionSynchronization.js'
 import { login } from './authApi.js'
 import { currentUserKey, useCurrentUser } from './useCurrentUser.js'
 import styles from './LoginPage.module.css'
@@ -21,13 +22,19 @@ const loginSchema = z.object({
 })
 
 export function LoginPage() {
-  const { t, preferences, setPublicPreferences, errorMessage: describeError } = useLanguage()
+  const { t, errorMessage: describeError } = useLanguage()
   const currentUser = useCurrentUser()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
-  useEffect(() => { document.title = `${t('Sign in')} · LIFEMAXING` }, [t])
+  const externalNotified = useRef(false)
+  useEffect(() => {
+    if (currentUser.isSuccess && new URLSearchParams(location.search).get('external') === 'complete' && !externalNotified.current) {
+      externalNotified.current = true
+      notifySessionChange()
+    }
+  }, [currentUser.isSuccess, location.search])
   const form = useForm({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '', rememberMe: false } })
   const mutation = useMutation({
     mutationFn: login,
@@ -42,16 +49,11 @@ export function LoginPage() {
   const submit = form.handleSubmit(values => mutation.mutate(values))
   const errorMessage = mutation.isError ? describeError(mutation.error) : undefined
 
-  return <main className={styles.page}>
-    <aside className={styles.identity} aria-label={t('workspace')}>
-      <BrandMark size={32} color="var(--color-inverse)" />
-      <h2>{t("Make room for what matters.")}</h2><p>{t("A personal space to turn plans into action and preserve your progress over time.")}</p>
-    </aside>
-    <div className={styles.login}>
-      <a href="/start" className={styles.brand}><BrandMark size={20} />LIFEMAXING</a>
-      <div className={styles.surface}>
-      <h1>{t("Sign in")}</h1>
-      <p className={styles.intro}>{t("Open your tasks, habits and daily plan.")}</p>
+  const reason = new URLSearchParams(location.search)
+  return <AuthLayout title={t('Sign in')} intro={t('Open your tasks, habits and daily plan.')}>
+        {reason.get('password') === 'changed' && <p role="status" className={styles.notice}>{t('Your password has changed. Sign in again on your devices.')}</p>}
+        {reason.has('error') && <p role="alert" className={styles.error}>{t(reason.get('error') === 'external_account_exists'
+          ? 'An account already uses this email. Sign in with your password or reset it.' : 'External sign-in could not be completed. Try again or use your password.')}</p>}
         {new URLSearchParams(location.search).get('reason') === 'expired' &&
           <p role="status" className={styles.notice}>{t("Your session expired. Sign in again to continue.")}</p>}
         <form onSubmit={submit} className={styles.form} noValidate>
@@ -66,11 +68,10 @@ export function LoginPage() {
           {errorMessage && <p role="alert" className={styles.error}>{errorMessage}</p>}
           <Button type="submit" loading={mutation.isPending}>{t("Sign in")}</Button>
         </form>
-      </div>
-      <div className={styles.preferences}>
-        <Select label={t('language')} value={preferences.uiLanguage || 'en'} onChange={event => setPublicPreferences({ uiLanguage: event.target.value })}>{languages.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select>
-        <Select label={t('theme')} value={preferences.theme || 'system'} onChange={event => setPublicPreferences({ theme: event.target.value })}>{['light', 'dark', 'system'].map(value => <option key={value} value={value}>{t(value)}</option>)}</Select>
-      </div>
-    </div>
-  </main>
+      <nav className={styles.links} aria-label={t('Account options')}>
+        <Link to="/signup">{t('Create account')}</Link><Link to="/forgot-password">{t('Forgot password')}</Link>
+        <Link to="/resend-verification">{t('Resend verification')}</Link>
+      </nav>
+      <ExternalSignIn />
+  </AuthLayout>
 }
