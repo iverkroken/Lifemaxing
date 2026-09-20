@@ -43,8 +43,10 @@ public sealed class PreferenceMigrationTests(TestDatabaseFixture database)
                 Assert.Equal("Europe/Oslo", saved.TimeZoneId);
                 Assert.Equal("system", saved.Theme);
                 Assert.Equal("normal", saved.Density);
+                Assert.Equal("FocusedDay", saved.PlanningMode);
             }
             Assert.Equal("Fictional historical action", (await db.Tasks.SingleAsync()).Title);
+            Assert.Empty(await db.Set<Lifemaxing.Api.Features.Finance.Subscription>().ToListAsync());
             Assert.False(db.Database.HasPendingModelChanges());
         }
         finally

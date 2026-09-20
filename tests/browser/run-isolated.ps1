@@ -1,4 +1,4 @@
-param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '', [switch] $UxRefresh, [switch] $Redesign, [switch] $SignatureShell, [switch] $Artwork,
+param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '', [switch] $UxRefresh, [switch] $Redesign, [switch] $SignatureShell, [switch] $Artwork, [switch] $Quality, [switch] $SelectedFeatures, [switch] $AreaDetails,
   [ValidateSet('chromium', 'firefox')][string] $BrowserEngine = 'chromium',
   [string] $ArtifactRoot = '', [switch] $Headed, [string] $TestFilter = '',
   [ValidateSet('', 'before', 'after')][string] $PerformanceStage = '')
@@ -17,9 +17,11 @@ $testDatabase = 'lifemaxing_browser_' + [Guid]::NewGuid().ToString('N')
 $apiProcess = $null
 $viteProcess = $null
 $created = $false
+$featureMailbox = $null
 $variables = @('ConnectionStrings__Database', 'ASPNETCORE_ENVIRONMENT', 'ASPNETCORE_URLS', 'ASPNETCORE_CONTENTROOT',
   'OwnerProvisioning__Email', 'OwnerProvisioning__Password', 'SMOKE_EMAIL', 'SMOKE_PASSWORD', 'SMOKE_BASE_URL',
-  'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default', 'REFERENCE_STAGE', 'PERFORMANCE_STAGE', 'SMOKE_BROWSER', 'VISUAL_ARTIFACT_ROOT')
+  'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default', 'REFERENCE_STAGE', 'PERFORMANCE_STAGE', 'SMOKE_BROWSER', 'VISUAL_ARTIFACT_ROOT',
+  'Authentication__Accounts__PublicOrigin', 'Authentication__Accounts__Email__Provider', 'Authentication__Accounts__Email__MailboxDirectory', 'LIFEMAXING_TEST_MAILBOX')
 $previous = @{}
 foreach ($name in $variables) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 function Wait-Ready([string] $url) {
@@ -67,13 +69,47 @@ try {
   $env:LIFEMAXING_API_TARGET = 'http://127.0.0.1:5082'
   $env:SMOKE_BASE_URL = 'http://127.0.0.1:5174'
   $env:SMOKE_RESTART = '0'
+  if ($SelectedFeatures) {
+    $featureMailbox = Join-Path ([IO.Path]::GetTempPath()) ('lifemaxing-browser-mail-' + [Guid]::NewGuid().ToString('N'))
+    $env:Authentication__Accounts__PublicOrigin = $env:SMOKE_BASE_URL
+    $env:Authentication__Accounts__Email__Provider = 'Development'
+    $env:Authentication__Accounts__Email__MailboxDirectory = $featureMailbox
+    $env:LIFEMAXING_TEST_MAILBOX = $featureMailbox
+  }
   New-Item -ItemType Directory -Path artifacts -Force | Out-Null
   $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-error.log')
   $viteArguments = 'node_modules/vite/bin/vite.js client --config client/vite.config.js --port 5174'
-  if ($PerformanceStage -or $Redesign -or $SignatureShell -or $Artwork) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
+  if ($PerformanceStage -or $Redesign -or $SignatureShell -or $Artwork -or $Quality -or $SelectedFeatures -or $AreaDetails) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
   $viteProcess = Start-Process node -ArgumentList $viteArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-vite.log') -RedirectStandardError (Join-Path $logRoot 'browser-vite-error.log')
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   Wait-Ready 'http://127.0.0.1:5174/start'
+  if ($AreaDetails) {
+    $env:SMOKE_BROWSER = $BrowserEngine
+    $browserArguments = @('run', 'test:smoke', '--', 'area-detail.spec.js')
+    if ($TestFilter) { $browserArguments += @('--grep', $TestFilter) }
+    if ($Headed) { $browserArguments += '--headed' }
+    & npm @browserArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Life Area detail checks failed.' }
+    return
+  }
+  if ($SelectedFeatures) {
+    $env:SMOKE_BROWSER = $BrowserEngine
+    $browserArguments = @('run', 'test:smoke', '--', 'selected-features.spec.js')
+    if ($TestFilter) { $browserArguments += @('--grep', $TestFilter) }
+    if ($Headed) { $browserArguments += '--headed' }
+    & npm @browserArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Selected feature checks failed.' }
+    return
+  }
+  if ($Quality) {
+    $env:SMOKE_BROWSER = $BrowserEngine
+    $browserArguments = @('run', 'test:smoke', '--', 'quality.spec.js')
+    if ($TestFilter) { $browserArguments += @('--grep', $TestFilter) }
+    if ($Headed) { $browserArguments += '--headed' }
+    & npm @browserArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Application quality checks failed.' }
+    return
+  }
   if ($SignatureShell) {
     $env:SMOKE_BROWSER = $BrowserEngine
     $browserArguments = @('run', 'test:smoke', '--', 'redesign.spec.js', 'signature-shell.spec.js')
@@ -132,6 +168,12 @@ try {
   if ($viteProcess -and !$viteProcess.HasExited) { Stop-Process -Id $viteProcess.Id }
   if ($created -and $testDatabase -match '^lifemaxing_browser_[a-f0-9]{32}$') {
     docker compose exec -T db psql -U lifemaxing -d postgres -v ON_ERROR_STOP=1 -c "DROP DATABASE $testDatabase WITH (FORCE)"
+  }
+  if ($featureMailbox -and (Test-Path -LiteralPath $featureMailbox)) {
+    $mailboxTarget = [IO.Path]::GetFullPath($featureMailbox)
+    $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+    if (!$mailboxTarget.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetFileName($mailboxTarget) -notmatch '^lifemaxing-browser-mail-[a-f0-9]{32}$') { throw 'Refusing unexpected mailbox cleanup path.' }
+    Remove-Item -LiteralPath $mailboxTarget -Recurse -Force
   }
   foreach ($name in $variables) { [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process') }
 }

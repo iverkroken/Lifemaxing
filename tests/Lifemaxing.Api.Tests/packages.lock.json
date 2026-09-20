@@ -40,6 +40,11 @@
         "resolved": "4.0.0",
         "contentHash": "kzLFyBYUnoidpGOXvpNOfIo8C92gVgVR6X8ncHwhcrDYugiOut5rrhDkr0L3cWHd7J2pKXf6LgaeXoBBDlx1ag=="
       },
+      "Microsoft.AspNetCore.Authentication.Google": {
+        "type": "Transitive",
+        "resolved": "10.0.12",
+        "contentHash": "CYQYHQaz2FSTu7ShfwOZWqxBUC8ykq2FQNOcm0jBMZ4PGcX0SgLtpIfRNnDz0AfGboZYtDnJkE0ambi34JtsrA=="
+      },
       "Microsoft.AspNetCore.Cryptography.Internal": {
         "type": "Transitive",
         "resolved": "10.0.12",
@@ -508,6 +513,7 @@
       "lifemaxing.api": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.AspNetCore.Authentication.Google": "[10.0.12, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.12, )",
           "Microsoft.EntityFrameworkCore": "[10.0.12, )",
           "Npgsql": "[10.0.3, )",
