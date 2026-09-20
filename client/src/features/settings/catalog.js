@@ -1,6 +1,7 @@
 // Reviewed interface copy: English | Norwegian Bokmål | Swedish | Danish.
 // Keys are source copy, never user content or server error messages.
 const rows = `
+All dates|Alle datoer|Alla datum|Alle datoer
 Choose your focus|Velg fokus|V?lj fokus|V?lg fokus
 An existing task|En eksisterende oppgave|En befintlig uppgift|En eksisterende opgave
 Plan|Plan|Planera|Plan

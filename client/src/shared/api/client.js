@@ -1,3 +1,5 @@
+import { sessionGeneration, waitForSessionCheck } from '../../features/auth/sessionSynchronization.js'
+
 export class ApiError extends Error {
   constructor(message, status, problem = {}) {
     super(message)
@@ -27,11 +29,27 @@ export function clearCsrfToken() {
   csrfToken = undefined
 }
 
-export function apiRequest(path, request = {}) {
-  return sendRequest(path, request, true)
+export async function apiRequest(path, request = {}) {
+  if ((path.startsWith('/auth/') && path !== '/auth/change-password') || path === '/system/status') return sendRequest(path, request, true)
+  const generation = sessionGeneration()
+  const verifySession = async () => {
+    await waitForSessionCheck()
+    request.signal?.throwIfAborted()
+    if (generation !== sessionGeneration()) throw new DOMException('The session changed.', 'AbortError')
+  }
+  await verifySession()
+  try {
+    const result = await sendRequest(path, request, true, verifySession)
+    await verifySession()
+    return result
+  } catch (error) {
+    await verifySession()
+    if (error.status === 401) window.dispatchEvent(new Event('lifemaxing:session-expired'))
+    throw error
+  }
 }
 
-async function sendRequest(path, { body, headers, ...options }, canRefreshCsrf) {
+async function sendRequest(path, { body, headers, ...options }, canRefreshCsrf, verifySession) {
   const method = options.method?.toUpperCase() || 'GET'
   const requestHeaders = {
     Accept: 'application/json',
@@ -41,6 +59,8 @@ async function sendRequest(path, { body, headers, ...options }, canRefreshCsrf) 
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     requestHeaders['X-CSRF-TOKEN'] = await getCsrfToken()
   }
+  // Token acquisition and retries can overlap a session change in another tab.
+  await verifySession?.()
 
   const response = await fetch(`/api/v1${path}`, {
     ...options,
@@ -54,10 +74,7 @@ async function sendRequest(path, { body, headers, ...options }, canRefreshCsrf) 
     const problem = await response.json().catch(() => ({}))
     if (problem.code === 'csrf_validation_failed' && canRefreshCsrf) {
       clearCsrfToken()
-      return sendRequest(path, { body, headers, ...options }, false)
-    }
-    if (response.status === 401 && path !== '/auth/login' && path !== '/auth/me') {
-      window.dispatchEvent(new Event('lifemaxing:session-expired'))
+      return sendRequest(path, { body, headers, ...options }, false, verifySession)
     }
     throw new ApiError(problem.detail || problem.title || 'The request could not be completed.', response.status, problem)
   }
