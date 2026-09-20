@@ -1,5 +1,17 @@
 # DATABASE.md
 
+Local application, 21 September 2026: with explicit user authorization, `20260920220222_PlanningModesAndSubscriptions` was applied to the normal Development database. A private backup was validated first; all 24 pre-existing table counts and aggregate row fingerprints matched afterward (ignoring the new PlanningMode field). The column/default, subscription fields/FK/checks/index and migration history were verified. No reset, reseeding or additional migration occurred. Earlier references to disposable-only application describe the initial feature pass.
+
+## Additive selected-feature schema — 20–21 September 2026
+
+Migration `20260920220222_PlanningModesAndSubscriptions` adds `UserSettings.PlanningMode` (varchar20, required, default `FocusedDay`) and `Subscriptions`. Existing users retain the previous mission-centered layout; tasks, commitments, habits and history are unchanged. API validation accepts Simple, ThreeThreeThree, FocusedDay and Custom only.
+
+`Subscriptions` fields: UUID Id, required UserId FK to AppUser, Name varchar200, Category varchar80 (empty allowed), Price numeric(11,2), Currency varchar3, BillingInterval varchar9, NextBillingDate/StartDate date, optional Notes varchar2000, Status varchar9 and UTC CreatedAtUtc/UpdatedAtUtc. Composite index `(UserId, Status, NextBillingDate)` supports owned list/upcoming reads. Checks enforce nonnegative price up to 999999999.99, valid supported interval/status and ordered dates in 1900–9998. Supported currency codes are NOK/SEK/DKK/EUR/GBP/USD/CHF/CAD/AUD/NZD/PLN/CZK/HUF; there is no currency conversion. Cancelled records remain editable/reactivatable; no deletion endpoint exists.
+
+Active-only monthly/yearly estimates use server-side decimal aggregation grouped by currency and category. Weekly: price×52/12 monthly and ×52 yearly; monthly: price and ×12; quarterly: /3 and ×4; yearly: /12 and unchanged. Sum before display rounding. These are cadence estimates, not historical payments. Manual next dates never advance automatically; overdue records remain visible. Subscriptions have stable identifiers for future separately owned transaction links; no bank/import tables are created.
+
+Registration and Google reuse the existing Identity tables, including AspNetUserLogins; there is no second user model or auth-token table. Atomic initialization creates settings/ten Life Areas for each new user. Identity confirmation/reset tokens are time-limited Data Protection values, not database or browser-storage records. The older administrative-only AppUser note below is superseded by this explicit scope. Reversing this migration drops the new subscriptions table and preference: do not run Down after collecting real records without a reviewed backup/export strategy.
+
 Dette er en relasjonell blueprint, ikke en beskjed om å opprette alle tabeller i fase 0. Fasefordelingen følger IMPLEMENTATION_PLAN.md. En delt PostgreSQL database, ett AppDbContext og EF migrasjoner er nok gjennom V2. Bruk IdentityUser<Guid>, UUID primærnøkler for domenedata og UserId på alle private rotdata. Ingen bruker ID kommer fra klienten. LifeAreaId er eksplisitt på delte objekter; spesialiserte moduler har et entydig område og trenger ikke gjentatte AreaId kolonner.
 
 ## Felles regler for lagring

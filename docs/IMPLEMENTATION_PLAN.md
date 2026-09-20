@@ -1,5 +1,13 @@
 # IMPLEMENTATION_PLAN.md
 
+## Approved local completion — 21 September 2026
+
+The [approved follow-up](superpowers/plans/2026-09-21-local-completion.md) explicitly authorizes the reviewed additive migration on the normal local Development database, real Planning Mode verification, all-area detail routes/ID filtering, Finance discoverability and search ranking corrections. This is the specific permission required by the general migration rule below. The initial selected-feature pass described next used disposable databases only; this follow-up preserves existing local data with a private backup and before/after checks. Live Google/Resend/Apple configuration, commits and pushes remain outside scope.
+
+## Selected additions — 20–21 September 2026
+
+The current explicitly requested addition follows the [selected-features plan](superpowers/plans/2026-09-20-selected-features.md) and [design](superpowers/specs/2026-09-20-selected-features-design.md). Deliverable increments are Identity account lifecycle, Today modes/search and manual Finance subscriptions, followed by integrated migration/browser verification. Public registration and manual subscriptions are explicit exceptions to older phase restrictions below. No automatic progression into original Phase 4 or the remaining area modules is implied. Apply the additive migration only through a reviewed deployment/local migration step; this implementation tests disposable databases and does not migrate the owner's private database.
+
 Dette er den operative byggeordren for Astra i Rider. Ikke bygg hele prosjektet i ett steg. For hver fase implementeres én gjennomgående flyt, kjøres mot PostgreSQL og avsluttes med testen og Definition of Done nedenfor. Alle private ruter under /api/v1 krever autentisering hvis ikke annet er uttrykkelig nevnt. CRUD i tabellene betyr liste, hent én, opprett, endre og arkiver eller slett etter reglene i DATABASE.md; konkrete unntak er angitt. HTTP API major 1 dekker både produkt V1 og V2.
 
 ## Navngitt forbedringsserie etter Phase 3

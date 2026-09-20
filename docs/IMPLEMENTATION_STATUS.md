@@ -1,5 +1,141 @@
 # LIFEMAXING Implementation Status
 
+## Local development and Life Area completion pass - 21 September 2026
+
+This approved follow-up supersedes the earlier statement below that only disposable databases were migrated. It retains the existing feature implementations and provider boundaries; it is not a new roadmap phase.
+
+- **Normal local database:** Applied the already reviewed `20260920220222_PlanningModesAndSubscriptions` migration to the configured local Development PostgreSQL database. A private backup was created and validated first. Counts and aggregate row fingerprints for all 24 existing tables matched before and after migration, excluding the new PlanningMode field and migration metadata. Verified the required mode column/default, Subscriptions columns, ownership foreign key, four checks, index and migration history. No reset, recreation, reseeding or historical data deletion occurred.
+- **Planning Mode diagnosis:** The normal database lacked PlanningMode, and a direct query reproduced the missing-column error. The current settings projection needs this column; a failed settings load correctly disables the selector. The schema is repaired and normal API/Vite processes are running current code. A new regression verifies settings retry restores the selector while retaining tasks and habits. Actual existing-account selector/save/refresh/logout/login verification remains pending interactive sign-in in the open local verification browser; isolated tests are not substituted for this check.
+- **Every Life Area:** `/areas/:areaKey` now resolves the signed-in user's area and renders its existing image, Overview, Tasks, Goals, Habits and Back to Life Areas. Stable keys cover fitness, university, career, finance, home, style, food, creative, travel and personal. Nested lists use the actual owned area ID, including resets, pagination and conflicting query parameters. Scoped Habits uses its ID-filtered library/week view because the Today response does not carry area IDs. Task, goal and habit capture inherit the current area.
+- **Finance and search:** Finance overview and area navigation expose the existing Subscriptions page and a return to Overview. Other areas cannot render Finance subscriptions through their nested route. Search ranks exact page/action matches before prefixes and substrings, includes Finance Subscriptions, resolves nested-area context to its owned ID, and sends area entity matches to their own overviews. Backend entity ranking, ownership, debounce, cancellation and keyboard behavior are retained.
+
+### Verification for this follow-up
+
+| Check | Result |
+| --- | --- |
+| Frontend lint | Passed. |
+| Full frontend tests | 89 tests in 29 files and 3 launcher tests passed. |
+| Frontend production build | Passed. |
+| Locked backend restore | Passed. |
+| Debug and Release backend builds | Passed, zero warnings/errors. The initial Debug attempt encountered the old watch process's file lock; it passed after that verified local process was stopped and restarted. |
+| Full Release backend tests | 76 passed, zero failures/skips. |
+| New area browser suite | 3/3 Chromium and 3/3 Firefox passed. All ten image-card clicks and their three scoped tabs, conflicting filters, capture persistence, renamed/inactive/unknown areas, Finance navigation and responsive checks are covered. |
+| Changed artwork and Finance regressions | 3/3 artwork and 1/1 Finance CRUD/discovery checks passed in Chromium. |
+| Existing browser regressions | 11/11 passed on the corrected full rerun, including actual API/browser restart persistence, remembered sessions, productivity, Focus and dialogs. Together with the area/artwork/Finance checks, 21 browser scenarios passed in this follow-up. |
+| Normal Development migration/data integrity | Passed, including a subsequent baseline recheck. |
+| Normal existing-account Planning Mode browser flow | Pending interactive sign-in; not claimed complete. |
+
+Area browser coverage includes 1440, 1280, 1024, 768, 430 and 390px, both themes, enlarged text, keyboard navigation and reduced motion. Representative desktop/mobile screenshots were inspected. An independent source review found no material defects in owned-area resolution, scoped filters, capture defaults or route guards. The first existing-regression run exposed a test timing defect: its goal-note assertion matched the editable textarea, then reloaded before the second POST completed (confirmed aborted in the browser trace). Assertions now target the saved Progress history region before refreshing. [COMPLETION_AUDIT.md](COMPLETION_AUDIT.md) maps the original 17 requirements and separates implemented code from external configuration.
+
+### Changed files and suggested commits
+
+1. **Owned Life Area navigation and lists:** `client/src/features/areas/AreaDetail{.jsx,.module.css,.test.jsx}`, `areaDetailCatalog.js`, AreaCard/AreaPage styles, `app/App.jsx`, settings language wiring, scoped Tasks/Goals/Habits pages, capture forms, AuthenticatedShell, and the Finance route guard. New source files are explicitly tracked.
+2. **Search and Planning Mode regressions:** CommandMenu and tests, backend SearchEndpoints/PlanningSearchTests, and PlanningModes.test.jsx. The local migration applies the existing reviewed migration; this follow-up adds no schema migration.
+3. **Browser verification and documentation:** area-detail.spec.js, existing artwork/selected-feature/phase2 checks and isolated runner; README, architecture/database/design/product/implementation docs, completion audit and approved follow-up plan.
+
+Earlier staged and working-tree changes are preserved. Required source/tests/docs belong in Git; `artifacts/`, Playwright results, build outputs, dependencies, temporary browser helpers, private backups and User Secrets stay outside tracking. No commit, push or branch operation occurred. Live Google, Resend and Apple configuration remains outside this pass, and no external credentials were added.
+
+## Selected feature additions - 21 September 2026
+
+Implemented the explicit follow-on feature brief while retaining the existing quality pass below. React/Vite JavaScript, ASP.NET Core Identity, EF Core and PostgreSQL remain the architecture. No next roadmap phase is implied.
+
+- **Today and search:** Simple, 3:3:3, Focused Day and Custom are persisted per user through settings. Switching changes presentation over the same tasks, mission and habits. 3:3:3 explains a flexible framework; Custom reserves the template key without a builder. Existing command search adds bounded, ranked, owner-scoped tasks/goals/habits/Life Areas, immediate page/action suggestions, cancellation, keyboard navigation and useful loading/empty/failure states. No Project entity or search service was introduced.
+- **Accounts:** Identity registration atomically creates the user, settings and ten standard areas. Confirmation/resend, neutral forgot-password, expiring reset, current-password change and session revocation are implemented. Public forms share the original No Risk No Story image, shared controls, responsive composition, four languages and both themes. Routes: `/signup`, `/verify-email`, `/resend-verification`, `/forgot-password`, `/reset-password`; redesigned `/login`; password change lives in `/settings?section=security`.
+- **Provider status:** Disabled/Development/Resend email boundary is implemented; the private Development mailbox was exercised end to end. Real email delivery is not configured or verified. Google uses Microsoft's supported handler and local Identity logins, tested with a simulated backchannel; real Google login is not configured or verified. Apple has disabled UI and bound configuration only; its handler/key rotation remain planned. [ACCOUNT_SETUP.md](ACCOUNT_SETUP.md) lists all required settings and exact callback URLs. No provider secrets were added.
+- **Finance:** `/areas/finance/subscriptions` is linked from the existing Finance card. Manual records support create/edit, active/cancelled status, category, amount/currency, weekly/monthly/quarterly/yearly interval, start/next dates and notes. Totals use all active owned records, sum decimals before rounding and keep currencies separate. Six earliest billing dates include overdue records for review; no automatic date advancement or inferred payment. Cancellation retains the record and does not cancel the real provider. Bank import/matching is documented as a future boundary only.
+
+### Database and security
+
+Migration `20260920220222_PlanningModesAndSubscriptions` adds `UserSettings.PlanningMode` with a `FocusedDay` backfill and the owned `Subscriptions` table, validation constraints and `(UserId, Status, NextBillingDate)` index. Existing Identity tables supply registration/external logins. The generated SQL is additive; existing tasks/history survive the tested upgrade. Model/snapshot agreement is covered by the migration integration test. Only disposable databases were migrated; the owner's normal database and running services were left untouched. Apply the reviewed migration before running this version against an existing database. Rollback removes subscription data and must not be used casually after real records exist.
+
+Every new private query/mutation derives ownership from the authenticated principal; foreign subscription IDs return 404. CSRF, rate limits, confirmed-email login and existing Identity password hashing/policy remain. Forgot/resend never disclose account existence. Tokens use purpose-bound Identity protection, two-hour default expiry, fragment links removed from browser history and explicit confirmation POST; tokens are absent from API responses/logs. Development mail files are outside Git/webroot with private permissions. Google requires verified email and never silently links an existing local email. Password change participates in the existing cross-tab ownership verification. No important user data is stored authoritatively on a device.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `npm run lint` | Passed, no warnings/errors. |
+| `npm run test -- --run` | 72 frontend tests in 28 files plus 3 launcher tests passed. |
+| `npm run build` | Production build passed. |
+| `node scripts/run-dotnet.mjs restore --locked-mode` | Passed. |
+| Release backend build | Passed, zero warnings/errors. Debug output was occupied by the existing development API, which was preserved. |
+| Full Release backend tests | 76 passed, zero failures/skips, including real PostgreSQL ownership/migration and Identity token tests. |
+| Selected-feature production-preview Chromium browser suite | 4/4 passed: real local-mailbox account lifecycle, mode preservation/search, Finance create/edit/cancel/reactivate and public-page responsive matrix. |
+| Selected-feature production-preview Firefox checks | All four scenarios passed across the initial run and corrected Finance rerun. |
+| Existing isolated browser regressions | 11/11 passed, including actual API/browser restart persistence, remembered sessions, productivity, Focus, keyboard dialogs and mobile navigation. |
+
+The browser matrix covers 1440/1280/1024/768/430/390px account and Finance screens in light/dark, 200% account-page text and reduced motion. Planning modes were checked at 1440/768/390px with identical task/habit IDs after reload. Representative desktop/mobile screenshots, image framing and editor layout were inspected manually. Independent source/security reviews found one punctuation-boundary search ranking defect; a regression first failed, then passed after SQL candidate ordering and final ranking were aligned. The first Finance browser attempt used an incorrect test label; the corrected complete run passed. Firefox exposed a second test-only assumption: UUID tie ordering can place either record first when billing dates match. Cancellation now targets the named record, and the focused Firefox rerun passed. Physical Safari/iPhone/iPad testing and real provider callbacks/delivery remain unverified.
+
+### Changed files and logical commits
+
+All paths are repository-relative. Previous quality-pass files are grouped in the preceding task's section below; their edits/staging are preserved.
+
+| Suggested commit / purpose | Files |
+| --- | --- |
+| Identity backend and configuration | `server/Lifemaxing.Api/Features/Auth/{AccountOptions,AccountEmailSender,AccountRegistration,AccountEndpoints,ExternalAccountEndpoints}.cs`; `Data/{WorkspaceInitialization,OwnerProvisioning}.cs`; `Program.cs`; API project/lock and test lock; `appsettings.Accounts.example.json`; `tests/Lifemaxing.Api.Tests/{AccountLifecycleTests,Phase1IntegrationTests}.cs`; `docs/ACCOUNT_SETUP.md` |
+| Account interface and session integration | `client/src/features/auth/{AccountPage,AccountPages.test,AuthLayout,ChangePassword,ExternalSignIn,LoginPage,LoginPage.test}.jsx`; `AuthLayout.module.css`, `LoginPage.module.css`, `accountApi.js`, `accountCatalog.js`, `accountForms.js`, `sessionIsolation.test.jsx`; `features/settings/SettingsPage.jsx`; `shared/api/client.js` |
+| Planning and search | `features/today/{PlanningModeControl,PlanningModes.test,TodayPage}.jsx`, `TodayPage.module.css`, `usePlanningMode.js`; `features/search/*`; `features/auth/{CommandMenu,CommandMenu.test}.jsx`; backend `Data/UserSettings.cs`, `Features/Settings/SettingsEndpoints.cs`, `Features/Search/SearchEndpoints.cs`; `tests/Lifemaxing.Api.Tests/PlanningSearchTests.cs` |
+| Manual Finance and additive schema | `client/src/features/finance/*`; `features/areas/AreaCard.jsx`; backend `Features/Finance/*`, `Data/AppDbContext.cs`, `Data/Migrations/20260920220222_PlanningModesAndSubscriptions{,.Designer}.cs`, `AppDbContextModelSnapshot.cs`; `tests/Lifemaxing.Api.Tests/{SubscriptionTests,PreferenceMigrationTests}.cs` |
+| Shared wiring, verification and documentation | `client/src/app/App.jsx`, `features/settings/language.js`, `client/PRODUCT.md`; `tests/browser/{selected-features.spec.js,run-isolated.ps1}`; README; project/spec/roadmap/architecture/database/design/engineering/implementation/risk docs; `docs/superpowers/{specs/2026-09-20-selected-features-design,plans/2026-09-20-selected-features}.md` |
+
+For independently buildable commits, land the combined model/migration wiring with both planning and Finance backend sources, then split frontend/authentication work as practical. Shared route/catalog/Program hunks cross feature boundaries. New source, maintained tests, migration metadata, safe configuration example and documentation belong in Git. Evidence under `artifacts/selected-features*`, Playwright results, build output, dependencies, `.env`, User Secrets and private mailboxes do not. No commit, push or branch operation was performed.
+
+## Existing application quality pass - 20 September 2026
+
+Implemented within the existing product scope. No new roadmap phase, framework, dependency, backend contract, schema or migration was introduced.
+
+- Expanded the shared workspace ceiling from 1440px to 1600px. Goals, Progress and Rewards now use larger responsive artwork with the shared subtle media radius and intentional mobile aspect ratios. Existing image assignments, Life Area card geometry and focal positions are preserved; Personal, Home and Health & Fitness were visually checked at desktop and mobile widths.
+- Today keeps its original full-viewport artwork and normal-flow title. The reproduced scrolling defect was the fixed transparent header remaining transparent until the entire hero left view, allowing the title/content to pass behind navigation. Its observer now tracks a content boundary against the measured header height. There is no scroll-driven font transform to remove. Also removed duplicate anchor clearance, improved hero text contrast, and surfaced existing task/habit progress, the daily mission and its existing Focus entry point.
+- Plan identifies the all-date task list and links to the daily plan. Goals aligns heading, artwork, actions, identity and progress. Life Areas uses a tighter introductory composition so the first complete card is visible at all six audited widths without shrinking the cards. Shared navigation spacing, wrapping and immediate opaque-header switching preserve the single top navigation and existing drawer.
+- Shared fields use readable 16px text. Native selects receive progressive customizable-picker styling where supported; native semantics and fallback remain. Task menus stay inside narrow screens, with consistent surface styling; dialog close controls cannot shrink. Native date-picker popups remain platform controlled, while their input surfaces use the shared application styling.
+
+### User data isolation
+
+The backend audit found no unscoped private-data query or mutation in the implemented Tasks, Habits, Goals, plans/daily mission, Life Areas, Focus, Progress/Rewards or Settings flows. Ownership comes from the authenticated principal, including validation of linked entities and child history. Important data remains PostgreSQL-backed; localStorage contains only the approved display preferences, not authoritative tasks, goals or other user records. Same-account cross-device data uses the same API and database.
+
+A client isolation issue was found and fixed: switching the shared authentication cookie in another tab could leave a tab displaying the previous account's cached data. Tabs now send a data-free session-change signal and revalidate on focus/visibility changes. Private requests wait for verification; stale responses are discarded when ownership changes. Private query/mutation caches are cleared and the private view remounts for a different owner. During same-account verification, hidden/inert content preserves scroll height and unsaved drafts. A top-layer verification dialog keeps retry usable even when a form dialog was already open. Automated tests cover switching owners, sign-out, stale responses and recoverable verification failure.
+
+The audit does not claim physical iPhone/iPad certification or public deployment verification. No implemented feature was found to store important user data solely on the client.
+
+### Preservation and review
+
+Preserved original artwork, palette, Life Area ordering/filter/editor behavior, domain rules, XP history, persisted Focus, four languages, both themes, native form accessibility and the existing top-navigation hierarchy. No working sections were replaced for stylistic reasons and no unverified dead code was removed. Independent ownership and final source reviews found no remaining material issue in the changed implementation.
+
+### Changed files by purpose
+
+Paths below are relative to the repository; braces list individual files in the same directory.
+
+| Purpose | Files |
+| --- | --- |
+| Shared sizing, controls and navigation | `client/src/shared/styles/tokens.css`; `client/src/shared/ui/{Input.module.css,Dialog.module.css}`; `client/src/features/auth/{AuthenticatedShell.jsx,AuthenticatedShell.module.css,Navigation.module.css}` |
+| Today composition and scrolling | `client/src/features/today/{TodayHero.jsx,TodayPage.module.css}` |
+| Plan and Goals hierarchy | `client/src/features/tasks/{TasksPage.jsx,TasksPage.module.css,TaskRow.module.css}`; `client/src/features/goals/{GoalsPage.jsx,GoalsPage.module.css}`; `client/src/features/settings/catalog.js` |
+| Life Areas and large imagery | `client/src/features/areas/{AreaPage.jsx,AreaPage.module.css}`; `client/src/features/progress/{ProgressPage.module.css,RewardsPage.jsx,RewardsPage.module.css}` |
+| Session ownership and regressions | `client/src/features/auth/{ProtectedRoute.jsx,ProtectedRoute.module.css,authApi.js,useCurrentUser.js,sessionSynchronization.js,sessionIsolation.test.jsx}`; `client/src/shared/api/client.js` |
+| Browser checks and current documentation | `tests/browser/{quality.spec.js,artwork.spec.js,run-isolated.ps1}`; `docs/{ARCHITECTURE.md,DESIGN_SYSTEM.md,IMPLEMENTATION_STATUS.md}` |
+
+Suggested commits: (1) session ownership synchronization and its tests, with the architecture note; (2) existing-interface polish and shared design documentation; (3) browser quality coverage, isolated-runner support and implementation status. The browser session test in the third group depends on the first.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| `npm run lint` | Passed. |
+| `npm run test -- --run` | 58 frontend tests in 23 files and 3 launcher tests passed. |
+| `npm run build` | Passed. |
+| `node scripts/run-dotnet.mjs build -c Release --no-restore` | Passed, zero warnings/errors. |
+| `node scripts/run-dotnet.mjs test -c Release --no-build --no-restore --logger 'console;verbosity=minimal'` | 56 passed, zero failures/skips; real PostgreSQL-backed tests included. |
+| Isolated production-preview Chromium quality checks | All five scenarios passed across the full run and focused session rerun. |
+| Isolated production-preview Firefox quality checks | Final complete run: 5/5 passed. |
+| Existing isolated browser workflows and persistence | 11/11 passed: core workflows, authentication, actual browser profile restart, API restart, historical records, Focus and Remember Me. |
+| Final navigation regressions | 2/2 passed: active/hover/keyboard indicators in both themes, and Today text/header boundary across desktop/mobile resizes. |
+
+The quality suite runs with `powershell -NoProfile -ExecutionPolicy Bypass -File tests/browser/run-isolated.ps1 -Quality` and accepts `-BrowserEngine firefox`. It exercises 13 populated routes at 1440/1280/1024/768/430/390px in both themes, image decoding, no horizontal overflow, initial Life Area visibility, Today scrolling, task menus, select keyboard use, capture dialogs, 200% text, short landscape, reduced motion, session retry/draft preservation and cross-tab sign-out. Screenshot crops and compositions were inspected manually; architecture and changed source were also reviewed. The session ownership unit regressions use distinct account identities, and existing backend tests exercise real two-account isolation.
+
+Today scrolling first failed against the old transparent-header behavior. Test-only corrections account for half-pixel scroll rounding and required-field accessible names. Firefox's headless native OS popup does not receive simulated keys (also reproduced on plain HTML), so its fallback test uses closed-select arrow navigation; Chromium exercises the customizable popup and nested Escape behavior. Physical Safari/iOS picker interaction remains unverified.
+
+Reviewed new session source/tests and browser coverage are added to tracking by explicit path. Evidence and generated output stay ignored under `artifacts/quality-*`, `test-results/`, build directories and dependency caches. Local `.env` and User Secrets remain outside tracking. Disposable test databases and test-owned services were cleaned up. No commit, push or branch operation was performed.
+
 ## Life Areas filters and whole-card dragging - 17 September 2026
 
 COMPLETE implementation; account-specific live save confirmation remains pending. Filter opens a responsive panel for My layout, localized alphabetical order, most/fewest open tasks, active goals and active habits, plus all/active/inactive and with/without content. Choices use URL parameters, combine without writes, preserve saved order for ties, and can be reset. Unknown counts are not zero; count-dependent controls/views wait for complete counts. Personal is a standard card under automatic sorting and wide in My layout. Customize layout clears viewing filters and edits the complete owned collection.

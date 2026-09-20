@@ -1,6 +1,6 @@
 # LIFEMAXING
 
-A personal operating system for planning, execution and progress. The current private workspace includes Today, Tasks/Inbox, daily commitments and mission, Habits, Goals, Life Areas, persisted Focus, XP/progress, Activity, Rewards and Settings. It uses the approved artwork design with responsive top navigation and a menu drawer. See [implementation status](docs/IMPLEMENTATION_STATUS.md) and the [V2 audit ledger](docs/V2_STATUS.md) for delivered behavior, verification and deliberate future boundaries.
+A personal operating system for planning, execution and progress. The current private workspace includes Today planning modes, Tasks/Inbox, daily commitments and mission, Habits, Goals, Life Areas, manual Finance subscriptions, workspace search, persisted Focus, XP/progress, Activity, Rewards and Settings. It uses the approved artwork design with responsive top navigation and a menu drawer. See [implementation status](docs/IMPLEMENTATION_STATUS.md), [account/provider setup](docs/ACCOUNT_SETUP.md) and the [V2 audit ledger](docs/V2_STATUS.md) for delivered behavior, verification and deliberate future boundaries.
 
 ## Prerequisites
 
@@ -71,7 +71,7 @@ These diagnostics remain public and contain no personal data. The CSRF-token and
 
 ## Provision the private owner once
 
-There is no registration endpoint. After the migration, put the intended owner email and a unique password in ASP.NET Core User Secrets:
+Public registration now exists at `/signup` and requires configured verification delivery; see [account setup](docs/ACCOUNT_SETUP.md). The original one-time owner provisioning command remains available for an empty database. After the migration, put the intended owner email and a unique password in ASP.NET Core User Secrets:
 
 **Bruk minst 15 tegn. Flere tilfeldige ord fungerer fint. Tall og spesialtegn er ikke påkrevd.** Maximum 128 Unicode characters; spaces are preserved. New passwords are checked against a bundled, limited common-password list, entirely locally. This intentionally replaces the former 12-character/composition policy. Existing passwords remain valid for sign-in; see the [canonical authentication policy](docs/ARCHITECTURE.md#authentication-policy--prompt-a-13-september-2026).
 
@@ -138,7 +138,7 @@ After the Release build, from the repository root in a local interactive Windows
 
 Use the .NET 10 SDK described above. The `http` launch profile selects Development; this command exits without starting an HTTP server. Enter the **existing** account email, then a new phrase twice. Password input is masked and supports spaces/paste; Escape cancels. No password/token belongs in command arguments, shell history or redirected input. The command refuses Production, extra arguments and noninteractive input/output. It uses UserManager's reset token/validation, preserves the user ID and all relationships/history, clears lockout after success and revokes older sessions. It never provisions an owner, resets a database or removes passkeys. The real owner must enter their own new password; automated verification uses a disposable fictional account.
 
-Production recovery is deliberately separate: this Development command is unavailable there. Before production rollout, establish an authenticated administrative recovery runbook with verified account identity, restricted operator access, backup/restore verification and an audited reset through Identity; alternatively implement a genuine verified-email recovery service with expiring single-use tokens, rate limiting and account-neutral responses. Revoke sessions after recovery. No production recovery HTTP endpoint or pretend email link is supplied by this task. Do not set a deployed application to Development to bypass this boundary.
+The Development command is unavailable in Production. Verified-email recovery now exists at `/forgot-password` and `/reset-password`, using expiring Identity tokens, rate limiting, account-neutral requests and session revocation. Configure and verify production delivery using [account setup](docs/ACCOUNT_SETUP.md); it is disabled by default. Retain a restricted, audited administrative recovery runbook and backup/restore verification. Do not set a deployed application to Development to bypass this boundary.
 
 ## Builds and tests
 
@@ -150,7 +150,11 @@ npm run test -- --run
 npm run build
 ```
 
-The server integration tests create and remove an isolated database on the configured PostgreSQL server. They read the API database connection from User Secrets by default; set `LIFEMAXING_TEST_CONNECTION` to override it. Tests cover migrations, authentication, lockout, rate limiting, CSRF, owner isolation, settings, logout and the missing registration routes. Frontend tests cover loading and form behavior. Package versions are exact in project manifests; `package-lock.json`, NuGet lockfiles and `dotnet-tools.json` lock dependencies and EF tooling. Use `npm ci`, `dotnet restore --locked-mode` and `dotnet tool restore` for reproducible restores.
+The server integration tests create and remove an isolated database on the configured PostgreSQL server. They read the API database connection from User Secrets by default; set `LIFEMAXING_TEST_CONNECTION` to override it. Tests cover migrations, authentication, lockout, rate limiting, CSRF, owner isolation, settings, logout, registration/verification/recovery, Google middleware with a simulated backchannel, search and subscriptions. Frontend tests cover loading and form behavior. Package versions are exact in project manifests; `package-lock.json`, NuGet lockfiles and `dotnet-tools.json` lock dependencies and EF tooling. Use `npm ci`, `dotnet restore --locked-mode` and `dotnet tool restore` for reproducible restores.
+
+After a Release API build and frontend production build, run `powershell -NoProfile -ExecutionPolicy Bypass -File tests/browser/run-isolated.ps1 -SelectedFeatures` for the account lifecycle, Today modes/search, subscriptions and responsive account pages. It uses a disposable database and private temporary Development mailbox, cleans both, and leaves the normal application database and services alone.
+
+Use `-AreaDetails` with the same runner for all ten area overviews, ID-scoped tabs, renamed/inactive areas, scoped capture, Finance navigation and the responsive artwork matrix. Add `-BrowserEngine firefox` for Firefox. The area routes are `/areas/:areaKey`, `/areas/:areaKey/tasks`, `/areas/:areaKey/goals`, `/areas/:areaKey/habits`; Finance also has `/areas/finance/subscriptions`. Names can change without changing stable routes or filtering. See the [completion audit](docs/COMPLETION_AUDIT.md) for the normal local migration and verification boundaries.
 
 With all three development processes running, the public browser smoke checks cover real database status, route refresh, API 404 behavior and layout overflow at 375/768/1440 px:
 

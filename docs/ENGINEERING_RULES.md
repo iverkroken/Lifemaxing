@@ -1,5 +1,9 @@
 # ENGINEERING_RULES.md
 
+## Approved scope exception — 20–21 September 2026
+
+The user's selected-feature brief permits public Identity registration, verification/recovery email, supported Google authentication and manual Finance subscriptions. This explicitly supersedes the older blanket no-registration/no-external-account-email wording below. Only account verification/recovery messages go to the configured email provider; no task, health or financial data is sent. Google runs only when configured; Apple and bank connections remain disabled/planned. Ownership, CSRF, secret handling, migration review and production release requirements are unchanged. See ACCOUNT_SETUP.md and IMPLEMENTATION_STATUS.md.
+
 Dette dokumentet er arbeidsinstruks for Astra når implementeringen begynner. PROJECT_SPEC.md bestemmer produktatferd, DATABASE.md bestemmer datainvarianter, ARCHITECTURE.md bestemmer koblinger og denne filen bestemmer arbeidsmåte. Hvis dokumentene motsier hverandre, stopp den konkrete endringen, dokumenter konflikten og foreslå én begrunnet rettelse før videre kode.
 
 ## Før hver fase

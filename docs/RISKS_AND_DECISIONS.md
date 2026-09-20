@@ -1,5 +1,9 @@
 # RISKS_AND_DECISIONS.md
 
+## Selected scope decision - 21 September 2026
+
+The user's explicit selected-feature request authorizes public Identity registration, verification/recovery, a supported Google provider, disabled Apple preparation, persisted Today planning modes, owned application search and manual Finance subscriptions. This supersedes historical single-owner/no-registration restrictions only for this scope. Identity cookies, server ownership, PostgreSQL persistence and the modular monolith remain unchanged. Confirmation is required before password login; Google never silently links an existing local email. Real email delivery and Google authentication require deployment configuration and live verification; Apple OAuth and bank import remain planned. See [account setup](ACCOUNT_SETUP.md) for the secret boundary and [architecture](ARCHITECTURE.md) for future transaction matching. Existing quality-pass work is retained; no next roadmap phase is implicitly authorized.
+
 Opprinnelig status 12. september 2026; ADR 13–16 tilføyd 13. september 2026 gjennom Experience Evolution P0. Beslutningene styrer V1 og V2 og kan endres ved en ny, begrunnet beslutning. Navn på leverandører og priser er tidsavhengige og verifiseres ved drift. Historiske leverandørpriser nedenfor er ikke verifisert på nytt i P0.
 
 ## Beslutninger

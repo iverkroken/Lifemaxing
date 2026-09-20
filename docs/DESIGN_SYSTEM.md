@@ -2,11 +2,21 @@
 
 ## Current authority - artwork product redesign, 15 September 2026
 
+### Selected additions — 20–21 September 2026
+
+Life Area details extend the same visual language: a bounded original image beside the area title, a shared wrapping area-navigation row, lightweight overview actions/counts and the existing scoped lists. Main card surfaces link to their overview; explicit actions and layout editing remain independently operable. Scoped lists suppress competing global title/artwork and the editable all-area filter. Finance Subscriptions stays within the area context with a clear return to overview. The single application top navigation remains authoritative.
+
+Account pages share a split composition using the original `no risk no story.jpg` in its full landscape framing, a bounded form and the existing Joint mark, language/theme controls and tokens. On small screens the form leads and framed artwork follows. Login/signup/recovery/verification transitions are ordinary links; provider buttons are disabled with truthful copy until configured. Security settings owns password change. No new visual identity, floating-card framework or secondary app navbar is introduced.
+
+Today places a persisted planning-mode selector above the daily workspace. Simple prioritizes one list, Focused Day keeps the main mission, 3:3:3 adds a concise explanatory structure and Custom preserves free-form work. All use the same task/habit controls; switching never removes data. Search extends the same top-navigation dialog with immediate pages/actions and ranked owned results, keyboard arrows/Enter/Escape, loading/error/no-match copy.
+
+Finance subscriptions uses open editorial rows, currency-separated monthly/yearly estimates, upcoming dates and category summaries. Shared dialogs/forms handle creation/editing. Cancellation is labelled as manual tracking and never implies cancellation with the vendor. Desktop columns reflow into one mobile reading order; no fictitious bank connection, default browser-style card system or finance-specific palette is added.
+
 The approved full redesign replaces the previous mineral, burgundy and sidebar presentation. This section is current; the Nordic Atelier contract below preserves approval history. Product, API and data rules remain unchanged.
 
 ### Shared system
 
-Inter 400/500/600 provides display (44-72 px), page titles (32-48 px), section titles (24 px), body (16 px) and supporting text (14 px). The shared spacing scale uses 4 px increments. Content uses a 1440 px maximum with responsive 16-40 px gutters.
+Inter 400/500/600 provides display (44-72 px), page titles (32-48 px), section titles (24 px), body (16 px) and supporting text (14 px). The shared spacing scale uses 4 px increments. Content uses a 1600 px maximum with responsive 16-40 px gutters; forms and descriptive text retain narrower measures.
 
 | Role | Light | Dark |
 | --- | --- | --- |
@@ -28,7 +38,11 @@ Plan opens Tasks and exposes Tasks/Goals/Habits/Inbox contextual navigation. Pro
 
 ### Artwork and page composition
 
-Original PNGs in client/public/images are runtime assets and must retain their bytes and names. Backround.png is the supplied filename; CSS rotates it 90 degrees counterclockwise. Today fills its first 100svh with this artwork, then transitions into the daily workspace. Current-day hero data remains independent of the selected planning date.
+Original PNGs in client/public/images are runtime assets and must retain their bytes and names. Backround.png is the supplied filename; CSS rotates it 90 degrees counterclockwise. Today fills its first 100svh with this artwork, then transitions into the daily workspace. Current-day hero data remains independent of the selected planning date. Its task/habit summary, labelled mission and existing Focus entry stay in normal document flow. The fixed header becomes opaque when the start of the hero text reaches it, measured against the actual header height; no scroll scaling or pinned text is used. The document owns anchor clearance so it is not doubled at the workspace.
+
+Goals gives the existing artwork more of the desktop composition. Progress and Rewards use larger responsive image sections with shared 12-16 px media corners. Full-bleed Today and Focus backgrounds remain immersive. Life Areas groups its counts in one compact row, bringing the unchanged image cards and their controls into the initial viewport.
+
+Shared form fields use 16 px text and retain native labels, validation and keyboard behavior. Supporting browsers use CSS `base-select` to give native select pickers the application surface, spacing, selected state and elevation; other browsers retain native pickers. Date calendars and time-zone suggestions remain platform controls. Dialogs and task menus reuse the existing surfaces and focus rules. No custom calendar or JavaScript select framework is added.
 
 Goals uses Gods plan.png; Finance and Style use Money.png and Rolex.png; Progress uses Muhammed ali.png; Rewards uses Tiger.png; Focus uses Odessey.png. The September 16 integration assigns Tutto passo.png to Creative (existing PNG explicitly approved). Food uses cooking.jpg, Travel Polo 1.jpg, Career Work.jpg, Personal personal.jpg, Home toscana.jpg and Fitness Ronaldo.jpg. These seven assignments are locked. The subsequent approved visual follow-up assigns Tesla.jpg to University. Life Area media is 16rem tall on desktop/tablet and 14rem below 640px; the 3/2/1 grid and other mappings remain. areaPresentation.js defines image source, position and wide-card metadata by stable area key, independent of display names; portrait focal positions preserve subjects within existing card dimensions. Text and controls remain usable if artwork cannot load. No production 3D runtime is introduced.
 

@@ -9,6 +9,8 @@ Responsive web application for desktop, tablet and mobile. Private authenticated
 A personal operating system joining daily planning, execution, habits, goals, life areas, progress and an honest history. The owner uses it repeatedly over years; it must combine a personal emotional entrance with precise daily controls.
 
 ## Working capabilities
+
+September 20–21 selected additions explicitly extend the earlier scope: Identity registration/verification/recovery, configurable email/Google with disabled Apple preparation, saved Today planning modes, owned workspace search and manual Finance subscriptions. The previous no-registration/no-finance statements below are historical constraints superseded only for these named features. Bank integration, public profiles, AI search and template builders remain excluded. See ../docs/ACCOUNT_SETUP.md and ../docs/IMPLEMENTATION_STATUS.md for delivery boundaries.
 Today, Tasks/Inbox, Goals, Habits, ten Life Areas, Progress/Activity/Rewards, server-persisted Focus, Settings, session security. Existing APIs and owner isolation are authoritative. No public registration or invented data.
 
 ## Stack

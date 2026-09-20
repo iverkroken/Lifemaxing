@@ -1,5 +1,17 @@
 # PROJECT_SPEC.md
 
+## Approved local completion — 21 September 2026
+
+Every existing Life Area has its own stable-key overview with the original image and Overview/Tasks/Goals/Habits navigation. Views use the authenticated area's real relationship ID and remain correct after renaming. Finance exposes manual Subscriptions through its overview and area navigation. The user explicitly authorized applying the reviewed planning/subscriptions migration to the normal Development database, preserving existing data, and verifying Planning Mode there. This completes the selected feature scope; it does not authorize live provider setup or additional area modules. See [completion audit](COMPLETION_AUDIT.md).
+
+## Approved selected additions — 20–21 September 2026
+
+The explicit new-feature brief supersedes the older prohibition on public registration and deferral of manual subscription tracking. Public email/password registration now creates a private owned workspace through the existing Identity foundation; verified email is required. Recovery/reset, authenticated password change and configurable Google use the same users. Email delivery requires an explicitly configured provider; Apple remains a disabled prepared integration. Setup and exact boundaries are in [ACCOUNT_SETUP.md](ACCOUNT_SETUP.md).
+
+Today offers saved Simple, 3:3:3, Focused Day and Custom presentation modes over the same tasks, commitments, mission and habits; no duplicates or enforced quotas. 3:3:3 explains three hours of meaningful work, three shorter tasks and three maintenance activities as guidance. Custom currently retains free-form planning; a template builder is not implemented. Search includes owned tasks, goals, habits and Life Areas alongside pages/actions, without AI or an external search service.
+
+Finance now includes manual recurring subscriptions, separate totals by currency, upcoming/overdue billing dates and retained cancellation. It is not bank integration, payment processing, a budget system or financial advice. The earlier broader V2 Finance accounts/transactions/budgets remain planned. No public profiles/sharing or other roadmap phases are authorized by these additions. Earlier phase descriptions below retain their historical meaning where this section explicitly supersedes them.
+
 Status: Endelig produktspesifikasjon for første utviklingsløp. Produktversjoner V1 til V6 beskriver funksjonelle milepæler, ikke versjoner av HTTP API.
 
 ## Formål

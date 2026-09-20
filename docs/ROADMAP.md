@@ -1,5 +1,9 @@
 # ROADMAP.md
 
+## Selected additions after stabilization — 20–21 September 2026
+
+The user explicitly prioritized persisted Today modes, local ranked workspace search, Identity registration/verification/recovery, an account-screen refresh, configurable Google, disabled Apple preparation and manual Finance subscriptions. This is a bounded addition, not completion of original Phase 4/5/6. [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) records verification; [ACCOUNT_SETUP.md](ACCOUNT_SETUP.md) distinguishes shipped code from required email/Google configuration and planned Apple OAuth. Real Open Banking, automatic subscription matching and template builders remain planned. These decisions supersede earlier owner-only registration and subscription deferral statements; all private data remains owner-scoped.
+
 Dette er produktets prioriterte rekkefølge. Fasenummer og akseptkriterier utdypes i IMPLEMENTATION_PLAN.md. Versjon betyr produktomfang; /api/v1 er en separat versjon av kontrakten.
 
 ## Må bygges nå: første samlede utviklingsløp
