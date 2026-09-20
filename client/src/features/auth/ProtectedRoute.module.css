@@ -1,1 +1,3 @@
 .centered { min-height: 100dvh; display: grid; place-items: center; color: var(--color-text-muted); padding: var(--space-6); }
+.verification { position: fixed; inset: 0; margin: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; border: 0; color: var(--color-text-muted); background: var(--color-canvas); padding: var(--space-6); }
+.verification[open] { display: grid; place-items: center; }
