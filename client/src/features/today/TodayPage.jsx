@@ -17,6 +17,8 @@ import { TodayHabits } from '../habits/TodayHabits.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
 import layout from './TodayPage.module.css'
 import { TodayHero } from './TodayHero.jsx'
+import { PlanningGuide, PlanningModeControl } from './PlanningModeControl.jsx'
+import { usePlanningMode } from './usePlanningMode.js'
 
 function PlanPicker({ date, action }) {
   const { t } = useLanguage()
@@ -53,6 +55,8 @@ export function TodayPage() {
   const navigate = useNavigate()
   const [selectedDate, setSelectedDate] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const planningMode = usePlanningMode()
+  const simple = planningMode.mode === 'Simple'
   const currentDay = useProductivity('/today')
   const today = useProductivity(`/today${selectedDate ? `?date=${selectedDate}` : ''}`)
   const areas = useProductivity('/areas')
@@ -69,6 +73,7 @@ export function TodayPage() {
   const committed = unfinished.filter(task => commitments.has(task.id))
   const attention = unfinished.filter(task => !commitments.has(task.id))
   const history = otherTasks.filter(task => task.isCompleted || task.deletedAtUtc || commitments.get(task.id)?.removedAtUtc)
+  const visibleHistory = simple && mission && (mission.isCompleted || mission.deletedAtUtc || commitments.get(mission.id)?.removedAtUtc) ? [mission, ...history] : history
   const renderTask = task => <TaskRow key={task.id} task={task} action={action} date={data.localDate} commitment={commitments.get(task.id)} area={areas.data?.find(area => area.id === task.lifeAreaId)} />
   const current = data?.localDate === data?.currentLocalDate
   const dayTasks = data?.tasks.filter(task => !task.deletedAtUtc && !commitments.get(task.id)?.removedAtUtc) || []
@@ -84,15 +89,17 @@ export function TodayPage() {
         {selectedDate && <Button variant="quiet" onClick={() => setSelectedDate('')}>{t("Go to today")}</Button>}
         <Button variant="secondary" onClick={() => openCapture({ date: data?.localDate })}><Icon name="plus" />{t("Add a task")}</Button></div>
     </header>
+    <PlanningModeControl {...planningMode} />
+    <PlanningGuide mode={planningMode.mode} />
     <Availability query={today} label={t("Your day")} />
     {data && <div className={layout.dayStrip}><span>{t('dayStatus', { done: dayTasks.filter(task => task.isCompleted).length, total: dayTasks.length })}</span><span>{t('doneCount', { done: data.habits.filter(habit => habit.activeLogId || habit.targetReached).length, total: data.habits.length })} · {t('Habits')}</span></div>}
     {focus.data?.session && <p className={styles.meta}>{t('focusStatus', { status: t(focus.data.session.status) })} <Link to="/focus">{t("Return to focus →")}</Link></p>}
     {data && <>
       {focus.isError && <Availability query={focus} label={t("Focus")} />}
       {finished && <p role="status" className={layout.finished}><Icon name="check" />{t("Your planned work and habits are complete for this day.")}</p>}
-      {emptyDay ? <><EmptyDay date={data.localDate} openPicker={openPicker} /><ProgressNote /></> : <div className={layout.layout}>
+      {emptyDay ? <><EmptyDay date={data.localDate} openPicker={openPicker} /><ProgressNote /></> : <div className={layout.layout} data-planning-mode={planningMode.mode}>
 
-          <section className={mission ? layout.mission : layout.pickMission} aria-label={t("Daily Mission")}>
+          {!simple && <section className={mission ? layout.mission : layout.pickMission} aria-label={t("Daily Mission")}>
             <div className={layout.missionHeading}><h2>{t("Daily Mission")}</h2>{mission && <Button variant="quiet" size="small" onClick={openPicker}>{t("Change mission")}</Button>}</div>
             <h3 className={layout.missionTitle}>{mission ? <Link to={`/tasks/${mission.id}`}>{mission.title}</Link> : t("Choose the task to do first.")}</h3>
             {mission && <p className={styles.meta}><AreaLabel area={areas.data?.find(area => area.id === mission.lifeAreaId)} />{mission.estimateMinutes && <span> &middot; {t("minutesCount", { count: mission.estimateMinutes })}</span>}</p>}
@@ -104,17 +111,22 @@ export function TodayPage() {
             </div>
             <ActionFeedback action={startFocus} success={t("Focus started.")} />
             {mission?.goalId && <MissionGoal id={mission.goalId} />}
-          </section>
+          </section>}
+          {simple && <section className={layout.work} aria-label={t('Daily list')}>
+            <div className={styles.sectionHeading}><h2>{t('Daily list')}</h2><Button variant="quiet" size="small" onClick={openPicker}>{t('Plan a task')}</Button></div>
+            <ul className={styles.list}>{dayTasks.filter(task => !task.isCompleted).map(renderTask)}</ul>
+            {mission && <Button variant="quiet" size="small" onClick={openPicker}>{t('Change mission')}</Button>}
+          </section>}
           <details className={layout.habits} open><summary>{t("Today's habits")}</summary><div className={styles.sectionHeading}><Link to="/habits">{t("All habits →")}</Link></div>
             {data.habits.length ? <><p className={styles.meta}>{t('doneCount', { done: data.habits.filter(habit => habit.activeLogId || habit.targetReached).length, total: data.habits.length })}</p><TodayHabits data={data} action={action} compact /></> : <p className={styles.meta}>{t("No habits scheduled for this day.")}</p>}
           </details>
           <div className={layout.feedback}><ActionFeedback action={action} /></div>
-          <section className={layout.work} aria-label={t("Daily commitments")}>
+          {!simple && <section className={layout.work} aria-label={t("Daily commitments")}>
             <div className={styles.sectionHeading}><h2>{t("Planned tasks")}<span className={styles.meta}>· {committed.length}</span></h2><Button variant="quiet" size="small" onClick={openPicker}><Icon name="plus" size={16} />{t("Plan a task")}</Button></div>
             {committed.length === 0 ? <p className={styles.meta}>{mission ? t("No other tasks planned.") : t("No tasks planned for this day.")}</p> : <ul className={styles.list}>{committed.map(renderTask)}</ul>}
-          </section>
-          {attention.length > 0 && <section className={layout.work} aria-label={t("Needs attention")}><div className={styles.sectionHeading}><h2>{t("Needs attention")}</h2><span className={styles.meta}>{t("Earlier plans & due dates")}</span></div><ul className={styles.list}>{attention.map(renderTask)}</ul></section>}
-          {history.length > 0 && <details className={layout.history}><summary>{t('historyCount', { count: history.length })}</summary><ul className={styles.list}>{history.map(renderTask)}</ul></details>}
+          </section>}
+          {!simple && attention.length > 0 && <section className={layout.work} aria-label={t("Needs attention")}><div className={styles.sectionHeading}><h2>{t("Needs attention")}</h2><span className={styles.meta}>{t("Earlier plans & due dates")}</span></div><ul className={styles.list}>{attention.map(renderTask)}</ul></section>}
+          {visibleHistory.length > 0 && <details className={layout.history}><summary>{t('historyCount', { count: visibleHistory.length })}</summary><ul className={styles.list}>{visibleHistory.map(renderTask)}</ul></details>}
           {areas.isError && <Availability query={areas} label={t("Life Areas")} />}
         <aside className={layout.aside} aria-label={t("Daily habits and progress")}>
           <ProgressNote />

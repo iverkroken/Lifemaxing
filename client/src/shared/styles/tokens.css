@@ -144,7 +144,7 @@
   --text-4xl: 3.75rem;
   --text-page-title: clamp(2.25rem, 4vw, 3rem);
   --text-section-title: 1.5rem;
-  --workspace-width: 90rem;
+  --workspace-width: 100rem;
   --form-width: 28rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -160,6 +160,7 @@
   --radius-button: 0.5rem;
   --radius-card: 0.75rem;
   --radius-featured: 1rem;
+  --radius-media: clamp(0.75rem, 1.2vw, 1rem);
   --radius-pill: 999px;
   --control-height: 2.75rem;
   --sidebar-width: 0rem;
