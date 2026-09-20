@@ -20,22 +20,22 @@ export function GoalsPage() {
   const { t, areaName, date } = useLanguage()
   const [page, setPage] = useState(1)
   const [archived, setArchived] = useState('false')
-  const { openCapture } = useOutletContext()
+  const { openCapture, area: scopedArea } = useOutletContext()
   const [params, setParams] = useSearchParams()
-  const areaId = params.get('areaId') || ''
+  const areaId = scopedArea?.id || params.get('areaId') || ''
   const goals = useProductivity(`/goals?page=${page}&pageSize=12&archived=${archived}&${areaId ? `areaId=${areaId}` : ''}`)
   const areas = useProductivity('/areas')
 
-  return <div className={styles.stack}>
-    <div className={pageStyles.introduction}>
+  return <div className={`${styles.stack} ${pageStyles.page}`}>
+    {scopedArea ? <header className={styles.sectionHeading}><h2>{t('Goals')}</h2><Button onClick={() => openCapture({ kind: 'goal' })}>{t('New goal')}</Button></header> : <div className={pageStyles.introduction}>
     <PageHeader editorial title={t("Goals")} description={t("Track the outcomes you care about and record your next step.")}
       action={<Button onClick={() => openCapture({ kind: 'goal' })}>{t("New goal")}</Button>} />
     <div className={pageStyles.artwork}><img src="/images/Gods%20plan.png" alt="" width="735" height="484" /></div>
-    </div>
+    </div>}
     <section aria-label={t("Goal list")}>
     <div className={pageStyles.toolbar}>
       <Select label={t("Goal list")} value={archived} onChange={e => { setArchived(e.target.value); setPage(1) }}><option value="false">{t("Current goals")}</option><option value="true">{t("Archived goals")}</option></Select>
-      <Select label={t("Life Area filter")} value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value } : {}); setPage(1) }}><option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>
+      {!scopedArea && <Select label={t("Life Area filter")} value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value } : {}); setPage(1) }}><option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>}
     </div>
     <QueryFeedback query={goals} /><QueryFeedback query={areas} />
     {goals.data?.total === 0 && <EmptyState title={t("What would you like to move toward?")} icon="goals" action={<Button variant="secondary" onClick={() => openCapture({ kind: 'goal' })}>{t("Set your first goal")}</Button>}>{t("Choose a meaningful outcome. Track it with numbers or simply record what changed.")}</EmptyState>}

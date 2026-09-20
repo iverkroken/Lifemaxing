@@ -14,12 +14,12 @@ import pageStyles from './GoalsPage.module.css'
 const schema = z.object({ title: z.string().trim().min(1, 'Enter a goal title.').max(200), description: z.string().max(10000),
   lifeAreaId: z.string(), state: z.string(), targetDate: z.string(), targetValue: z.string(), baselineValue: z.string(), unit: z.string(), direction: z.string() })
 
-export function GoalForm({ goal, onSaved }) {
+export function GoalForm({ goal, onSaved, initialAreaId = '' }) {
   const { t, areaName } = useLanguage()
   const [measured, setMeasured] = useState(goal?.targetValue != null)
   const areas = useProductivity('/areas')
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: goal?.title || '', description: goal?.description || '',
-    lifeAreaId: goal?.lifeAreaId || '', state: goal?.state || 'Active', targetDate: goal?.targetDate || '',
+    lifeAreaId: goal?.lifeAreaId || initialAreaId, state: goal?.state || 'Active', targetDate: goal?.targetDate || '',
     targetValue: goal?.targetValue?.toString() || '', baselineValue: goal?.baselineValue?.toString() || '', unit: goal?.unit || '', direction: goal?.direction || 'Increase' } })
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction(onSaved)
