@@ -16,7 +16,7 @@ public static class SettingsEndpoints
             var userId = principal.GetUserId();
             var response = await db.UserSettings
                 .Where(value => value.UserId == userId)
-                .Select(value => new SettingsResponse(value.TimeZoneId, value.Locale, value.UiLanguage, value.Theme, value.Density))
+                .Select(value => new SettingsResponse(value.TimeZoneId, value.Locale, value.UiLanguage, value.Theme, value.Density, value.PlanningMode))
                 .SingleAsync(cancellationToken);
             return Results.Ok(response);
         });
@@ -38,6 +38,8 @@ public static class SettingsEndpoints
                 errors["theme"] = ["Choose light, dark or system."];
             if (request.Density is not null and not ("normal" or "compact"))
                 errors["density"] = ["Choose normal or compact density."];
+            if (request.PlanningMode is not null and not ("Simple" or "ThreeThreeThree" or "FocusedDay" or "Custom"))
+                errors["planningMode"] = ["Choose a supported planning mode."];
             if (errors.Count > 0)
             {
                 return Results.ValidationProblem(errors,
@@ -51,12 +53,13 @@ public static class SettingsEndpoints
             if (request.UiLanguage is not null) value.UiLanguage = request.UiLanguage;
             if (request.Theme is not null) value.Theme = request.Theme;
             if (request.Density is not null) value.Density = request.Density;
+            if (request.PlanningMode is not null) value.PlanningMode = request.PlanningMode;
             await db.SaveChangesAsync(cancellationToken);
-            return Results.Ok(new SettingsResponse(value.TimeZoneId, value.Locale, value.UiLanguage, value.Theme, value.Density));
+            return Results.Ok(new SettingsResponse(value.TimeZoneId, value.Locale, value.UiLanguage, value.Theme, value.Density, value.PlanningMode));
         }).ValidateAntiforgery();
     }
 }
 
-public sealed record SettingsResponse(string TimeZoneId, string Locale, string UiLanguage, string Theme, string Density);
+public sealed record SettingsResponse(string TimeZoneId, string Locale, string UiLanguage, string Theme, string Density, string PlanningMode);
 public sealed record UpdateSettingsRequest(string? TimeZoneId = null, string? Locale = null,
-    string? UiLanguage = null, string? Theme = null, string? Density = null);
+    string? UiLanguage = null, string? Theme = null, string? Density = null, string? PlanningMode = null);

@@ -10,6 +10,7 @@ import { Select } from '../../shared/ui/Select.jsx'
 import { Icon } from '../../shared/ui/Icon.jsx'
 import { PageHeader } from '../../shared/ui/PageHeader.jsx'
 import { SignOutDialog } from '../auth/SignOutDialog.jsx'
+import { ChangePassword } from '../auth/ChangePassword.jsx'
 import { getSettings, updateSettings } from './settingsApi.js'
 import { languages } from './language.js'
 import { useLanguage } from './language.js'
@@ -95,6 +96,7 @@ export function SettingsPage() {
             <span className={styles.securityIcon}><Icon name="shield" size={28} /></span><h2 id="security-heading">{t('sessionTitle')}</h2>
             <p>{t('sessionHint')}</p><p>{t('deviceHint')}</p>
           </div></section>
+          <section className={styles.panel}><div className={styles.panelBody}><ChangePassword /></div></section>
           <section className={`${styles.panel} ${styles.danger}`} aria-labelledby="session-controls"><div className={styles.panelBody}>
             <h2 id="session-controls">{t('danger')}</h2>
             <div className={styles.sessionRow}><div><h3>{t('signOut')}</h3><p>{t('outHint')}</p></div><Button variant="dangerQuiet" onClick={() => setSignOut('device')}>{t('signOut')}</Button></div>
