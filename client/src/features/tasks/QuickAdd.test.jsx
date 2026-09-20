@@ -7,6 +7,20 @@ import { QuickAdd } from './QuickAdd.jsx'
 
 afterEach(() => { clearCsrfToken(); vi.unstubAllGlobals() })
 
+test('area capture preserves its actual area for Inbox and planned tasks', async () => {
+  const fetchMock = vi.fn(async (path, request) => path.endsWith('/csrf')
+    ? Response.json({ requestToken: 'test-token' }) : Response.json({ id: 'task-1', ...JSON.parse(request.body) }, { status: 201 }))
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  render(<QueryClientProvider client={client}><QuickAdd lifeAreaId="owned-finance" date="2026-09-21" /></QueryClientProvider>)
+  for (const name of ['Add to Inbox', 'Add to this day']) {
+    await userEvent.type(screen.getByLabelText('Task title', { exact: false }), 'Review costs')
+    await userEvent.click(screen.getByRole('button', { name }))
+    await screen.findByText('Task captured.')
+    expect(JSON.parse(fetchMock.mock.calls.at(-1)[1].body)).toMatchObject({ title: 'Review costs', lifeAreaId: 'owned-finance' })
+  }
+})
+
 test('captures only a title, preserves failed input, and explicitly plans the server supplied date', async () => {
   const fetchMock = vi.fn(async (path, request) => {
     if (path.endsWith('/csrf')) return Response.json({ requestToken: 'test-token' })

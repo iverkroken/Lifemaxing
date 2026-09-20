@@ -13,17 +13,17 @@ import styles from '../../shared/ui/Productivity.module.css'
 const schema = z.object({ title: z.string().trim().min(1, 'Enter a task title.').max(200, 'Use at most 200 characters.'),
   details: z.string().max(10000).optional(), priority: z.string().optional(), tier: z.string().optional() })
 
-function taskValues({ title, details, priority, tier }) {
-  return { title, ...(details && { details }), ...(priority && priority !== 'Normal' && { priority }), ...(tier && tier !== 'Small' && { tier }) }
+function taskValues({ title, details, priority, tier }, lifeAreaId) {
+  return { title, ...(lifeAreaId && { lifeAreaId }), ...(details && { details }), ...(priority && priority !== 'Normal' && { priority }), ...(tier && tier !== 'Small' && { tier }) }
 }
 
-export function QuickAdd({ date, autoFocus = false }) {
+export function QuickAdd({ date, lifeAreaId, autoFocus = false }) {
   const { t } = useLanguage()
   const [plannedDate, setPlannedDate] = useState(date || '')
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: '' } })
   const action = useProductivityAction(() => { form.reset(); form.setFocus('title') })
   return <section aria-label={t("Quick Add")}>
-    <form className={styles.form} onSubmit={form.handleSubmit(values => action.mutate({ path: '/tasks', body: taskValues(values) }))} noValidate>
+    <form className={styles.form} onSubmit={form.handleSubmit(values => action.mutate({ path: '/tasks', body: taskValues(values, lifeAreaId) }))} noValidate>
       <fieldset disabled={action.isPending} className={styles.formFields}>
       <Input label={t("Task title")} placeholder={t("What needs doing?")} autoFocus={autoFocus} required error={form.formState.errors.title} {...form.register('title')} />
       <details><summary>{t("More details")}</summary><div className={styles.form}>
@@ -35,7 +35,7 @@ export function QuickAdd({ date, autoFocus = false }) {
       <div className={styles.actions}>
         <Button type="submit" loading={action.isPending}>{t("Add to Inbox")}</Button>
         {plannedDate && <Button variant="secondary" loading={action.isPending}
-          onClick={form.handleSubmit(values => action.mutate({ path: '/tasks', body: { ...taskValues(values), plannedDate } }))}>{t("Add to this day")}</Button>}
+          onClick={form.handleSubmit(values => action.mutate({ path: '/tasks', body: { ...taskValues(values, lifeAreaId), plannedDate } }))}>{t("Add to this day")}</Button>}
       </div>
       <ActionFeedback action={action} success={t("Task captured.")} />
       </fieldset>
