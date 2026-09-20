@@ -3,7 +3,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
@@ -16,14 +16,14 @@ import pageStyles from './TasksPage.module.css'
 const schema = z.object({ title: z.string().trim().min(1, 'Enter a title.').max(200), details: z.string().max(10000),
   lifeAreaId: z.string(), goalId: z.string(), tier: z.string(), priority: z.string(), plannedDate: z.string(), dueDate: z.string(), estimateMinutes: z.string() })
 
-function TaskForm({ task }) {
+function TaskForm({ task, initialAreaId = '' }) {
   const { t, areaName } = useLanguage()
   const navigate = useNavigate()
   const areas = useProductivity('/areas')
   const [goalPage, setGoalPage] = useState(1)
   const goals = useProductivity(`/goals?page=${goalPage}`)
   const form = useForm({ resolver: zodResolver(schema), defaultValues: {
-    title: task?.title || '', details: task?.details || '', lifeAreaId: task?.lifeAreaId || '', goalId: task?.goalId || '',
+    title: task?.title || '', details: task?.details || '', lifeAreaId: task?.lifeAreaId || initialAreaId, goalId: task?.goalId || '',
     tier: task?.tier || 'Small', priority: task?.priority || 'Normal', plannedDate: task?.plannedDate || '', dueDate: task?.dueDate || '', estimateMinutes: task?.estimateMinutes?.toString() || '',
   } })
   const selectedGoal = useWatch({ control: form.control, name: 'goalId' })
@@ -83,7 +83,8 @@ function TaskForm({ task }) {
 
 export function NewTaskPage() {
   const { t } = useLanguage()
-  return <div className={styles.stack}><Link to="/tasks">{t("← All tasks")}</Link><PageHeader title={t("New task")} description={t("Define the next useful action.")} /><TaskForm /></div>
+  const [params] = useSearchParams()
+  return <div className={styles.stack}><Link to="/tasks">{t("← All tasks")}</Link><PageHeader title={t("New task")} description={t("Define the next useful action.")} /><TaskForm initialAreaId={params.get('areaId') || ''} /></div>
 }
 export function TaskDetailPage({ taskId, panel = false }) {
   const { t } = useLanguage()
