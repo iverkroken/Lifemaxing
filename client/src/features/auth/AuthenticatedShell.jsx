@@ -46,19 +46,20 @@ function Shell({ user, panelTaskId }) {
   useEffect(() => {
     if (location.pathname !== '/today') return
     let observer
-    let observedHero
+    let observedBoundary
     let headerHeight
     const header = document.querySelector('header')
     const observeHero = () => {
-      const hero = document.querySelector('[data-app-hero]')
+      const boundary = document.querySelector('[data-hero-boundary]')
       const nextHeight = header?.offsetHeight || 72
-      if (!hero || (hero === observedHero && nextHeight === headerHeight)) return
+      if (!boundary || (boundary === observedBoundary && nextHeight === headerHeight)) return
       observer?.disconnect()
-      observedHero = hero
+      observedBoundary = boundary
       headerHeight = nextHeight
-      // IntersectionObserver margins are fixed at construction; the header changes height on mobile.
-      observer = new IntersectionObserver(([entry]) => setHeroState({ key: location.key, past: !entry.isIntersecting }), { rootMargin: `-${headerHeight}px 0px 0px 0px` })
-      observer.observe(hero)
+      // Cover text when it reaches the fixed header, not when the whole hero
+      // leaves. Rebuild the observer margin when the header changes size.
+      observer = new IntersectionObserver(([entry]) => setHeroState({ key: location.key, past: entry.boundingClientRect.top < headerHeight }), { rootMargin: `-${headerHeight}px 0px 0px 0px` })
+      observer.observe(boundary)
     }
     const resize = new ResizeObserver(observeHero)
     if (header) resize.observe(header)
@@ -128,9 +129,9 @@ function Shell({ user, panelTaskId }) {
       <div className={styles.captureType}><Select label={t("Create")} value={capture.kind} onChange={e => setCapture(value => ({ ...value, kind: e.target.value }))}>
         <option value="task">{t("Task")}</option><option value="habit">{t("Habit")}</option><option value="goal">{t("Goal")}</option>
       </Select></div>
-      {capture.kind === 'task' && <QuickAdd date={capture.date === null ? undefined : capture.date || today.data?.currentLocalDate} autoFocus />}
-      {capture.kind === 'habit' && <HabitForm onSaved={habit => { setCaptureOpen(false); navigate(`/habits/${habit.id}`) }} />}
-      {capture.kind === 'goal' && <GoalForm onSaved={goal => { setCaptureOpen(false); navigate(`/goals/${goal.id}`) }} />}
+      {capture.kind === 'task' && <QuickAdd lifeAreaId={capture.lifeAreaId} date={capture.date === null ? undefined : capture.date || today.data?.currentLocalDate} autoFocus />}
+      {capture.kind === 'habit' && <HabitForm initialAreaId={capture.lifeAreaId} onSaved={habit => { setCaptureOpen(false); navigate(`/habits/${habit.id}`) }} />}
+      {capture.kind === 'goal' && <GoalForm initialAreaId={capture.lifeAreaId} onSaved={goal => { setCaptureOpen(false); navigate(`/goals/${goal.id}`) }} />}
     </Dialog>
     <MenuDrawer onNavigate={() => { setMenuOpen(false); requestAnimationFrame(() => document.getElementById('main-content')?.focus({ preventScroll: true })) }} open={menuOpen} onClose={() => setMenuOpen(false)} user={user} session={activeFocus.data?.session}
       onSearch={() => { setMenuOpen(false); setCommandOpen(true) }}

@@ -19,6 +19,13 @@ async function theme(page, value) {
   await page.getByRole('radio', { name: value, exact: true }).check()
   await expect(page.locator('html')).toHaveAttribute('data-theme', value.toLowerCase())
 }
+async function hoverCardImage(page, card) {
+  const image = card.locator('img')
+  await image.scrollIntoViewIfNeeded()
+  const box = await image.boundingBox()
+  // The overview link deliberately covers the image; move the real pointer onto that surface.
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+}
 
 test('Life Area layout drafts support moving, cancel, save failures and persistence', async ({ page, browserName }) => {
   await login(page)
@@ -262,18 +269,18 @@ test('active navigation keeps one indicator on hover and visible keyboard focus'
   }
 })
 
-test('Today header follows the artwork boundary when resizing across navigation breakpoints', async ({ page }) => {
+test('Today header follows the text boundary when resizing across navigation breakpoints', async ({ page }) => {
   await login(page)
   await page.setViewportSize({ width: 1440, height: 600 })
   await page.goto('/today')
   await ready(page)
-  const hero = page.locator('[data-app-hero]')
+  const boundary = page.locator('[data-hero-boundary]')
   const header = page.locator('header[data-artwork]')
   for (const width of [1440, 390, 1440]) {
     await page.setViewportSize({ width, height: 600 })
     // 68px is between the existing desktop (72px) and mobile (64px) header heights.
-    await hero.evaluate(element => scrollTo(0, element.offsetTop + element.offsetHeight - 68))
-    await expect.poll(() => hero.evaluate(element => Math.round(element.getBoundingClientRect().bottom))).toBe(68)
+    await boundary.evaluate(element => scrollTo(0, element.getBoundingClientRect().top + scrollY - 68))
+    await expect.poll(() => boundary.evaluate(element => Math.round(element.getBoundingClientRect().top))).toBe(68)
     await expect(header).toHaveAttribute('data-artwork', String(width < 1200))
   }
 })
@@ -319,8 +326,7 @@ test('artwork system: every route, both themes, desktop and mobile, original ass
     await page.mouse.move(width / 2, 700)
     await page.mouse.wheel(0, 1000)
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100)
-    // Empty tablet content can reach its scroll limit while artwork is still behind the header.
-    const stillOverArtwork = await hero.evaluate(element => element.getBoundingClientRect().bottom > document.querySelector('header[data-artwork]').offsetHeight)
+    const stillOverArtwork = await page.locator('[data-hero-boundary]').evaluate(element => element.getBoundingClientRect().top >= document.querySelector('header[data-artwork]').offsetHeight)
     await expect(page.locator('header[data-artwork]')).toHaveAttribute('data-artwork', String(stillOverArtwork))
     await page.screenshot({ path: `${root}/${browserName}/workspace-${width}.png` })
   }
@@ -363,7 +369,7 @@ test('Life Area images preserve locked assignments, responsive cards and editing
         await expect(image).toHaveCSS('object-fit', 'cover')
         await expect(card.getByRole('heading')).toBeVisible()
         for (const kind of ['tasks', 'goals', 'habits']) {
-          await expect(card.locator(`a[href^="/${kind}?areaId="]`).last()).toBeVisible()
+          await expect(card.locator(`a[href="/areas/${key}/${kind}"]`)).toBeVisible()
         }
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -391,8 +397,8 @@ test('Life Area images preserve locked assignments, responsive cards and editing
   await dialog.getByRole('button', { name: 'Save changes' }).click()
   await expect(dialog.getByRole('status')).toHaveText('Changes saved.')
   await page.keyboard.press('Escape')
-  await card.locator('a[href^="/tasks?areaId="]').first().click()
-  await expect(page).toHaveURL(/\/tasks\?areaId=/)
+  await card.getByRole('heading').getByRole('link').click()
+  await expect(page).toHaveURL(/\/areas\/food$/)
   expect(errors).toEqual([])
 })
 
@@ -489,14 +495,14 @@ test('Life Area controls preserve filtering and card interaction without layout 
       const card = cards.nth(index)
       await page.mouse.move(0, 0)
       const before = await cards.evaluateAll(elements => elements.map(el => [el.offsetLeft, el.offsetTop, el.offsetWidth, el.offsetHeight]))
-      await card.locator('img').hover()
+      await hoverCardImage(page, card)
       await expect(card).not.toHaveCSS('transform', 'none')
       await expect(card).not.toHaveCSS('box-shadow', 'none')
       expect(await cards.evaluateAll(elements => elements.map(el => [el.offsetLeft, el.offsetTop, el.offsetWidth, el.offsetHeight]))).toEqual(before)
-      const control = card.locator('a[href^="/habits?"]')
+      const control = card.locator('a[href$="/habits"]')
       await control.focus()
       await page.keyboard.press('Shift+Tab')
-      const focused = card.locator('a[href^="/goals?"]')
+      const focused = card.locator('a[href$="/goals"]')
       await expect(focused).toBeFocused()
       await expect(focused).toHaveCSS('outline-style', 'solid')
       await expect(focused.locator('svg')).toHaveCount(0)
@@ -540,18 +546,18 @@ test('Life Area controls preserve filtering and card interaction without layout 
     }
     return cases.map(([kind, key]) => ({ kind, key, id: areas.find(a => a.key === key).id }))
   })
-  for (const { kind, key, id } of fixture) {
+  for (const { kind, key } of fixture) {
     await page.goto('/areas')
-    const control = page.locator('[data-area="' + key + '"] a[href^="/' + kind + '?"]').last()
+    const control = page.locator('[data-area="' + key + '"] a[href="/areas/' + key + '/' + kind + '"]')
     await expect(control).toContainText('1')
     await control.click()
-    expect(new URL(page.url()).searchParams.get('areaId')).toBe(id)
-    await expect(page.getByLabel('Life Area filter')).toHaveValue(id)
-    await expect(page.getByText('Area filter ' + kind + ' included', { exact: true })).toBeVisible()
+    await expect(page).toHaveURL(new RegExp('/areas/' + key + '/' + kind + '$'))
+    await expect(page.getByLabel('Life Area filter')).toHaveCount(0)
+    await expect(page.getByText('Area filter ' + kind + ' included', { exact: true }).first()).toBeVisible()
     await expect(page.getByText('Area filter ' + kind + ' excluded', { exact: true })).toHaveCount(0)
     await page.reload()
-    await expect(page.getByLabel('Life Area filter')).toHaveValue(id)
-    await expect(page.getByText('Area filter ' + kind + ' included', { exact: true })).toBeVisible()
+    await expect(page.getByLabel('Life Area filter')).toHaveCount(0)
+    await expect(page.getByText('Area filter ' + kind + ' included', { exact: true }).first()).toBeVisible()
   }
   expect(errors).toEqual([])
 })
@@ -569,7 +575,7 @@ test('Life Area controls fit translated large text and touch input', async ({ pa
   for (const [language, label] of [['en', 'Tasks'], ['nb', 'Oppgaver'], ['sv', 'Uppgifter'], ['da', 'Opgaver']]) {
     await patchLanguage(language)
     await page.goto('/areas')
-    const controls = page.locator('section[data-area] a[href^="/tasks?"]').filter({ hasText: label })
+    const controls = page.locator('section[data-area] a[href$="/tasks"]').filter({ hasText: label })
     await expect(controls).toHaveCount(10)
     await page.evaluate(() => { document.documentElement.style.fontSize = '200%' })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -582,9 +588,10 @@ test('Life Area controls fit translated large text and touch input', async ({ pa
     await mobile.goto('/areas')
     const card = mobile.locator('section[data-area="fitness"]')
     await expect(card.getByRole('heading')).toBeVisible()
-    await card.locator('img').hover()
+    await hoverCardImage(mobile, card)
     await expect(card).toHaveCSS('transform', 'none')
     await card.getByRole('link', { name: /^Tasks/ }).tap()
-    await expect(mobile.getByLabel('Life Area filter')).toHaveValue(new URL(mobile.url()).searchParams.get('areaId'))
+    await expect(mobile).toHaveURL(/\/areas\/fitness\/tasks$/)
+    await expect(mobile.getByLabel('Life Area filter')).toHaveCount(0)
   } finally { await touch.close() }
 })
