@@ -21,10 +21,10 @@ export function HabitsPage() {
   const { t, areaName, date: formatDate } = useLanguage()
   const [page, setPage] = useState(1)
   const [archived, setArchived] = useState('false')
-  const { openCapture } = useOutletContext()
+  const { openCapture, area: scopedArea } = useOutletContext()
   const [params, setParams] = useSearchParams()
-  const areaId = params.get('areaId') || ''
-  const view = params.get('view') || (areaId ? 'library' : 'today')
+  const areaId = scopedArea?.id || params.get('areaId') || ''
+  const view = scopedArea ? 'library' : params.get('view') || (areaId ? 'library' : 'today')
   const changeView = value => setParams(current => { const next = new URLSearchParams(current); next.set('view', value); return next })
   const habits = useProductivity(`/habits?page=${page}&archived=${archived}&${areaId ? `areaId=${areaId}` : ''}`)
   const today = useProductivity('/today')
@@ -32,9 +32,9 @@ export function HabitsPage() {
   const action = useProductivityAction()
 
   return <div className={styles.stack}>
-    <PageHeader title={t("Habits")} description={t("Complete your daily routines, then review or adjust what comes next.")}
-      action={<Button onClick={() => openCapture({ kind: 'habit' })}>{t("New habit")}</Button>} />
-    <nav className={pageStyles.views} aria-label={t("Habit views")}><button aria-current={view === "today" ? "page" : undefined} onClick={() => changeView("today")}><Icon name="today" />{t("For today")}</button><button aria-current={view === "library" ? "page" : undefined} onClick={() => changeView("library")}><Icon name="habits" />{t("Your routines")}</button></nav>
+    {scopedArea ? <header className={styles.sectionHeading}><h2>{t('Habits')}</h2><Button onClick={() => openCapture({ kind: 'habit' })}>{t('New habit')}</Button></header> : <PageHeader title={t("Habits")} description={t("Complete your daily routines, then review or adjust what comes next.")}
+      action={<Button onClick={() => openCapture({ kind: 'habit' })}>{t("New habit")}</Button>} />}
+    {!scopedArea && <nav className={pageStyles.views} aria-label={t("Habit views")}><button aria-current={view === "today" ? "page" : undefined} onClick={() => changeView("today")}><Icon name="today" />{t("For today")}</button><button aria-current={view === "library" ? "page" : undefined} onClick={() => changeView("library")}><Icon name="habits" />{t("Your routines")}</button></nav>}
     {view !== "library" ? <>
       <section className={pageStyles.today} aria-label={t("Habits today")}><div className={pageStyles.todayHeading}><h2>{t("For today")}</h2><span className={styles.meta}>{areaId && <>{t("All areas")} · </>}{formatDate(today.data?.localDate)}</span></div>
         <div className={pageStyles.todayContent}><QueryFeedback query={today} /><TodayHabits data={today.data} action={action} emptyClassName={pageStyles.embeddedEmpty} onCreate={() => openCapture({ kind: 'habit' })} /><ActionFeedback action={action} /></div>
@@ -42,7 +42,7 @@ export function HabitsPage() {
       <HabitWeek key={areaId} areaId={areaId} />
     </> : <section aria-label={t("Habit library")}><h2 className={styles.sectionTitle}>{t("Your routines")}</h2>
         <div className={pageStyles.toolbar}><Select label={t("Habit list")} value={archived} onChange={e => { setArchived(e.target.value); setPage(1) }}><option value="false">{t("Current habits")}</option><option value="true">{t("Archived habits")}</option></Select>
-          <Select label={t("Life Area filter")} value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value, view: 'library' } : { view: 'library' }); setPage(1) }}><option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select></div>
+          {!scopedArea && <Select label={t("Life Area filter")} value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value, view: 'library' } : { view: 'library' }); setPage(1) }}><option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>}</div>
         <QueryFeedback query={habits} /><QueryFeedback query={areas} />
         {habits.data?.total === 0 && <EmptyState title={t("Start with something small")} action={<Button variant="secondary" onClick={() => openCapture({ kind: 'habit' })}>{t("New habit")}</Button>}>{t("A few minutes of something meaningful is enough to begin.")}</EmptyState>}
         <ul className={styles.list}>{habits.data?.items.map(habit => <li className={styles.row} key={habit.id}><div>
@@ -50,6 +50,7 @@ export function HabitsPage() {
           <p className={styles.meta}>{habit.archivedAtUtc ? t("Archived") : habit.isActive ? t("Active") : t("Inactive")}{habit.lifeAreaId && ` · ${areaName(areas.data?.find(area => area.id === habit.lifeAreaId)) || t("Life Area")}`}</p>
         </div><Link to={`/habits/${habit.id}`} aria-label={t('historyFor', { title: habit.title })}><Icon name="arrow" /></Link></li>)}</ul><Pagination data={habits.data} setPage={setPage} />
       </section>}
+    {scopedArea && <HabitWeek key={areaId} areaId={areaId} />}
   </div>
 }
 

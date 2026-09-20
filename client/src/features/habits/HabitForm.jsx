@@ -13,7 +13,7 @@ import pageStyles from './HabitsPage.module.css'
 
 const schema = z.object({ title: z.string().trim().min(1, 'Enter a habit title.').max(200), lifeAreaId: z.string(), isActive: z.boolean(), xpPerLog: z.coerce.number().int().min(1).max(25) })
 
-export function HabitForm({ habit, onSaved }) {
+export function HabitForm({ habit, onSaved, initialAreaId = '' }) {
   const { t, areaName } = useLanguage()
   const areas = useProductivity('/areas')
   const today = useProductivity('/today')
@@ -21,7 +21,7 @@ export function HabitForm({ habit, onSaved }) {
   const [days, setDays] = useState([1, 3, 5])
   const [target, setTarget] = useState(3)
   const [from, setFrom] = useState('')
-  const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: habit?.title || '', lifeAreaId: habit?.lifeAreaId || '', isActive: habit?.isActive ?? true, xpPerLog: habit?.xpPerLog ?? 10 } })
+  const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: habit?.title || '', lifeAreaId: habit?.lifeAreaId || initialAreaId, isActive: habit?.isActive ?? true, xpPerLog: habit?.xpPerLog ?? 10 } })
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction(saved => { if (!habit) form.reset(); onSaved?.(saved) })
   return <form className={`${styles.form} ${pageStyles.form}`} noValidate onSubmit={form.handleSubmit(values => action.mutate({ path: habit ? `/habits/${habit.id}` : '/habits', method: habit ? 'PATCH' : 'POST', body: { ...values, lifeAreaId: values.lifeAreaId || null,
