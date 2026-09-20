@@ -142,6 +142,13 @@ namespace Lifemaxing.Api.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<string>("PlanningMode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("FocusedDay");
+
                     b.Property<string>("Theme")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -164,6 +171,76 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.HasKey("UserId");
 
                     b.ToTable("UserSettings", (string)null);
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Finance.Subscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BillingInterval")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateOnly>("NextBillingDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(11, 2)
+                        .HasColumnType("numeric(11,2)");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Status", "NextBillingDate");
+
+                    b.ToTable("Subscriptions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Subscriptions_Dates", "\"NextBillingDate\" >= \"StartDate\" AND \"StartDate\" >= DATE '1900-01-01' AND \"NextBillingDate\" <= DATE '9998-12-31'");
+
+                            t.HasCheckConstraint("CK_Subscriptions_Interval", "\"BillingInterval\" IN ('Weekly', 'Monthly', 'Quarterly', 'Yearly')");
+
+                            t.HasCheckConstraint("CK_Subscriptions_Price", "\"Price\" >= 0 AND \"Price\" <= 999999999.99");
+
+                            t.HasCheckConstraint("CK_Subscriptions_Status", "\"Status\" IN ('Active', 'Cancelled')");
+                        });
                 });
 
             modelBuilder.Entity("Lifemaxing.Api.Features.Goals.Goal", b =>
@@ -968,6 +1045,15 @@ namespace Lifemaxing.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Finance.Subscription", b =>
+                {
+                    b.HasOne("Lifemaxing.Api.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Lifemaxing.Api.Features.Goals.Goal", b =>

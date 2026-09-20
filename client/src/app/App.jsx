@@ -11,10 +11,14 @@ import { PageHeader } from '../shared/ui/PageHeader.jsx'
 import styles from './App.module.css'
 
 const FocusPage = lazy(() => import('../features/focus/FocusPage.jsx').then(module => ({ default: module.FocusPage })))
+const AccountPage = lazy(() => import('../features/auth/AccountPage.jsx').then(module => ({ default: module.AccountPage })))
+const SubscriptionsPage = lazy(() => import('../features/finance/SubscriptionsPage.jsx').then(module => ({ default: module.SubscriptionsPage })))
 const ProgressPage = lazy(() => import('../features/progress/ProgressPage.jsx').then(module => ({ default: module.ProgressPage })))
 const ActivityPage = lazy(() => import('../features/progress/ProgressPage.jsx').then(module => ({ default: module.ActivityPage })))
 const RewardsPage = lazy(() => import('../features/progress/RewardsPage.jsx').then(module => ({ default: module.RewardsPage })))
 const AreaPage = lazy(() => import('../features/areas/AreaPage.jsx').then(module => ({ default: module.AreaPage })))
+const AreaLayout = lazy(() => import('../features/areas/AreaDetail.jsx').then(module => ({ default: module.AreaLayout })))
+const AreaOverview = lazy(() => import('../features/areas/AreaDetail.jsx').then(module => ({ default: module.AreaOverview })))
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage.jsx').then(module => ({ default: module.SettingsPage })))
 const StartPage = lazy(() => import('../features/system/StartPage.jsx').then(module => ({ default: module.StartPage })))
 const TodayPage = lazy(() => import('../features/today/TodayPage.jsx').then(module => ({ default: module.TodayPage })))
@@ -55,6 +59,11 @@ export function App() {
       <Route index element={<HomeRoute />} />
       <Route path="start" element={<main className={styles.publicPage}><StartPage /></main>} />
       <Route path="login" element={<LoginPage />} />
+      <Route path="signup" element={<AccountPage key="signup" mode="signup" />} />
+      <Route path="forgot-password" element={<AccountPage key="forgot" mode="forgot" />} />
+      <Route path="reset-password" element={<AccountPage key="reset" mode="reset" />} />
+      <Route path="verify-email" element={<AccountPage key="verify" mode="verify" />} />
+      <Route path="resend-verification" element={<AccountPage key="resend" mode="resend" />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedShell panelTaskId={background ? location.pathname.split('/')[2] : null} />}>
           <Route path="focus" element={<FocusPage />} />
@@ -71,6 +80,13 @@ export function App() {
           <Route path="goals" element={<GoalsPage />} />
           <Route path="goals/:id" element={<GoalDetailPage />} />
           <Route path="areas" element={<AreaPage />} />
+          <Route path="areas/:areaKey" element={<AreaLayout />}>
+            <Route index element={<AreaOverview />} />
+            <Route path="tasks" element={<TasksPage />} />
+            <Route path="goals" element={<GoalsPage />} />
+            <Route path="habits" element={<HabitsPage />} />
+            <Route path="subscriptions" element={<SubscriptionsPage />} />
+          </Route>
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Route>
