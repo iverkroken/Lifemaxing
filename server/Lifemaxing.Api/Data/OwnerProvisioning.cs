@@ -5,20 +5,6 @@ namespace Lifemaxing.Api.Data;
 
 public static class OwnerProvisioning
 {
-    private static readonly (string Key, string DisplayName)[] DefaultAreas =
-    [
-        ("fitness", "Health & Fitness"),
-        ("university", "University"),
-        ("career", "Work & Career"),
-        ("finance", "Finance"),
-        ("home", "Home & Plants"),
-        ("style", "Style"),
-        ("food", "Food & Cooking"),
-        ("creative", "Creative"),
-        ("travel", "Travel"),
-        ("personal", "Personal")
-    ];
-
     public static async Task<int> RunAsync(IServiceProvider services, IConfiguration configuration)
     {
         var email = configuration["OwnerProvisioning:Email"];
@@ -50,22 +36,7 @@ public static class OwnerProvisioning
             return 1;
         }
 
-        db.UserSettings.Add(new UserSettings
-        {
-            UserId = owner.Id,
-            TimeZoneId = "Europe/Oslo",
-            Locale = "nb-NO",
-            CreatedAtUtc = DateTimeOffset.UtcNow
-        });
-        db.LifeAreas.AddRange(DefaultAreas.Select((area, index) => new LifeArea
-        {
-            Id = Guid.NewGuid(),
-            UserId = owner.Id,
-            Key = area.Key,
-            DisplayName = area.DisplayName,
-            IsActive = true,
-            SortOrder = index
-        }));
+        WorkspaceInitialization.Add(db, owner.Id, "Europe/Oslo", "nb-NO");
         await db.SaveChangesAsync();
         await transaction.CommitAsync();
         Console.WriteLine("Owner account, settings and ten Life Areas were created.");
