@@ -83,11 +83,13 @@ export function AreaPage() {
   const countsReady = counts.isSuccess && hasAreaCounts(areas.data || [], counts.data)
   const viewReady = !needsAreaCounts(filters) || countsReady
   const visibleAreas = viewReady ? filterAreas(areas.data || [], counts.data, filters, areaName, language) : []
-  return <div className={shared.stack}>
+  return <div className={styles.page}>
     <PageHeader action={!layoutEditing && <div className={styles.layoutActions}><Button variant="secondary" aria-expanded={filtersOpen} aria-controls="area-filters" onClick={() => setFiltersOpen(open => !open)}><Icon name="settings" />{t("areaFilters")}{selectedFilters > 0 && ` (${selectedFilters})`}</Button><Button ref={customizeButton} variant="secondary" disabled={!areas.data?.length} onClick={() => { resetFilters(); setFiltersOpen(false); setLayoutEditing(true) }}><Icon name="settings" />{t("customizeLayout")}</Button></div>} editorial title={t("Life Areas")} description={t("Find the tasks, goals and routines that belong to each part of your life.")} />
-    {areas.isSuccess && <div className={styles.overview}><span><strong>{areas.data.filter(area => area.isActive).length}</strong>{t("active areas")}</span></div>}
+    {areas.isSuccess && <div className={styles.overview}>
+      <span><strong>{areas.data.filter(area => area.isActive).length}</strong>{t("active areas")}</span>
+      {!layoutEditing && <p className={styles.layoutStatus} role="status">{viewReady ? t("areaResults", { count: visibleAreas.length, total: areas.data.length }) : t("areaCountsUnavailable")} {selectedFilters > 0 && <Button variant="ghost" size="small" onClick={resetFilters}>{t("areaReset")}</Button>}</p>}
+    </div>}
     {!layoutEditing && filtersOpen && <AreaFilters filters={filters} change={changeFilter} reset={resetFilters} countsReady={countsReady} />}
-    {!layoutEditing && areas.isSuccess && <p className={styles.layoutStatus} role="status">{viewReady ? t("areaResults", { count: visibleAreas.length, total: areas.data.length }) : t("areaCountsUnavailable")} {selectedFilters > 0 && <Button variant="ghost" size="small" onClick={resetFilters}>{t("areaReset")}</Button>}</p>}
     <QueryFeedback query={areas} />
     <QueryFeedback query={counts} />
     {areas.isSuccess && areas.data.length === 0 && <p>{t("No Life Areas are available for this account.")}</p>}

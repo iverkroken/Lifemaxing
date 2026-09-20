@@ -11,10 +11,11 @@ export function AreaCard({ area, counts, editing = false, layoutEditing = false,
     <div className={styles.artwork}>{image ? <img src={image.src} style={{ objectPosition: image.position }} alt="" loading="lazy" draggable={layoutEditing ? false : undefined} /> : <AreaArtwork areaKey={area.key} />}</div>
     <div className={styles.areaTop}>{!area.isActive && <span>{t('Inactive')}</span>}{action}</div>
     <div className={styles.content}>
-      <h2>{layoutEditing ? areaName(area) : <Link to={`/tasks?areaId=${area.id}`}>{areaName(area)}</Link>}</h2>
+      <h2>{layoutEditing ? areaName(area) : <Link className={styles.overviewLink} to={`/areas/${encodeURIComponent(area.key)}`}>{areaName(area)}</Link>}</h2>
       <p className={styles.description}>{t(descriptions[area.key] || 'A meaningful part of your life.')}</p>
+      {!layoutEditing && area.key === 'finance' && <p><Link to="/areas/finance/subscriptions">{t('subscriptionTitle')}</Link></p>}
       {layoutEditing ? controls : <div className={styles.links}>{['tasks', 'goals', 'habits'].map(kind =>
-        <Link key={kind} to={`/${kind}?areaId=${area.id}`}><span>{t(kind)}</span><span className={styles.count}>{counts?.[kind] ?? '—'}</span></Link>)}</div>}
+        <Link key={kind} to={`/areas/${encodeURIComponent(area.key)}/${kind}`}><span>{t(kind)}</span><span className={styles.count}>{counts?.[kind] ?? '—'}</span></Link>)}</div>}
     </div>
     {children}
   </section>

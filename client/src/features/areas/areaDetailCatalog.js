@@ -1,0 +1,16 @@
+export const areaDetailCatalog = {
+  areaBack: ['Back to Life Areas', 'Tilbake til livsområder', 'Tillbaka till livsområden', 'Tilbage til livsområder'],
+  areaOverview: ['Overview', 'Oversikt', 'Översikt', 'Overblik'],
+  areaNavigation: ['Life Area navigation', 'Navigasjon i livsområdet', 'Navigering i livsområdet', 'Navigation i livsområdet'],
+  areaNotFound: ['Life Area not found', 'Fant ikke livsområdet', 'Livsområdet hittades inte', 'Livsområdet blev ikke fundet'],
+  areaNotFoundHint: ['Choose an area from your Life Areas to continue.', 'Velg et område fra livsområdene dine for å fortsette.', 'Välj ett av dina livsområden för att fortsätta.', 'Vælg et af dine livsområder for at fortsætte.'],
+  areaNextAction: ['Choose your next step', 'Velg ditt neste steg', 'Välj ditt nästa steg', 'Vælg dit næste skridt'],
+  areaOverviewHint: ['Keep the tasks, goals and routines for this part of your life together.', 'Samle oppgaver, mål og rutiner for denne delen av livet.', 'Samla uppgifter, mål och rutiner för den här delen av livet.', 'Saml opgaver, mål og rutiner for denne del af livet.'],
+  areaSummary_tasks: ['Open tasks in this area', 'Åpne oppgaver i dette området', 'Öppna uppgifter i detta område', 'Åbne opgaver i dette område'],
+  areaSummary_goals: ['Active goals in this area', 'Aktive mål i dette området', 'Aktiva mål i detta område', 'Aktive mål i dette område'],
+  areaSummary_habits: ['Active routines in this area', 'Aktive rutiner i dette området', 'Aktiva rutiner i detta område', 'Aktive rutiner i dette område'],
+  areaFinanceHint: ['Review recurring costs, keep billing dates up to date and manage your manual subscription records.', 'Se over faste kostnader, oppdater betalingsdatoer og administrer abonnementene du har registrert manuelt.', 'Granska återkommande kostnader, uppdatera betalningsdatum och hantera manuellt registrerade abonnemang.', 'Gennemgå faste udgifter, opdater betalingsdatoer og administrer manuelt registrerede abonnementer.'],
+  areaOpenSubscriptions: ['Open subscriptions', 'Åpne abonnementer', 'Öppna abonnemang', 'Åbn abonnementer'],
+  areaFinanceOnly: ['Subscriptions belong to Finance. Open Finance to continue.', 'Abonnementer hører til Økonomi. Åpne Økonomi for å fortsette.', 'Abonnemang hör till Ekonomi. Öppna Ekonomi för att fortsätta.', 'Abonnementer hører til Økonomi. Åbn Økonomi for at fortsætte.'],
+  areaFinanceBack: ['Back to Finance overview', 'Tilbake til økonomioversikten', 'Tillbaka till ekonomiöversikten', 'Tilbage til økonomioverblikket'],
+}

@@ -1,5 +1,7 @@
+.page { display: grid; gap: var(--space-6); min-width: 0; }
+.page > header { margin-bottom: 0; }
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); align-items: stretch; }
-.overview { display: flex; align-items: center; gap: var(--space-8); }
+.overview { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3) var(--space-8); }
 .overview > span { color: var(--color-text-secondary); font-size: var(--text-sm); }
 .overview strong { font-size: var(--text-xl); margin-right: var(--space-2); font-variant-numeric: tabular-nums; }
 .area { --area-tone: var(--color-area-sage); --area-mark: var(--color-area-sage-mark); position: relative; display: flex; flex-direction: column; min-width: 0; border-radius: var(--radius-card); background: var(--color-surface); overflow: hidden; }
@@ -43,6 +45,10 @@
 .artwork img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .area h2 a { color: var(--color-text); text-decoration: none; }
 .area h2 a:hover { color: var(--color-accent); text-decoration: underline; }
+.overviewLink::after { content: ''; position: absolute; inset: 0; z-index: 1; cursor: pointer; border-radius: inherit; }
+.overviewLink:focus-visible::after { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.areaTop { z-index: 2; }
+.content a:not(.overviewLink), .editor { position: relative; z-index: 2; }
 @media (min-width: 1200px) {
   .area[data-layout='wide'] { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 20rem; }
   .area[data-layout='wide'] .artwork { position: relative; height: auto; min-height: 20rem; }
