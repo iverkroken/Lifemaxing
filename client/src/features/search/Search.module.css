@@ -1,0 +1,4 @@
+.results { max-height: 55svh; overflow-y: auto; }
+.resultText { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.resultText small { display: block; color: var(--color-text-muted); font-size: var(--text-xs); margin-top: var(--space-1); }
+.groupTitle { font-size: var(--text-sm); font-weight: 500; margin: var(--space-5) 0 var(--space-2); color: var(--color-text-secondary); }
