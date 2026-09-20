@@ -1,11 +1,19 @@
 import { createContext, useContext } from 'react'
 import { catalog } from './catalog.js'
+import { areaDetailCatalog } from '../areas/areaDetailCatalog.js'
+import { accountCatalog } from '../auth/accountCatalog.js'
+import { financeCatalog } from '../finance/financeCatalog.js'
+import { planningSearchCatalog } from '../search/planningSearchCatalog.js'
 import { formatDate, localizedArea, errorKey } from './formatting.js'
 
 // UI language is separate from regional formatting and historical time zones.
 export const languages = [['en', 'English'], ['nb', 'Norsk bokmål'], ['sv', 'Svenska'], ['da', 'Dansk']]
 export const messages = {
   ...catalog,
+  ...areaDetailCatalog,
+  ...accountCatalog,
+  ...financeCatalog,
+  ...planningSearchCatalog,
   areaFilters: ['Filter', 'Filter', 'Filter', 'Filter'],
   areaSort: ['Sort by', 'Sorter etter', 'Sortera efter', 'Sortér efter'],
   areaStatus: ['Area status', 'Områdestatus', 'Områdesstatus', 'Områdestatus'],

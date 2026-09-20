@@ -2,9 +2,34 @@
 .field label { font-weight: var(--weight-control); line-height: var(--line-control); font-size: var(--text-sm); }
 .field label span, .hint { color: var(--color-text-muted); font-size: var(--text-sm); }
 .hint, .error { margin: 0; }
-.input { font-size: var(--text-sm); line-height: var(--line-body); width: 100%; min-height: var(--control-height); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-control-border); border-radius: var(--radius-control); background: var(--color-surface); color: var(--color-text); }
+.input { font-size: var(--text-base); line-height: var(--line-control); width: 100%; min-height: var(--control-height); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-control-border); border-radius: var(--radius-control); background: var(--color-surface); color: var(--color-text); }
 .input:hover:not(:disabled) { border-color: var(--color-text-secondary); }
 .input:disabled { background: var(--color-interactive); color: var(--color-text-muted); border-color: var(--color-border); cursor: not-allowed; opacity: 1; }
 .input::placeholder { color: var(--color-text-muted); opacity: 1; }
 .input[aria-invalid='true'] { border-color: var(--color-danger); }
 .error { color: var(--color-danger); font-size: var(--text-sm); }
+
+/* Keep native semantics, validation and mobile pickers. Supporting browsers can
+   theme the native select's top-layer surface without a JavaScript listbox. */
+select.input { cursor: pointer; }
+select.input option { background: var(--color-raised); color: var(--color-text); }
+.input[type='date'] { max-width: 100%; }
+.input::-webkit-calendar-picker-indicator { cursor: pointer; padding: var(--space-1); border-radius: var(--radius-row); }
+.input::-webkit-calendar-picker-indicator:hover { background-color: var(--color-hover); }
+@supports (appearance: base-select) {
+  select.input, select.input::picker(select) { appearance: base-select; }
+  select.input { align-items: center; gap: var(--space-3); white-space: normal; overflow-wrap: anywhere; }
+  select.input::picker-icon { color: var(--color-text-muted); margin-inline-start: auto; }
+  select.input:open { border-color: var(--color-focus); }
+  select.input::picker(select) {
+    margin-block: var(--space-2); padding: var(--space-2); border: 0;
+    border-radius: var(--radius-card); background: var(--color-raised); color: var(--color-text);
+    box-shadow: var(--shadow-dialog); max-inline-size: calc(100vw - var(--space-8));
+    max-block-size: min(24rem, 60dvh); overflow: auto;
+  }
+  select.input option { min-height: var(--control-height); padding: var(--space-3); gap: var(--space-3); border-radius: var(--radius-control); white-space: normal; overflow-wrap: anywhere; }
+  select.input option:hover, select.input option:focus { background: var(--color-hover); }
+  select.input option:checked { background: var(--color-selected); font-weight: var(--weight-control); }
+  select.input option:disabled { color: var(--color-text-muted); cursor: not-allowed; }
+  select.input option::checkmark { color: var(--color-accent); }
+}
