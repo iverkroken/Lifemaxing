@@ -5,8 +5,7 @@ import styles from './TodayPage.module.css'
 
 export function TodayHero({ data }) {
   const { t, date } = useLanguage()
-  const removed = new Set(data?.commitments.filter(plan => plan.removedAtUtc).map(plan => plan.taskId))
-  const tasks = data?.tasks.filter(task => !task.deletedAtUtc && !removed.has(task.id))
+  const tasks = data?.tasks.filter(task => !task.deletedAtUtc)
   const mission = tasks?.find(task => task.id === data?.mission?.taskId && !task.isCompleted)
 
   return <section className={styles.hero} aria-labelledby="today-title" data-app-hero data-hero-theme="dark">
@@ -21,7 +20,7 @@ export function TodayHero({ data }) {
         {tasks?.length > 0 && <p>{t('dayStatus', { done: tasks.filter(task => task.isCompleted).length, total: tasks.length })}</p>}
         {data?.habits.length > 0 && <p>{t('Habits')} · {t('doneCount', { done: data.habits.filter(habit => habit.activeLogId || habit.targetReached).length, total: data.habits.length })}</p>}
       </div>
-      {mission && <div className={styles.heroMission}><p>{t('Daily Mission')}</p><p className={styles.heroPriority}>{mission.title}</p></div>}
+      {mission && <div className={styles.heroMission}><p>{t('Daily priority')}</p><p className={styles.heroPriority}>{mission.title}</p></div>}
       <div className={styles.heroActions}>
         <a className={styles.heroLink} href="#daily-workspace">{t('Open your day')}<Icon name="arrow" className={styles.downArrow} /></a>
         {mission && <Link className={styles.heroLink} to={`/focus?taskId=${mission.id}`}><Icon name="focus" />{t('Start focus')}</Link>}
