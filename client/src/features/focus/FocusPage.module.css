@@ -27,6 +27,10 @@
   --color-warning-soft: var(--palette-dark-warning-soft);
   --color-on-success: var(--palette-dark-on-success);
   --color-danger: var(--palette-dark-danger);
+  --color-area-sage-mark: var(--palette-dark-success);
+  --color-area-blue-mark: var(--palette-dark-info);
+  --color-area-sand-mark: var(--palette-dark-area-sand-mark);
+  --color-area-rose-mark: var(--palette-dark-area-rose-mark);
   position: relative; isolation: isolate; min-height: 100svh; background: var(--color-dark); color: var(--color-text); color-scheme: dark;
   padding: calc(var(--header-height) + var(--space-12)) var(--page-gutter) var(--space-12); overflow: clip;
 }
@@ -70,3 +74,7 @@
   .choice label { flex: 1 1 12rem; }
 }
 @media (forced-colors: active) { .artwork { display: none; } .choice label:has(input:checked) { outline: 2px solid Highlight; } }
+.pickerList { display: grid; gap: var(--space-2); padding: 0; margin: 0; list-style: none; max-height: 24rem; overflow: auto; }
+.pickerList button { width: 100%; min-height: var(--control-height); text-align: left; display: grid; gap: var(--space-2); border: 1px solid var(--color-control-border); border-radius: var(--radius-control); padding: var(--space-4); color: var(--color-text); background: var(--color-surface); cursor: pointer; }
+.pickerList button[aria-pressed='true'] { border-color: var(--color-accent); background: var(--color-selected); }
+.pickerList button > span { font-size: var(--text-sm); color: var(--color-text-muted); }
