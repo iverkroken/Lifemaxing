@@ -27,12 +27,15 @@ public static class GoalEndpoints
     public static void MapGoalEndpoints(this RouteGroupBuilder api)
     {
         var goals = api.MapGroup("/goals");
-        goals.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, Guid? areaId, bool? archived,
+        goals.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, Guid? areaId, bool? archived, string? state, string? search,
             int? page, int? pageSize, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
             var query = db.Goals.Where(x => x.UserId == userId && (archived == true ? x.ArchivedAtUtc != null : x.ArchivedAtUtc == null));
             if (areaId.HasValue) query = query.Where(x => x.LifeAreaId == areaId);
+            if (state is not (null or "Active" or "Paused" or "Completed")) return Productivity.Invalid("state", "Choose Active, Paused or Completed.");
+            if (state != null) query = query.Where(x => x.State == state);
+            if (!string.IsNullOrWhiteSpace(search)) query = query.Where(x => x.Title.Contains(search.Trim()));
             var number = Math.Min(Productivity.Page(page), 1000000); var size = Productivity.PageSize(pageSize);
             var total = await query.CountAsync(ct);
             var items = await query.OrderByDescending(x => x.CreatedAtUtc).ThenBy(x => x.Id)

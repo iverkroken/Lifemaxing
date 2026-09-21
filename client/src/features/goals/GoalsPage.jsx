@@ -60,6 +60,9 @@ export function GoalDetailPage() {
   const [note, setNote] = useState('')
   const [editing, setEditing] = useState(false)
   const goal = useProductivity(`/goals/${id}`)
+  const today = useProductivity('/today')
+  const planning = useProductivityAction()
+  const selected = today.data?.goals?.some(row => row.goal.id === id && row.manuallySelected)
   const progress = useProductivity(`/goals/${id}/progress?page=${page}`)
   const action = useProductivityAction(() => { setValue(''); setNote(''); setPage(1) })
   const archive = useProductivityAction(() => setEditing(false))
@@ -69,6 +72,11 @@ export function GoalDetailPage() {
     <PageHeader title={data?.title || t("Goal")} description={data?.description}
       action={data && !data.archivedAtUtc && <Button variant="secondary" onClick={() => setEditing(true)}>{t("Edit goal")}</Button>} />
     <QueryFeedback query={goal} />
+    {data && !data.archivedAtUtc && data.state === 'Active' && <div className={styles.actions}>
+      <Link to={`/focus?goalId=${id}`}>{t('Focus')}</Link>
+      <Button variant="secondary" disabled={!today.data} loading={planning.isPending} onClick={() => planning.mutate({ path: `/today/${today.data.currentLocalDate}/goals/${id}`, method: selected ? 'DELETE' : 'PUT' })}>{t(selected ? 'Remove selection' : 'Add to today')}</Button>
+      <ActionFeedback action={planning} /><QueryFeedback query={today} />
+    </div>}
     {data && <div className={pageStyles.detail}>
       <div>
         <StatusBadge tone={!data.archivedAtUtc && data.state === 'Completed' ? 'success' : 'neutral'}>{t(data.archivedAtUtc ? 'Archived' : data.state)}</StatusBadge>
