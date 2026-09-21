@@ -27,12 +27,12 @@ export function PlanningModeControl({ mode, query, userId }) {
 
 export function PlanningGuide({ mode }) {
   const { t } = useLanguage()
-  if (mode === 'FocusedDay') return null
+  if (mode === 'FocusedDay') return <p className={styles.modeHint}>{t('focusedDayGuide')}</p>
   if (mode === 'Simple') return <p className={styles.modeHint}>{t('One daily list. Choose your next useful action.')}</p>
-  if (mode === 'Custom') return <p className={styles.modeHint}>{t('Your own rhythm. Use your mission, commitments and habits freely. Reusable templates are not available yet.')}</p>
+  if (mode === 'Custom') return <p className={styles.modeHint}>{t('customDayGuide')}</p>
   return <section className={styles.planningGuide} aria-label="3:3:3">
     <h2>{t('A balanced day with 3:3:3')}</h2>
-    <dl><div><dt>{t('Three hours of meaningful work')}</dt><dd>{t('Protect time for your mission. Start focus when you are ready.')}</dd></div>
+    <dl><div><dt>{t('Three meaningful work items')}</dt><dd>{t('meaningfulWorkGuide')}</dd></div>
       <div><dt>{t('Three shorter tasks')}</dt><dd>{t('Choose a few supporting tasks from your daily plan.')}</dd></div>
       <div><dt>{t('Three maintenance activities')}</dt><dd>{t('Make room for habits and everyday upkeep.')}</dd></div></dl>
     <p>{t('A guide, not a quota. Your tasks stay together; choose what fits this day.')}</p>

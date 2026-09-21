@@ -24,13 +24,13 @@ test('a failed settings load keeps work visible and unlocks the selector after a
   const selector = await screen.findByRole('combobox', { name: 'Planning mode' })
   expect(await screen.findByRole('alert')).toHaveTextContent('could not be saved or loaded')
   expect(selector).toBeDisabled()
-  expect(screen.getByText('Retained daily action')).toBeVisible()
+  expect(screen.getByRole('link', { name: 'Retained daily action' })).toBeVisible()
   expect(screen.getByText('Retained routine')).toBeVisible()
   available = true
   await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
   await waitFor(() => expect(selector).toBeEnabled())
   expect(selector).toHaveValue('Simple')
-  expect(screen.getByText('Retained daily action')).toBeVisible()
+  expect(screen.getByRole('link', { name: 'Retained daily action' })).toBeVisible()
   expect(screen.getByText('Retained routine')).toBeVisible()
 })
 
@@ -59,10 +59,10 @@ test('persists presentation modes while keeping the mission, daily tasks and hab
     await userEvent.selectOptions(selector, value)
     expect(await screen.findByText('Planning mode saved.')).toBeVisible()
     expect(selector).toHaveValue(value)
-    expect(screen.getByText('Supporting task')).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Supporting task' })).toBeVisible()
     expect(screen.getByText('Evening walk')).toBeVisible()
-    if (value === 'Simple') expect(within(screen.getByRole('region', { name: 'Daily list' })).getByText('Meaningful work')).toBeVisible()
-    if (value === 'ThreeThreeThree') expect(screen.getByText('Three hours of meaningful work')).toBeVisible()
+    if (value === 'Simple') expect(within(screen.getByRole('region', { name: 'Tasks Today' })).getByText('Meaningful work')).toBeVisible()
+    if (value === 'ThreeThreeThree') expect(screen.getByText('Three meaningful work items')).toBeVisible()
   }
   expect(writes).toEqual(Array(4).fill('/api/v1/settings'))
 })
@@ -92,5 +92,5 @@ test('retains the saved mode and work after a failed change and allows retry', a
   fail = false
   await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
   await waitFor(() => expect(selector).toHaveValue('Simple'))
-  expect(within(screen.getByRole('region', { name: 'Daily list' })).getByText('Preserved mission')).toBeVisible()
+  expect(within(screen.getByRole('region', { name: 'Tasks Today' })).getByText('Preserved mission')).toBeVisible()
 })
