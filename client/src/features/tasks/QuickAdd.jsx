@@ -1,43 +1,50 @@
 import { useLanguage } from '../settings/language.js'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useProductivityAction } from '../../shared/api/productivity.js'
+import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
 import { Select } from '../../shared/ui/Select.jsx'
-import { ActionFeedback } from '../../shared/ui/ProductivityFeedback.jsx'
+import { ActionFeedback, Pagination, QueryFeedback } from '../../shared/ui/ProductivityFeedback.jsx'
+import { taskDefaults, taskPayload, taskSchema } from './taskForm.js'
 import styles from '../../shared/ui/Productivity.module.css'
 
-const schema = z.object({ title: z.string().trim().min(1, 'Enter a task title.').max(200, 'Use at most 200 characters.'),
-  details: z.string().max(10000).optional(), priority: z.string().optional(), tier: z.string().optional() })
-
-function taskValues({ title, details, priority, tier }, lifeAreaId) {
-  return { title, ...(lifeAreaId && { lifeAreaId }), ...(details && { details }), ...(priority && priority !== 'Normal' && { priority }), ...(tier && tier !== 'Small' && { tier }) }
-}
-
-export function QuickAdd({ date, lifeAreaId, autoFocus = false }) {
-  const { t } = useLanguage()
-  const [plannedDate, setPlannedDate] = useState(date || '')
-  const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: '' } })
-  const action = useProductivityAction(() => { form.reset(); form.setFocus('title') })
-  return <section aria-label={t("Quick Add")}>
-    <form className={styles.form} onSubmit={form.handleSubmit(values => action.mutate({ path: '/tasks', body: taskValues(values, lifeAreaId) }))} noValidate>
+export function QuickAdd({ date, currentDate = date, lifeAreaId = '', autoFocus = false }) {
+  const { t, areaName, date: formatDate } = useLanguage()
+  const areas = useProductivity('/areas')
+  const [page, setPage] = useState(1)
+  const goals = useProductivity(`/goals?page=${page}&state=Active`)
+  const form = useForm({ resolver: zodResolver(taskSchema), defaultValues: taskDefaults(null, lifeAreaId, date || '') })
+  const plannedDate = useWatch({ control: form.control, name: 'plannedDate' })
+  const selectedGoal = useWatch({ control: form.control, name: 'goalId' })
+  const action = useProductivityAction(() => { form.reset({ ...form.getValues(), title: '', details: '' }); form.setFocus('title') })
+  const submit = (values, inbox = false) => action.mutate({ path: '/tasks', body: taskPayload(values, inbox ? '' : values.plannedDate) })
+  const label = !plannedDate ? t('Add to Inbox') : plannedDate === currentDate ? t('Add to today') : t('addToDate', { date: formatDate(plannedDate) })
+  return <section aria-label={t('Quick Add')}>
+    <form className={styles.form} onSubmit={form.handleSubmit(values => submit(values))} noValidate>
       <fieldset disabled={action.isPending} className={styles.formFields}>
-      <Input label={t("Task title")} placeholder={t("What needs doing?")} autoFocus={autoFocus} required error={form.formState.errors.title} {...form.register('title')} />
-      <details><summary>{t("More details")}</summary><div className={styles.form}>
-        <Input label={t("Details")} multiline rows={3} error={form.formState.errors.details} {...form.register('details')} />
-        <div className={styles.fields}><Select label={t("Task size")} {...form.register('tier')} defaultValue="Small">{['Tiny', 'Small', 'Medium', 'Large', 'Epic'].map(size => <option key={size} value={size}>{t(size)}</option>)}</Select>
-          <Select label={t("Priority")} {...form.register('priority')} defaultValue="Normal">{['Low', 'Normal', 'High'].map(priority => <option key={priority} value={priority}>{t(priority)}</option>)}</Select></div>
-      </div></details>
-      <Input label={t('Planned date')} type="date" value={plannedDate} onChange={event => setPlannedDate(event.target.value)} hint={t('captureDateHint')} />
-      <div className={styles.actions}>
-        <Button type="submit" loading={action.isPending}>{t("Add to Inbox")}</Button>
-        {plannedDate && <Button variant="secondary" loading={action.isPending}
-          onClick={form.handleSubmit(values => action.mutate({ path: '/tasks', body: { ...taskValues(values, lifeAreaId), plannedDate } }))}>{t("Add to this day")}</Button>}
-      </div>
-      <ActionFeedback action={action} success={t("Task captured.")} />
+        <Input label={t('Task title')} placeholder={t('What needs doing?')} autoFocus={autoFocus} required error={form.formState.errors.title} {...form.register('title')} />
+        <Select label={t('Life Area')} {...form.register('lifeAreaId')}><option value="">{t('No area')}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>
+        <QueryFeedback query={areas} />
+        <div className={styles.fields}>
+          <Select label={t('Priority')} {...form.register('priority')}>{['Low', 'Normal', 'High'].map(value => <option key={value} value={value}>{t(value)}</option>)}</Select>
+          <Select label={t('Task size')} {...form.register('tier')}>{['Tiny', 'Small', 'Medium', 'Large', 'Epic'].map(value => <option key={value} value={value}>{t(value)}</option>)}</Select>
+        </div>
+        <Input label={t('Planned date')} type="date" {...form.register('plannedDate')} hint={t('taskDateMeaning')} />
+        <details><summary>{t('More details')}</summary><div className={styles.form}>
+          <Select label={t('Goal')} {...form.register('goalId')}><option value="">{t('No goal')}</option>
+            {selectedGoal && !goals.data?.items.some(goal => goal.id === selectedGoal) && <option value={selectedGoal}>{t('Linked goal (outside this page)')}</option>}
+            {goals.data?.items.map(goal => <option key={goal.id} value={goal.id}>{goal.title}</option>)}
+          </Select><QueryFeedback query={goals} /><Pagination data={goals.data} setPage={setPage} />
+          <Input label={t('Details')} multiline rows={3} error={form.formState.errors.details} {...form.register('details')} />
+          <Input label={t('Due date')} type="date" {...form.register('dueDate')} />
+          <Input label={t('Estimate (minutes)')} type="number" min="1" max="10080" {...form.register('estimateMinutes')} />
+        </div></details>
+        <div className={styles.actions}><Button type="submit" loading={action.isPending}>{label}</Button>
+          {plannedDate && <Button variant="secondary" loading={action.isPending} onClick={form.handleSubmit(values => submit(values, true))}>{t('Add to Inbox')}</Button>}
+        </div>
+        <ActionFeedback action={action} success={t('Task captured.')} />
       </fieldset>
     </form>
   </section>
