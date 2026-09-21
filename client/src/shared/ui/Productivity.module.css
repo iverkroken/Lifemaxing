@@ -76,3 +76,6 @@
 .goalRow h2 a:hover { text-decoration: underline; }
 
 .goalRow > .sectionHeading > :last-child { margin-left: auto; }
+.completionControl { display: grid; place-items: center; flex-shrink: 0; width: var(--control-height); height: var(--control-height); cursor: pointer; }
+.completionCheck { width: var(--space-5); height: var(--space-5); accent-color: var(--color-success); cursor: pointer; margin: 0; }
+.completionCheck:disabled { cursor: wait; }
