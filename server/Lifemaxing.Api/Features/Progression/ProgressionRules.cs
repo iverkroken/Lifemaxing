@@ -4,7 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Lifemaxing.Api.Features.Progression;
 
-public sealed record LevelProgress(long TotalXp, int Level, string Rank, long XpIntoLevel, long XpForNextLevel, decimal Percentage, int RuleVersion = 1);
+public sealed record LevelProgress(long TotalXp, int Level, string Rank, long XpIntoLevel, long XpForNextLevel, decimal Percentage, int RuleVersion = 1)
+{
+    public RankInfo RankInfo => RankRules.ForLevel(Level, TotalXp);
+}
 
 public static class ProgressionRules
 {
@@ -24,7 +27,7 @@ public static class ProgressionRules
         var needed = 500L + 100L * (low - 1);
         return new(total, low, Rank(low), earned, needed, decimal.Round(100m * earned / needed, 2));
     }
-    public static string Rank(int level) => level switch { < 10 => "Bronze", < 20 => "Silver", < 30 => "Gold", < 40 => "Platinum", < 50 => "Diamond", _ => "Apex" };
+    public static string Rank(int level) => RankRules.ForLevel(level).Name;
     public static Task<long> Total(AppDbContext db, Guid owner, CancellationToken ct) => db.XpEntries.Where(x => x.UserId == owner).SumAsync(x => (long)x.AmountSigned, ct);
 
     public static void Record(AppDbContext db, Guid owner, string kind, string subjectKind, Guid subjectId,
@@ -44,7 +47,7 @@ public static class ProgressionRules
         db.XpEntries.Add(entry);
         // Completion is the meaningful activity; its summary includes the actual capped award.
         var previous = Calculate(before).Level; var next = Calculate(before + amount).Level;
-        if (next > previous) Record(db, owner, "LevelReached", "Progress", entry.Id, null, day.Now, $"Reached level {next} · {Rank(next)} (rules v1)", entry.Id);
+        if (next > previous) Record(db, owner, "LevelReached", "Progress", entry.Id, null, day.Now, $"Reached level {next} · {RankRules.ForLevel(next).Label} (level rules v1, rank rules v2)", entry.Id);
         return amount;
     }
 

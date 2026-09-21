@@ -14,6 +14,7 @@ public static class ProgressionEndpoints
 {
     public static void MapProgressionEndpoints(this RouteGroupBuilder api)
     {
+        api.MapGet("/progress/ranks", () => Results.Ok(RankRules.Catalog));
         api.MapGet("/progress", async (ClaimsPrincipal principal, AppDbContext db, CancellationToken ct) =>
         {
             var owner = principal.GetUserId();

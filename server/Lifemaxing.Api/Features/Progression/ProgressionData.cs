@@ -68,6 +68,8 @@ public sealed class FocusSession
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public Guid? TaskId { get; set; }
+    public Guid? GoalId { get; set; }
+    public Guid? HabitId { get; set; }
     public DateTimeOffset StartedAtUtc { get; set; }
     public DateTimeOffset? RunningSinceUtc { get; set; }
     public long AccumulatedSeconds { get; set; }

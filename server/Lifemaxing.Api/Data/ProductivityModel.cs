@@ -36,6 +36,11 @@ public static class ProductivityModel
         commitment.HasIndex(x => new { x.UserId, x.LocalDate });
 
         var mission = model.Entity<DailyMission>();
+        var selectedGoal = model.Entity<DailyGoalSelection>();
+        selectedGoal.Property(x => x.TimeZoneId).HasMaxLength(100);
+        selectedGoal.HasIndex(x => new { x.UserId, x.LocalDate, x.GoalId }).IsUnique();
+        selectedGoal.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        selectedGoal.HasOne<Goal>().WithMany().HasForeignKey(x => x.GoalId).OnDelete(DeleteBehavior.Restrict);
         mission.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         mission.HasOne<TaskItem>().WithMany().HasForeignKey(x => x.TaskId).OnDelete(DeleteBehavior.Restrict);
         mission.HasIndex(x => new { x.UserId, x.LocalDate }).IsUnique();
