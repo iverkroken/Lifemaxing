@@ -34,6 +34,16 @@ public sealed class PreferenceMigrationTests(TestDatabaseFixture database)
             }
             var taskId = Guid.NewGuid();
             await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"Tasks\" (\"Id\", \"UserId\", \"Title\", \"Tier\", \"Priority\", \"CreatedAtUtc\", \"UpdatedAtUtc\") VALUES ({taskId}, {ids[0]}, 'Fictional historical action', 'Small', 'Normal', {DateTimeOffset.UtcNow}, {DateTimeOffset.UtcNow})");
+            var habitId = Guid.NewGuid();
+            var focusId = Guid.NewGuid();
+            var xpId = Guid.NewGuid();
+            var receiptId = Guid.NewGuid();
+            var now = DateTimeOffset.UtcNow;
+            const string legacyReceipt = "{\"progression\":{\"progress\":{\"rank\":\"Bronze\",\"level\":1}}}";
+            await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"Habits\" (\"Id\", \"UserId\", \"Title\", \"IsActive\", \"CreatedAtUtc\", \"XpPerLog\") VALUES ({habitId}, {ids[0]}, 'Legacy routine', true, {now}, 0)");
+            await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"FocusSessions\" (\"Id\", \"UserId\", \"TaskId\", \"StartedAtUtc\", \"RunningSinceUtc\", \"AccumulatedSeconds\", \"Status\") VALUES ({focusId}, {ids[0]}, {taskId}, {now}, {now}, 30, 'Running')");
+            await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"XpEntries\" (\"Id\", \"UserId\", \"AmountSigned\", \"Kind\", \"SourceKind\", \"SourceId\", \"OccurredAtUtc\", \"LocalDate\", \"TimeZoneId\", \"Category\", \"RuleVersion\") VALUES ({xpId}, {ids[0]}, 0, 'Award', 'HabitLog', {Guid.NewGuid()}, {now}, {DateOnly.FromDateTime(now.UtcDateTime)}, 'Europe/Oslo', 'Habit', 1)");
+            await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"CommandReceipts\" (\"Id\", \"UserId\", \"ClientActionId\", \"Operation\", \"RequestHash\", \"CreatedAtUtc\", \"ResponseJson\", \"StatusCode\") VALUES ({receiptId}, {ids[0]}, {Guid.NewGuid()}, 'POST /historical', 'fixture', {now}, CAST({legacyReceipt} AS jsonb), 200)");
             await db.Database.MigrateAsync();
             for (var index = 0; index < cases.Length; index++)
             {
@@ -46,6 +56,16 @@ public sealed class PreferenceMigrationTests(TestDatabaseFixture database)
                 Assert.Equal("FocusedDay", saved.PlanningMode);
             }
             Assert.Equal("Fictional historical action", (await db.Tasks.SingleAsync()).Title);
+            Assert.Equal(10, (await db.Habits.SingleAsync()).XpPerLog);
+            var focus = await db.FocusSessions.SingleAsync();
+            Assert.Equal(taskId, focus.TaskId);
+            Assert.Null(focus.GoalId);
+            Assert.Null(focus.HabitId);
+            Assert.Equal(30, focus.AccumulatedSeconds);
+            Assert.Equal("Running", focus.Status);
+            Assert.Equal(0, (await db.XpEntries.SingleAsync()).AmountSigned);
+            Assert.Contains("Bronze", (await db.CommandReceipts.SingleAsync()).ResponseJson);
+            Assert.Empty(await db.DailyGoalSelections.ToListAsync());
             Assert.Empty(await db.Set<Lifemaxing.Api.Features.Finance.Subscription>().ToListAsync());
             Assert.False(db.Database.HasPendingModelChanges());
         }

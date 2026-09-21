@@ -11,7 +11,7 @@ test('XP, claims, activity and paused focus survive API restart', async ({ page 
   await page.getByRole('button', { name: 'Stop session', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Start focus' })).toBeVisible()
   await page.goto('/progress')
-  await expect(page.getByRole('progressbar')).toBeVisible()
+  await expect(page.getByRole('progressbar', { name: 'Progress to next level', exact: true })).toBeVisible()
   await page.getByText('XP ledger · awards and corrections', { exact: true }).click()
   await expect(page.getByText('-100 XP · Reversal', { exact: true })).toBeVisible()
   await page.goto('/rewards')

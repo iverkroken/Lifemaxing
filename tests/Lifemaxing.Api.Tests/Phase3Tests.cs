@@ -32,7 +32,7 @@ public sealed class ProgressionRuleTests
             Assert.Equal(level, ProgressionRules.Calculate(boundary).Level);
             Assert.Equal(0, ProgressionRules.Calculate(boundary).XpIntoLevel);
         }
-        Assert.Equal(new[] { "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Apex", "Apex" },
+        Assert.Equal(new[] { "Iron", "Bronze", "Silver", "Gold", "Platinum", "Emerald", "Challenger" },
             new[] { 9, 10, 20, 30, 40, 50, 100 }.Select(ProgressionRules.Rank));
         Assert.InRange(ProgressionRules.Calculate(long.MaxValue).Percentage, 0, 100);
         Assert.Equal(new[] { 10, 25, 50, 100, 200 }, new[] { "Tiny", "Small", "Medium", "Large", "Epic" }.Select(ProgressionRules.TaskXp));
