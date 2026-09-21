@@ -25,11 +25,11 @@ All routes below are under `/api/v1`, require the authenticated Identity cookie,
 ## Today, commitments and mission
 
 - `GET /today?date=YYYY-MM-DD`: date is optional. Returns `localDate`, `currentLocalDate`, `timeZoneId`, `tasks`, `commitments`, `mission`, `habits`, `inboxCount`.
-- Tasks include the selected date's commitments/mission, plus unfinished unarchived tasks planned or due on/before that date. Completed and archived committed tasks remain visible with their current status. This is a daily planning view, not a reconstruction of historical task state at midnight.
+- Current Today tasks are owned unarchived Tasks planned exactly on the selected date, including completed tasks. Earlier unfinished plans/deadlines are attentionTasks; historical off-date/archive references are planHistory. Goals are the union of explicit daily selections and linked Tasks.
 - `POST /daily-commitments`: `{ taskId, localDate }`. Sets the task's planned date and preserves its due date. Setting PlannedDate through task creation/editing also creates a commitment.
 - Moving a future plan marks the previous commitment removed and clears a matching future mission. Moving after the original day starts retains its commitment. Original TimeZoneId and CommittedAtUtc are retained for historical interpretation.
 - `DELETE /daily-commitments/{id}` marks cancellation, clears a matching PlannedDate and mission, and retains the row and removal timestamp. UI labels cancellation and plans created on the selected day. Future score eligibility is not calculated in Phase 2.
-- `PUT /daily-mission/{date}`: `{ taskId }`. At most one mission per owner/date; task must be unfinished and unarchived. Selection creates/restores that day's commitment without moving an existing PlannedDate. Consequently an unscheduled mission task may still appear in Inbox, following the documented PlannedDate definition.
+- `PUT /daily-mission/{date}`: `{ taskId }`. At most one priority per owner/date; task must be unfinished, unarchived and already planned for this date (otherwise 409). Selection never moves the task.
 - `DELETE /daily-mission/{date}` clears the selection and leaves the commitment. Mission selection itself has no historical event table until Phase 3; its task and commitment history are retained.
 
 ## Habits
@@ -67,4 +67,4 @@ Completion, habit log and goal progress handlers have explicit transaction bound
 
 The dedicated UX pass retains `/today` as the authenticated landing page and exposes only implemented routes through a desktop sidebar and a mobile/tablet dock with a More dialog. See `DESIGN_SYSTEM.md` for the completed navigation and interaction patterns. API contracts are unchanged by that pass.
 
-Phase 3 extends these contracts: task complete/reopen and habit log/revoke require a `ClientActionId` UUID header and return progression feedback in addition to their resource fields. Habits add `xpPerLog` (default 10, configurable 1–25). See the Phase 3 API section in `ARCHITECTURE.md` and the historical storage details in `DATABASE.md`.
+Phase 3 extends these contracts: task complete/reopen and habit log/revoke require a `ClientActionId` UUID header and return progression feedback in addition to their resource fields. Habits add `xpPerLog` (default 10, configurable 1–75). See the Phase 3 API section in `ARCHITECTURE.md` and the historical storage details in `DATABASE.md`.

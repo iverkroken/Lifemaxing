@@ -4,6 +4,7 @@ import { areaDetailCatalog } from '../areas/areaDetailCatalog.js'
 import { accountCatalog } from '../auth/accountCatalog.js'
 import { financeCatalog } from '../finance/financeCatalog.js'
 import { planningSearchCatalog } from '../search/planningSearchCatalog.js'
+import { dailyProgressCatalog } from '../today/dailyProgressCatalog.js'
 import { formatDate, localizedArea, errorKey } from './formatting.js'
 
 // UI language is separate from regional formatting and historical time zones.
@@ -14,6 +15,7 @@ export const messages = {
   ...accountCatalog,
   ...financeCatalog,
   ...planningSearchCatalog,
+  ...dailyProgressCatalog,
   areaFilters: ['Filter', 'Filter', 'Filter', 'Filter'],
   areaSort: ['Sort by', 'Sorter etter', 'Sortera efter', 'Sortér efter'],
   areaStatus: ['Area status', 'Områdestatus', 'Områdesstatus', 'Områdestatus'],

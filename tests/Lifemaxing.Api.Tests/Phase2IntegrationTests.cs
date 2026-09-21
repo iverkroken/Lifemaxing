@@ -114,6 +114,9 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         using var client = app.CreateClient(); await SignIn(client, owner.Email, owner.Password);
         var a = (await Send(client, HttpMethod.Post, "/tasks", new { title = "First" }, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         var b = (await Send(client, HttpMethod.Post, "/tasks", new { title = "Second" }, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        await Send(client, HttpMethod.Put, "/daily-mission/2026-06-10", new { taskId = a }, HttpStatusCode.Conflict);
+        await Send(client, HttpMethod.Post, "/daily-commitments", new { taskId = a, localDate = "2026-06-10" });
+        await Send(client, HttpMethod.Post, "/daily-commitments", new { taskId = b, localDate = "2026-06-10" });
         await Send(client, HttpMethod.Put, "/daily-mission/2026-06-10", new { taskId = a });
         await Send(client, HttpMethod.Put, "/daily-mission/2026-06-10", new { taskId = b });
         var today = await Get(client, "/today");
@@ -249,6 +252,7 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => Send(client, HttpMethod.Post, $"/tasks/{taskId}/complete", new { })));
         await Send(client, HttpMethod.Post, $"/tasks/{taskId}/reopen", new { });
         var date = (await Get(client, "/today")).GetProperty("localDate").GetString();
+        await Send(client, HttpMethod.Post, "/daily-commitments", new { taskId, localDate = date });
         await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => Send(client, HttpMethod.Put, $"/daily-mission/{date}", new { taskId })));
         var habitId = (await Send(client, HttpMethod.Post, "/habits", new { title = "Once per day" }, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         var responses = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => { var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/habits/{habitId}/logs") { Content = JsonContent.Create(new { localDate = date }) }; request.Headers.Add("ClientActionId", Guid.NewGuid().ToString()); return client.SendAsync(request); }));
