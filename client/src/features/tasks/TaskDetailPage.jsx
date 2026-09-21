@@ -2,7 +2,7 @@ import { useLanguage } from '../settings/language.js'
 import { useForm, useWatch } from 'react-hook-form'
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { taskSchema as schema, taskDefaults, taskPayload } from './taskForm.js'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
@@ -13,8 +13,6 @@ import { ActionFeedback, Pagination, QueryFeedback } from '../../shared/ui/Produ
 import styles from '../../shared/ui/Productivity.module.css'
 import pageStyles from './TasksPage.module.css'
 
-const schema = z.object({ title: z.string().trim().min(1, 'Enter a title.').max(200), details: z.string().max(10000),
-  lifeAreaId: z.string(), goalId: z.string(), tier: z.string(), priority: z.string(), plannedDate: z.string(), dueDate: z.string(), estimateMinutes: z.string() })
 
 function TaskForm({ task, initialAreaId = '' }) {
   const { t, areaName } = useLanguage()
@@ -22,10 +20,7 @@ function TaskForm({ task, initialAreaId = '' }) {
   const areas = useProductivity('/areas')
   const [goalPage, setGoalPage] = useState(1)
   const goals = useProductivity(`/goals?page=${goalPage}`)
-  const form = useForm({ resolver: zodResolver(schema), defaultValues: {
-    title: task?.title || '', details: task?.details || '', lifeAreaId: task?.lifeAreaId || initialAreaId, goalId: task?.goalId || '',
-    tier: task?.tier || 'Small', priority: task?.priority || 'Normal', plannedDate: task?.plannedDate || '', dueDate: task?.dueDate || '', estimateMinutes: task?.estimateMinutes?.toString() || '',
-  } })
+  const form = useForm({ resolver: zodResolver(schema), defaultValues: taskDefaults(task, initialAreaId) })
   const selectedGoal = useWatch({ control: form.control, name: 'goalId' })
   const save = useProductivityAction(saved => {
     if (task) form.reset(form.getValues())
@@ -34,9 +29,7 @@ function TaskForm({ task, initialAreaId = '' }) {
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction()
   return <form className={`${styles.form} ${pageStyles.taskForm}`} noValidate onSubmit={form.handleSubmit(values => save.mutate({
-    path: task ? `/tasks/${task.id}` : '/tasks', method: task ? 'PATCH' : 'POST', body: { ...values,
-      details: values.details || null, lifeAreaId: values.lifeAreaId || null, goalId: values.goalId || null,
-      plannedDate: values.plannedDate || null, dueDate: values.dueDate || null, estimateMinutes: values.estimateMinutes ? Number(values.estimateMinutes) : null },
+    path: task ? `/tasks/${task.id}` : '/tasks', method: task ? 'PATCH' : 'POST', body: taskPayload(values),
   }))}>
     <fieldset disabled={save.isPending || action.isPending || Boolean(task?.deletedAtUtc)} className={styles.formFields}>
     <div className={pageStyles.formLayout}>

@@ -10,6 +10,7 @@ public sealed record TaskResponse(Guid Id, string Title, string? Details, Guid? 
     string Tier, string Priority, DateOnly? PlannedDate, DateOnly? DueDate, int? EstimateMinutes,
     DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc, DateTimeOffset? DeletedAtUtc, bool IsCompleted)
 {
+    public int ExpectedXp => Progression.ProgressionRules.TaskXp(Tier);
     public static readonly Expression<Func<TaskItem, TaskResponse>> Projection = x => new TaskResponse(
         x.Id, x.Title, x.Details, x.LifeAreaId, x.GoalId, x.Tier, x.Priority, x.PlannedDate, x.DueDate,
         x.EstimateMinutes, x.CreatedAtUtc, x.UpdatedAtUtc, x.DeletedAtUtc,

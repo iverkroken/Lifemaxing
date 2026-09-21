@@ -1,10 +1,4 @@
 .row { display: grid; grid-template-columns: var(--control-height) minmax(0, 1fr) auto; align-items: center; gap: var(--space-4); padding: var(--row-padding) var(--space-3); border-bottom: 1px solid var(--color-border); }
-.complete { width: var(--control-height); height: var(--control-height); padding: var(--space-3); border: 0; border-radius: var(--radius-control); background: transparent; display: grid; place-items: center; cursor: pointer; color: var(--color-success); position: relative; }
-.complete::before { content: ''; width: var(--space-6); height: var(--space-6); border: 1px solid var(--color-text-muted); border-radius: var(--radius-pill); position: absolute; transition: border-color var(--motion-fast), background-color var(--motion-fast); }
-.complete:hover::before { border-color: var(--color-success); background: var(--color-success-soft); }
-.checked::before { background: var(--color-success-soft); border-color: var(--color-success); }
-.complete svg { position: relative; }
-.complete:disabled { color: var(--color-text-muted); cursor: wait; }
 .body { min-width: 0; }
 .body > a { font-size: var(--text-base); font-weight: 500; line-height: 1.5; }
 .meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); font-size: var(--text-sm); color: var(--color-text-muted); margin-top: var(--space-2); font-variant-numeric: tabular-nums; }

@@ -15,7 +15,7 @@ public static class TaskEndpoints
         var tasks = api.MapGroup("/tasks");
         tasks.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, bool? inbox, string? status,
             Guid? areaId, Guid? goalId, DateOnly? plannedDate, DateOnly? dueBefore, string? search,
-            int? page, int? pageSize, CancellationToken ct) =>
+            int? page, int? pageSize, string? view, string? priority, TimeProvider clock, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
             if (!Productivity.DateValid(plannedDate) || !Productivity.DateValid(dueBefore))
@@ -31,6 +31,18 @@ public static class TaskEndpoints
             if (goalId.HasValue) query = query.Where(x => x.GoalId == goalId);
             if (plannedDate.HasValue) query = query.Where(x => x.PlannedDate == plannedDate);
             if (dueBefore.HasValue) query = query.Where(x => x.DueDate <= dueBefore);
+            if (priority is not (null or "Low" or "Normal" or "High")) return Productivity.Invalid("priority", "Choose Low, Normal or High.");
+            if (priority != null) query = query.Where(x => x.Priority == priority);
+            if (view is not (null or "today" or "overdue" or "upcoming")) return Productivity.Invalid("view", "Choose today, overdue or upcoming.");
+            if (view != null)
+            {
+                var day = await Productivity.Day(db, userId, clock, ct);
+                query = view switch {
+                    "today" => query.Where(x => x.PlannedDate == day.Date),
+                    "overdue" => query.Where(x => x.PlannedDate < day.Date || x.DueDate < day.Date),
+                    _ => query.Where(x => x.PlannedDate > day.Date)
+                };
+            }
             if (!string.IsNullOrWhiteSpace(search)) query = query.Where(x => x.Title.Contains(search.Trim()));
             var total = await query.CountAsync(ct);
             var size = Productivity.PageSize(pageSize);
