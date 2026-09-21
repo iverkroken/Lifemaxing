@@ -1,11 +1,12 @@
 param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '', [switch] $UxRefresh, [switch] $Redesign, [switch] $SignatureShell, [switch] $Artwork, [switch] $Quality, [switch] $SelectedFeatures, [switch] $AreaDetails,
   [ValidateSet('chromium', 'firefox')][string] $BrowserEngine = 'chromium',
-  [string] $ArtifactRoot = '', [switch] $Headed, [string] $TestFilter = '',
+  [string] $ArtifactRoot = '', [switch] $Headed, [string] $TestFilter = '', [switch] $DailyProgression,
   [ValidateSet('', 'before', 'after')][string] $PerformanceStage = '')
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 Set-Location -LiteralPath $repoRoot
-$env:PATH = "$env:LOCALAPPDATA\Microsoft\dotnet;$env:PATH"
+$dotnetExecutable = & node --input-type=module -e "import { resolveDotnetExecutable } from './scripts/run-dotnet.mjs'; console.log(resolveDotnetExecutable())"
+if ($LASTEXITCODE -ne 0) { throw 'Pinned .NET SDK not found.' }
 $logRoot = Join-Path $repoRoot 'artifacts'
 if ($ArtifactRoot) {
   $evidencePath = [IO.Path]::GetFullPath((Join-Path $repoRoot $ArtifactRoot))
@@ -21,7 +22,7 @@ $featureMailbox = $null
 $variables = @('ConnectionStrings__Database', 'ASPNETCORE_ENVIRONMENT', 'ASPNETCORE_URLS', 'ASPNETCORE_CONTENTROOT',
   'OwnerProvisioning__Email', 'OwnerProvisioning__Password', 'SMOKE_EMAIL', 'SMOKE_PASSWORD', 'SMOKE_BASE_URL',
   'SMOKE_RESTART', 'LIFEMAXING_API_TARGET', 'Logging__LogLevel__Default', 'REFERENCE_STAGE', 'PERFORMANCE_STAGE', 'SMOKE_BROWSER', 'VISUAL_ARTIFACT_ROOT',
-  'Authentication__Accounts__PublicOrigin', 'Authentication__Accounts__Email__Provider', 'Authentication__Accounts__Email__MailboxDirectory', 'LIFEMAXING_TEST_MAILBOX')
+  'Authentication__Accounts__PublicOrigin', 'Authentication__Accounts__Email__Provider', 'Authentication__Accounts__Email__MailboxDirectory', 'LIFEMAXING_TEST_MAILBOX', 'PGPASSWORD')
 $previous = @{}
 foreach ($name in $variables) { $previous[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 function Wait-Ready([string] $url) {
@@ -31,6 +32,15 @@ function Wait-Ready([string] $url) {
   }
   throw "Test service did not become ready: $url"
 }
+function Invoke-TestSql([string] $databaseName, [string] $sql) {
+  if ($env:LIFEMAXING_TEST_CONNECTION) {
+    $env:PGPASSWORD = $connection.get_Item('Password')
+    $sql | & psql -h $connection.get_Item('Host') -p $connection.get_Item('Port') -U $connection.get_Item('Username') -d $databaseName -v ON_ERROR_STOP=1
+  } else {
+    $sql | docker compose exec -T db psql -U lifemaxing -d $databaseName -v ON_ERROR_STOP=1
+  }
+  if ($LASTEXITCODE -ne 0) { throw 'Isolated database command failed.' }
+}
 try {
   if ($ArtifactRoot) { $env:VISUAL_ARTIFACT_ROOT = $logRoot }
   foreach ($port in @(5082, 5174)) {
@@ -39,30 +49,32 @@ try {
     }
   }
   # Read the existing local secret without printing or copying it into a tracked file.
-  $secretFile = Join-Path $env:APPDATA 'Microsoft/UserSecrets/lifemaxing-local-development/secrets.json'
-  $secrets = Get-Content -LiteralPath $secretFile -Raw | ConvertFrom-Json
   $connection = New-Object System.Data.Common.DbConnectionStringBuilder
-  $connection.set_ConnectionString($secrets.'ConnectionStrings:Database')
+  if ($env:LIFEMAXING_TEST_CONNECTION) {
+    $connection.set_ConnectionString($env:LIFEMAXING_TEST_CONNECTION)
+  } else {
+    $secretFile = Join-Path $env:APPDATA 'Microsoft/UserSecrets/lifemaxing-local-development/secrets.json'
+    $secrets = Get-Content -LiteralPath $secretFile -Raw | ConvertFrom-Json
+    $connection.set_ConnectionString($secrets.'ConnectionStrings:Database')
+    $secrets = $null
+  }
   $connection.set_Item('Database', $testDatabase)
   if ($connection.get_Item('Database') -ne $testDatabase) { throw 'Isolated database selection failed.' }
   $env:ConnectionStrings__Database = $connection.get_ConnectionString()
-  $secrets = $null
-  docker compose exec -T db psql -U lifemaxing -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE $testDatabase"
-  if ($LASTEXITCODE -ne 0) { throw 'Could not create browser test database.' }
+  Invoke-TestSql 'postgres' "CREATE DATABASE $testDatabase"
   $created = $true
   $env:ASPNETCORE_ENVIRONMENT = 'Development'
   $env:Logging__LogLevel__Default = 'Warning'
-  dotnet tool run dotnet-ef database update --project server/Lifemaxing.Api --configuration Release --no-build
+  & $dotnetExecutable tool run dotnet-ef database update --project server/Lifemaxing.Api --configuration Release --no-build
   if ($LASTEXITCODE -ne 0) { throw 'Browser database migration failed.' }
   $env:OwnerProvisioning__Email = 'browser-owner@example.test'
   $env:OwnerProvisioning__Password = 'Browser-Test!-' + [Guid]::NewGuid().ToString('N')
   $env:SMOKE_EMAIL = $env:OwnerProvisioning__Email
   $env:SMOKE_PASSWORD = $env:OwnerProvisioning__Password
-  dotnet server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll --provision-owner
+  & $dotnetExecutable server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll --provision-owner
   if ($LASTEXITCODE -ne 0) { throw 'Disposable owner provisioning failed.' }
   # Keep regression copy deterministic; language switching is tested separately.
-  'UPDATE "UserSettings" SET "Locale" = ''en-GB'';' | docker compose exec -T db psql -U lifemaxing -d $testDatabase -v ON_ERROR_STOP=1
-  if ($LASTEXITCODE -ne 0) { throw 'Fictional owner language setup failed.' }
+  Invoke-TestSql $testDatabase 'UPDATE "UserSettings" SET "Locale" = ''en-GB'';'
   Remove-Item Env:OwnerProvisioning__Email, Env:OwnerProvisioning__Password
   $env:ASPNETCORE_URLS = 'http://127.0.0.1:5082'
   $env:ASPNETCORE_CONTENTROOT = Join-Path $repoRoot 'server/Lifemaxing.Api'
@@ -77,12 +89,29 @@ try {
     $env:LIFEMAXING_TEST_MAILBOX = $featureMailbox
   }
   New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-  $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-error.log')
+  $apiProcess = Start-Process $dotnetExecutable -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-error.log')
   $viteArguments = 'node_modules/vite/bin/vite.js client --config client/vite.config.js --port 5174'
-  if ($PerformanceStage -or $Redesign -or $SignatureShell -or $Artwork -or $Quality -or $SelectedFeatures -or $AreaDetails) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
+  if ($PerformanceStage -or $Redesign -or $SignatureShell -or $Artwork -or $Quality -or $SelectedFeatures -or $AreaDetails -or $DailyProgression) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
   $viteProcess = Start-Process node -ArgumentList $viteArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-vite.log') -RedirectStandardError (Join-Path $logRoot 'browser-vite-error.log')
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   Wait-Ready 'http://127.0.0.1:5174/start'
+  if ($DailyProgression) {
+    $env:SMOKE_BROWSER = $BrowserEngine
+    $browserArguments = @('run', 'test:smoke', '--', 'daily-progression.spec.js')
+    if ($TestFilter) { $browserArguments += @('--grep', $TestFilter) }
+    & npm @browserArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Daily planning and progression checks failed.' }
+    if (!$TestFilter) {
+      Stop-Process -Id $apiProcess.Id
+      $apiProcess.WaitForExit()
+      $apiProcess = Start-Process $dotnetExecutable -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api-restart.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-restart-error.log')
+      Wait-Ready 'http://127.0.0.1:5082/health/live'
+      $env:SMOKE_RESTART = '1'
+      npm run test:smoke -- daily-progression.spec.js --grep 'restart'
+      if ($LASTEXITCODE -ne 0) { throw 'Daily state persistence after restart failed.' }
+    }
+    return
+  }
   if ($AreaDetails) {
     $env:SMOKE_BROWSER = $BrowserEngine
     $browserArguments = @('run', 'test:smoke', '--', 'area-detail.spec.js')
@@ -156,7 +185,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Authentication browser checks failed.' }
   Stop-Process -Id $apiProcess.Id
   $apiProcess.WaitForExit()
-  $apiProcess = Start-Process dotnet -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api-restart.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-restart-error.log')
+  $apiProcess = Start-Process $dotnetExecutable -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api-restart.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-restart-error.log')
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   $env:SMOKE_RESTART = '1'
   npm run test:smoke -- phase2-restart.spec.js phase3-restart.spec.js
@@ -167,7 +196,7 @@ try {
   if ($apiProcess -and !$apiProcess.HasExited) { Stop-Process -Id $apiProcess.Id }
   if ($viteProcess -and !$viteProcess.HasExited) { Stop-Process -Id $viteProcess.Id }
   if ($created -and $testDatabase -match '^lifemaxing_browser_[a-f0-9]{32}$') {
-    docker compose exec -T db psql -U lifemaxing -d postgres -v ON_ERROR_STOP=1 -c "DROP DATABASE $testDatabase WITH (FORCE)"
+    Invoke-TestSql 'postgres' "DROP DATABASE $testDatabase WITH (FORCE)"
   }
   if ($featureMailbox -and (Test-Path -LiteralPath $featureMailbox)) {
     $mailboxTarget = [IO.Path]::GetFullPath($featureMailbox)

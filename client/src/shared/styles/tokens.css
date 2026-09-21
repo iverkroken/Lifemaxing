@@ -81,12 +81,16 @@
   --color-area-ink: var(--color-text);
   --color-raised: var(--palette-light-raised);
   --color-mission: var(--color-surface);
+  --color-rank-iron: #59616C;
   --color-rank-bronze: #916740;
   --color-rank-silver: #697985;
   --color-rank-gold: #93731F;
-  --color-rank-platinum: #42746A;
+  --color-rank-platinum: #367987;
+  --color-rank-emerald: #287751;
   --color-rank-diamond: #3F6E96;
-  --color-rank-apex: #6E5A93;
+  --color-rank-master: #7450A0;
+  --color-rank-grandmaster: #B43E37;
+  --color-rank-challenger: #8C712E;
   --color-warning: #805718;
   --color-focus: var(--palette-light-focus);
   --color-scrim: #17213380;
@@ -225,12 +229,16 @@
   --color-area-rose: #2E252E;
   --color-area-sage: #1C2C24;
   --color-area-ink: var(--color-text);
+  --color-rank-iron: #B9C1CE;
   --color-rank-bronze: #D8AA80;
   --color-rank-silver: #B6C9D7;
   --color-rank-gold: #E6CB74;
-  --color-rank-platinum: #A0DCD0;
+  --color-rank-platinum: #A2DDE9;
+  --color-rank-emerald: #84D2AC;
   --color-rank-diamond: #99CDF4;
-  --color-rank-apex: #CBB4EF;
+  --color-rank-master: #CBB4EF;
+  --color-rank-grandmaster: #FFAB94;
+  --color-rank-challenger: #EFDFAC;
 }
 :root[data-density='compact'] { --row-padding: 0.5rem; --section-gap: 1.5rem; }
 @media (prefers-reduced-motion: reduce) { :root { --motion-fast: 0ms; } }
