@@ -13,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Features.Tasks.TaskCompletion> TaskCompletions => Set<Features.Tasks.TaskCompletion>();
     public DbSet<Features.Today.DailyCommitment> DailyCommitments => Set<Features.Today.DailyCommitment>();
     public DbSet<Features.Today.DailyMission> DailyMissions => Set<Features.Today.DailyMission>();
+    public DbSet<Features.Today.DailyGoalSelection> DailyGoalSelections => Set<Features.Today.DailyGoalSelection>();
     public DbSet<Features.Habits.Habit> Habits => Set<Features.Habits.Habit>();
     public DbSet<Features.Habits.HabitSchedulePeriod> HabitSchedulePeriods => Set<Features.Habits.HabitSchedulePeriod>();
     public DbSet<Features.Habits.HabitLog> HabitLogs => Set<Features.Habits.HabitLog>();

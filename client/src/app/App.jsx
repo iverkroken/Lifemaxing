@@ -13,6 +13,7 @@ import styles from './App.module.css'
 const FocusPage = lazy(() => import('../features/focus/FocusPage.jsx').then(module => ({ default: module.FocusPage })))
 const AccountPage = lazy(() => import('../features/auth/AccountPage.jsx').then(module => ({ default: module.AccountPage })))
 const SubscriptionsPage = lazy(() => import('../features/finance/SubscriptionsPage.jsx').then(module => ({ default: module.SubscriptionsPage })))
+const RankSystemPage = lazy(() => import('../features/progress/RankSystemPage.jsx').then(module => ({ default: module.RankSystemPage })))
 const ProgressPage = lazy(() => import('../features/progress/ProgressPage.jsx').then(module => ({ default: module.ProgressPage })))
 const ActivityPage = lazy(() => import('../features/progress/ProgressPage.jsx').then(module => ({ default: module.ActivityPage })))
 const RewardsPage = lazy(() => import('../features/progress/RewardsPage.jsx').then(module => ({ default: module.RewardsPage })))
@@ -68,6 +69,7 @@ export function App() {
         <Route element={<AuthenticatedShell panelTaskId={background ? location.pathname.split('/')[2] : null} />}>
           <Route path="focus" element={<FocusPage />} />
           <Route path="progress" element={<ProgressPage />} />
+          <Route path="progress/ranks" element={<RankSystemPage />} />
           <Route path="activity" element={<ActivityPage />} />
           <Route path="rewards" element={<RewardsPage />} />
           <Route path="today" element={<TodayPage />} />

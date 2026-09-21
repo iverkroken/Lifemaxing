@@ -377,7 +377,7 @@ namespace Lifemaxing.Api.Data.Migrations
 
                     b.ToTable("Habits", null, t =>
                         {
-                            t.HasCheckConstraint("CK_Habit_Xp", "\"XpPerLog\" BETWEEN 0 AND 25");
+                            t.HasCheckConstraint("CK_Habit_Xp", "\"XpPerLog\" BETWEEN 1 AND 75");
                         });
                 });
 
@@ -567,6 +567,12 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.Property<DateTimeOffset?>("EndedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("GoalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("HabitId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset?>("RunningSinceUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -586,6 +592,10 @@ namespace Lifemaxing.Api.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("GoalId");
+
+                    b.HasIndex("HabitId");
+
                     b.HasIndex("TaskId");
 
                     b.HasIndex("UserId")
@@ -596,6 +606,8 @@ namespace Lifemaxing.Api.Data.Migrations
 
                     b.ToTable("FocusSessions", null, t =>
                         {
+                            t.HasCheckConstraint("CK_Focus_Reference", "num_nonnulls(\"TaskId\", \"GoalId\", \"HabitId\") <= 1");
+
                             t.HasCheckConstraint("CK_Focus_State", "\"AccumulatedSeconds\" >= 0 AND (\"EndedAtUtc\" IS NULL OR \"EndedAtUtc\" >= \"StartedAtUtc\") AND ((\"Status\" = 'Running' AND \"RunningSinceUtc\" IS NOT NULL AND \"EndedAtUtc\" IS NULL) OR (\"Status\" = 'Paused' AND \"RunningSinceUtc\" IS NULL AND \"EndedAtUtc\" IS NULL) OR (\"Status\" IN ('Completed', 'Stopped', 'Cancelled') AND \"RunningSinceUtc\" IS NULL AND \"EndedAtUtc\" IS NOT NULL))");
                         });
                 });
@@ -865,6 +877,42 @@ namespace Lifemaxing.Api.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("DailyCommitments");
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Today.DailyGoalSelection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GoalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("LocalDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset?>("RemovedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("SelectedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoalId");
+
+                    b.HasIndex("UserId", "LocalDate", "GoalId")
+                        .IsUnique();
+
+                    b.ToTable("DailyGoalSelections");
                 });
 
             modelBuilder.Entity("Lifemaxing.Api.Features.Today.DailyMission", b =>
@@ -1143,6 +1191,16 @@ namespace Lifemaxing.Api.Data.Migrations
 
             modelBuilder.Entity("Lifemaxing.Api.Features.Progression.FocusSession", b =>
                 {
+                    b.HasOne("Lifemaxing.Api.Features.Goals.Goal", null)
+                        .WithMany()
+                        .HasForeignKey("GoalId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Lifemaxing.Api.Features.Habits.Habit", null)
+                        .WithMany()
+                        .HasForeignKey("HabitId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Lifemaxing.Api.Features.Tasks.TaskItem", null)
                         .WithMany()
                         .HasForeignKey("TaskId")
@@ -1237,6 +1295,21 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.HasOne("Lifemaxing.Api.Features.Tasks.TaskItem", null)
                         .WithMany()
                         .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lifemaxing.Api.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Today.DailyGoalSelection", b =>
+                {
+                    b.HasOne("Lifemaxing.Api.Features.Goals.Goal", null)
+                        .WithMany()
+                        .HasForeignKey("GoalId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
