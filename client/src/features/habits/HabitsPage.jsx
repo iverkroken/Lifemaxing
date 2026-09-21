@@ -72,6 +72,7 @@ export function HabitDetailPage() {
       description={t("Show up, record it, and keep going.")}
       action={value && !value.archivedAtUtc && <Button variant="secondary" onClick={() => setEditing(true)}>{t("Edit habit")}</Button>} />
     <QueryFeedback query={habit} />
+    {value && value.isActive && !value.archivedAtUtc && <Link to={`/focus?habitId=${id}`}>{t('Focus')}</Link>}
     {value && <div className={pageStyles.detail}>
       <section aria-label={t("Completion log")}><div className={styles.sectionHeading}><h2 className={styles.sectionTitle}>{t("Completion log")}</h2><StatusBadge>{t(value.archivedAtUtc ? 'Archived' : value.isActive ? 'Active' : 'Inactive')}</StatusBadge></div>
         {!value.archivedAtUtc && value.isActive && <form className={styles.form} onSubmit={e => { e.preventDefault(); action.mutate({ path: `/habits/${id}/logs`, body: { localDate: date || today.data?.currentLocalDate } }) }}>

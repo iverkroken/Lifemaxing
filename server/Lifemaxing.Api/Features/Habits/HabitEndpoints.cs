@@ -13,11 +13,13 @@ public static class HabitEndpoints
     {
         var habits = api.MapGroup("/habits");
         habits.MapHabitWeek();
-        habits.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, Guid? areaId, bool? archived, int? page, int? pageSize, CancellationToken ct) =>
+        habits.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, Guid? areaId, bool? archived, bool? active, string? search, int? page, int? pageSize, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
             var query = db.Habits.AsNoTracking().Where(x => x.UserId == userId && (archived == true ? x.ArchivedAtUtc != null : x.ArchivedAtUtc == null));
             if (areaId.HasValue) query = query.Where(x => x.LifeAreaId == areaId);
+            if (active.HasValue) query = query.Where(x => x.IsActive == active);
+            if (!string.IsNullOrWhiteSpace(search)) query = query.Where(x => x.Title.Contains(search.Trim()));
             var number = Math.Min(Productivity.Page(page), 1000000); var size = Productivity.PageSize(pageSize);
             var total = await query.CountAsync(ct);
             var items = await query.OrderByDescending(x => x.CreatedAtUtc).ThenBy(x => x.Id).Skip((number - 1) * size).Take(size).Include(x => x.Schedules).ToListAsync(ct);
@@ -32,7 +34,7 @@ public static class HabitEndpoints
         habits.MapPost("/", async (HabitRequest request, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
-            if (request.XpPerLog is < 1 or > 25) return Productivity.Invalid("xpPerLog", "Use 1 to 25 XP per completion.");
+            if (!HabitRules.ValidXp(request.XpPerLog)) return Productivity.Invalid("xpPerLog", "Use 1 to 75 XP per completion.");
             if (!Productivity.TitleValid(request.Title)) return Productivity.Invalid("title", "Enter a title of 1–200 characters.");
             if (!await Productivity.OwnsArea(db, userId, request.LifeAreaId, ct)) return Productivity.NotFound();
             var day = await Productivity.Day(db, userId, clock, ct);
@@ -54,7 +56,7 @@ public static class HabitEndpoints
             if (habit is null) return Productivity.NotFound();
             if (habit.ArchivedAtUtc is not null) return Productivity.Conflict("Archived habits cannot be edited.");
             var request = Productivity.Patch(new HabitEditRequest(habit.Title, habit.LifeAreaId, habit.IsActive, habit.XpPerLog), patch);
-            if (request.XpPerLog is < 1 or > 25) return Productivity.Invalid("xpPerLog", "Use 1 to 25 XP per completion.");
+            if (!HabitRules.ValidXp(request.XpPerLog)) return Productivity.Invalid("xpPerLog", "Use 1 to 75 XP per completion.");
             if (!Productivity.TitleValid(request.Title)) return Productivity.Invalid("title", "Enter a title of 1–200 characters.");
             if (!await Productivity.OwnsArea(db, userId, request.LifeAreaId, ct)) return Productivity.NotFound();
             habit.Title = request.Title!.Trim(); habit.LifeAreaId = request.LifeAreaId; habit.IsActive = request.IsActive; habit.XpPerLog = request.XpPerLog;

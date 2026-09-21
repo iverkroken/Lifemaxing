@@ -14,6 +14,9 @@ public sealed record LogResponse(Guid Id, DateOnly LocalDate, string TimeZoneId,
 
 public static class HabitRules
 {
+    public const int MinXp = 1;
+    public const int MaxXp = 75;
+    public static bool ValidXp(int xp) => xp is >= MinXp and <= MaxXp;
     public static int IsoDay(DateOnly date) => date.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)date.DayOfWeek;
     public static DateOnly WeekStart(DateOnly date) => date.AddDays(1 - IsoDay(date));
     public static bool Covers(HabitSchedulePeriod schedule, DateOnly date) =>
