@@ -1,5 +1,17 @@
 # LIFEMAXING Implementation Status
 
+## Daily planning and progression — 21 September 2026
+
+Implemented the approved connected redesign. Today now derives its main tasks from the exact PlannedDate, habits from schedules and goals from task relationships plus explicit daily selections. Planning modes remain presentation/guidance; Focus references existing tasks, goals or habits. Capture exposes Life Area and distinguishes Add to today from Inbox. Habit XP is consistently 1–75, preserving the shared 75 XP daily cap.
+
+Ranks now consume the unchanged server Level calculation through RankRules: Iron through Challenger, four divisions each, and Challenger I at 98+. Progress retains statistics/activity/ledger/rewards and adds the prominent rank/level/division presentation; `/progress/ranks` shows the full catalog. Historical events and command receipts are not rewritten. The older independent-rank/Backlog proposals are superseded for this scope.
+
+Two additive migrations create DailyGoalSelections, expand Habit configuration and add nullable Focus goal/habit references. Existing Life Area relationships were reused. Verification used isolated PostgreSQL 18 databases; **this task did not migrate the normal/private database**. All ten existing PNGs remain tracked in `client/public/images/ranks` and are served from `/images/ranks/`.
+
+Verification: 97 frontend tests plus 3 launcher tests pass; 93 Release backend tests pass with no skips; frontend lint and production build pass; backend Debug/Release builds pass; EF reports no pending model changes. Fresh migration, legacy upgrade and preservation checks pass. The existing Chromium browser suite passes all 11 scenarios, including API/browser restart persistence. The new daily/progression flow, responsive matrix and goal-Focus restart checks pass in both Chromium and Firefox (3 scenarios per browser). Final Git inventory and evidence are recorded in [DAILY_PLANNING_PROGRESSION.md](DAILY_PLANNING_PROGRESSION.md), alongside exact thresholds, changed files, decisions and limitations.
+
+No commit, push or branch change was performed. Local screenshots, traces, build output, logs and disposable database credentials remain outside Git. See the linked report before applying migrations to a normal database; rollback is not lossless after using the new fields or configuring Habit XP above 25.
+
 ## Local development and Life Area completion pass - 21 September 2026
 
 This approved follow-up supersedes the earlier statement below that only disposable databases were migrated. It retains the existing feature implementations and provider boundaries; it is not a new roadmap phase.

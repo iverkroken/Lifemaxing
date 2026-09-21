@@ -129,7 +129,7 @@ function Shell({ user, panelTaskId }) {
       <div className={styles.captureType}><Select label={t("Create")} value={capture.kind} onChange={e => setCapture(value => ({ ...value, kind: e.target.value }))}>
         <option value="task">{t("Task")}</option><option value="habit">{t("Habit")}</option><option value="goal">{t("Goal")}</option>
       </Select></div>
-      {capture.kind === 'task' && <QuickAdd lifeAreaId={capture.lifeAreaId} date={capture.date === null ? undefined : capture.date || today.data?.currentLocalDate} autoFocus />}
+      {capture.kind === 'task' && <QuickAdd currentDate={today.data?.currentLocalDate} lifeAreaId={capture.lifeAreaId} date={capture.date === null ? undefined : capture.date || today.data?.currentLocalDate} autoFocus />}
       {capture.kind === 'habit' && <HabitForm initialAreaId={capture.lifeAreaId} onSaved={habit => { setCaptureOpen(false); navigate(`/habits/${habit.id}`) }} />}
       {capture.kind === 'goal' && <GoalForm initialAreaId={capture.lifeAreaId} onSaved={goal => { setCaptureOpen(false); navigate(`/goals/${goal.id}`) }} />}
     </Dialog>

@@ -1,5 +1,13 @@
 # DATABASE.md
 
+## Daily workspace additions — 21 September 2026
+
+`DailyGoalSelections` stores Id, UserId, GoalId, LocalDate, TimeZoneId, SelectedAtUtc and nullable RemovedAtUtc. A unique `(UserId, LocalDate, GoalId)` index makes selection idempotent under the existing per-owner transaction lock. Restrictive owner/goal foreign keys retain references. Removal marks the row rather than deleting Goal data. No Today copies of Tasks, Habits or Goals exist.
+
+`FocusSessions` adds nullable GoalId and HabitId with restrictive foreign keys. `num_nonnulls(TaskId, GoalId, HabitId) <= 1` permits one entity reference or existing unstructured sessions. Existing sessions, elapsed time and task references are unchanged.
+
+`CK_Habit_Xp` now permits 1–75; old zero configurations are normalized to the existing default 10. Historical logs, XP entries, activity and command receipts are untouched. The shared daily habit award cap remains 75. Migrations: `20260921180817_DailyWorkspaceAndHabitXp`, `20260921181454_FocusEntityReferences`. Rollback is not lossless after using new features: it removes selections/references, and restoring the old Habit constraint fails if values exceed 25. Use a reviewed forward correction rather than silently clamping values.
+
 Local application, 21 September 2026: with explicit user authorization, `20260920220222_PlanningModesAndSubscriptions` was applied to the normal Development database. A private backup was validated first; all 24 pre-existing table counts and aggregate row fingerprints matched afterward (ignoring the new PlanningMode field). The column/default, subscription fields/FK/checks/index and migration history were verified. No reset, reseeding or additional migration occurred. Earlier references to disposable-only application describe the initial feature pass.
 
 ## Additive selected-feature schema — 20–21 September 2026
@@ -47,7 +55,7 @@ Phase 2 avklaring: `TaskCompletion` introduseres med Id, UserId, TaskId, Complet
 | TaskCompletion | Id, UserId, TaskId, CompletedAtUtc, AwardedXp, ReversedAtUtc? | Delvis unik aktiv TaskId; hver syklus er identifiserbar; AwardedXp er historisk beløp |
 | XpEntry | Id, UserId, AmountSigned, Kind, SourceKind, SourceId, LifeAreaId?, OccurredAtUtc, RuleVersion, Note? | Append only; unik (UserId, Kind, SourceKind, SourceId); negativ reversal refererer original kilde via RelatedEntryId |
 | ActivityEvent | Id, UserId, Kind, SubjectKind, SubjectId, LifeAreaId?, OccurredAtUtc, Summary, DetailsJson?, SchemaVersion, SourceEventId? | Append only, unik (UserId, Kind, SourceEventId) når SourceEventId finnes; ingen hard FK til slettbart subjekt |
-| FocusSession | Id, UserId, TaskId?, StartedAtUtc, RunningSinceUtc?, AccumulatedSeconds, EndedAtUtc?, Status | Maks én uavsluttet økt per bruker med delvis unik indeks; serveren beregner varighet ved pause og stopp |
+| FocusSession | Id, UserId, TaskId?, GoalId?, HabitId?, StartedAtUtc, RunningSinceUtc?, AccumulatedSeconds, EndedAtUtc?, Status | Maks én uavsluttet økt per bruker med delvis unik indeks; serveren beregner varighet ved pause og stopp |
 | Reward | Id, UserId, Title, RequiredLevel, CreatedAtUtc, ArchivedAtUtc? | Én brukerdefinert belønning knyttet til levelterskel |
 | RewardClaim | Id, UserId, RewardId, ClaimedAtUtc | Unik (UserId, RewardId); tidligere hentet belønning beholdes ved XP korreksjon |
 | CommandReceipt | Id, UserId, ClientActionId, Operation, ResultId?, CreatedAtUtc | Unik (UserId, ClientActionId); idempotens for fullføring, reversering, vanelogg og RewardClaim |
@@ -60,7 +68,7 @@ Ikke bruk full Event Sourcing. Task, Goal, Habit og hver områdemodul beholder v
 
 `ProgressionAndFocus` adds the six new tables above and extends TaskCompletion with AwardedXp and Habit with XpPerLog. Existing Phase 2 completions retain AwardedXp 0; the migration does not invent retroactive awards or activity. Reopening a pre-progression completion therefore has no ledger reversal; a later new completion follows the current rules.
 
-XpEntry also stores LocalDate, TimeZoneId and Category. Tiny/Small awards share the SmallTasks bucket for the owner's completion day. Habit awards use the log's scheduled local date and historical schedule timezone, including backdated logs. Reversals retain the original award's bucket and rule version, while OccurredAtUtc records when the correction happened. Caps use the net amount in that original category/date bucket; travel and corrections never rewrite old dates. Zero/capped awards still get an entry and completion activity. Habit XP is configurable from 1 to 25, initially 10. The product formula and tier/rank rules remain canonical in PROJECT_SPEC.md.
+XpEntry also stores LocalDate, TimeZoneId and Category. Tiny/Small awards share the SmallTasks bucket for the owner's completion day. Habit awards use the log's scheduled local date and historical schedule timezone, including backdated logs. Reversals retain the original award's bucket and rule version, while OccurredAtUtc records when the correction happened. Caps use the net amount in that original category/date bucket; travel and corrections never rewrite old dates. Zero/capped awards still get an entry and completion activity. Habit XP is configurable from 1 to 75, initially 10. The product formula and tier/rank rules remain canonical in PROJECT_SPEC.md.
 
 CommandReceipt stores a bounded operation name, SHA-256 request fingerprint, response status and JSON response snapshot in addition to the documented identity/result fields. This lets a retry return its original result even after a later correction. A reused identity with a different operation or body returns 409. Successful receipt and domain writes share the existing transaction/owner row lock. XP, activity and receipt entities reject update/delete through AppDbContext; no API edits or deletes those histories. Unique source/cycle/claim/session indexes provide additional database guarantees.
 

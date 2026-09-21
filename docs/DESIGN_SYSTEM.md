@@ -1,5 +1,11 @@
 # LIFEMAXING design system
 
+## Daily workspace and rank presentation — 21 September 2026
+
+Today keeps its existing hero, followed by one workspace: Planning Mode, Tasks Today, Today's Habits and Today's Goals. Optional priority is a planned-task reference; modes never change storage. Metadata stays secondary to titles and native completion controls. Visible checkboxes use the spacing scale inside full-height click targets. Historical plans and earlier deadlines sit in disclosures below the daily sections.
+
+Focus preserves its quiet dark work surface and uses compact Tasks/Goals/Habits selection, existing controls and readable dark Life Area tokens. Progress gives the current rank emblem room beside numerical Level, XP and two separately labeled progress meters. The Rank System grid uses all ten original PNGs with transparent framing and `object-fit: contain`; no tint, crop or persistent animation. Shared rank color tokens affect only restrained progress/border details. Names/divisions and current/completed/locked text communicate state independently of color. Mobile stacks these compositions while preserving emblem size and control reachability; reduced motion disables the entrance animation.
+
 ## Current authority - artwork product redesign, 15 September 2026
 
 ### Selected additions — 20–21 September 2026

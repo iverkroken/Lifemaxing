@@ -33,9 +33,10 @@ function Commands({ onClose, destinations, openCapture, session }) {
   const query = search.trim().toLocaleLowerCase(language)
   const actions = [
     ...destinations.map(([path]) => ({ key: path, name: t(path), icon: path, run: () => navigate('/' + path) })),
+    { key: 'rank-system', name: t('Rank System'), icon: 'progress', run: () => navigate('/progress/ranks') },
     { key: 'finance-subscriptions', name: `${t('area_finance')} · ${t('subscriptionTitle')}`, icon: 'areas', run: () => navigate('/areas/finance/subscriptions') },
     ...(session ? [{ key: 'continue', name: t('continueFocus'), icon: 'focus', run: () => navigate('/focus') }] : []),
-    ...['task', 'habit', 'goal'].map(kind => ({ key: 'create-' + kind, name: t('create_' + kind), icon: 'plus', run: () => openCapture({ kind, date: null }) })),
+    ...['task', 'habit', 'goal'].map(kind => ({ key: 'create-' + kind, name: t('create_' + kind), icon: 'plus', run: () => openCapture({ kind }) })),
   ].map(action => {
     const name = action.name.trim().toLocaleLowerCase(language)
     return { ...action, rank: !query || name === query ? 0 : name.startsWith(query) ? 1 : name.includes(query) ? 2 : 3 }

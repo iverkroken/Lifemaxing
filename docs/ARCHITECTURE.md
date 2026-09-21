@@ -1,8 +1,20 @@
 # ARCHITECTURE.md
 
+## Daily planning and progression — 21 September 2026
+
+Today derives `tasks` strictly from owned, unarchived Tasks with `PlannedDate == localDate`, including completed tasks. Earlier unfinished plans/deadlines are returned separately as `attentionTasks`; off-date or archived historical commitments/priority references are returned as `planHistory`. Modes change settings and guidance only. Daily priority selection reuses DailyMission and requires an already-planned task; it never schedules or copies a task.
+
+`PUT/DELETE /api/v1/today/{date}/goals/{goalId}` persists an owned daily selection. Today's Goals are the deduplicated union of these references and Goals linked to Tasks planned that day. Today includes each Goal's latest progress and each scheduled Habit's Life Area, configured XP and actual completion award. Historical views use current entity state, not reconstructed snapshots.
+
+Focus accepts at most one existing `taskId`, `habitId` or `goalId`, or none for unstructured work. All references are owner-validated and preserved on sessions. Existing server timing and atomic task-completion commands remain. Habit logging is a separate action; goal progress and focus duration do not award XP.
+
+`ProgressionRules` remains authoritative for XP and numerical Level. `RankRules` consumes Level and exposes the ten-rank catalog, divisions, image URLs, color-token names and next-division XP progress through `/progress` and `GET /progress/ranks`. JavaScript formats these DTOs without recalculating ranks or levels. `/progress/ranks` is the full rank-system route. See [DAILY_PLANNING_PROGRESSION.md](DAILY_PLANNING_PROGRESSION.md) for exact thresholds and migration behavior.
+
+This supersedes earlier six-rank and independent-rank proposals for this delivery. No frontend framework, authentication, state-management or database technology changes were made.
+
 ## Life Area detail completion — 21 September 2026
 
-`/areas/:areaKey` resolves a stable key through the authenticated user's existing area query, then supplies the owned area and original shell context to nested Overview/Tasks/Goals/Habits screens. Existing paginated endpoints filter by the resolved UUID, never the display name. Unknown areas do not mount child queries. Route scope overrides conflicting query filters and survives filter reset; switching areas remounts scoped state. Global list/filter URLs remain supported. Scoped Habits uses the existing ID-filtered library and week endpoint because Today habit summaries do not carry area IDs. Capture and full task creation receive area defaults without replacing server ownership checks.
+`/areas/:areaKey` resolves a stable key through the authenticated user's existing area query, then supplies the owned area and original shell context to nested Overview/Tasks/Goals/Habits screens. Existing paginated endpoints filter by the resolved UUID, never the display name. Unknown areas do not mount child queries. Route scope overrides conflicting query filters and survives filter reset; switching areas remounts scoped state. Global list/filter URLs remain supported. Scoped Habits uses the existing ID-filtered library and week endpoint while Today now also carries habit area IDs. Capture and full task creation receive area defaults without replacing server ownership checks.
 
 Finance adds its existing `/areas/finance/subscriptions` page to this navigation and an overview entry; other area keys cannot display the Finance workspace. Search area results use stable overview paths and area context resolves to an owned UUID on nested routes. Localized page/actions rank exact, prefix and substring matches with stable ties, including Finance Subscriptions. No endpoint response shape, domain schema or authentication architecture changes are introduced by these navigation corrections.
 
@@ -65,7 +77,7 @@ API prefiks er /api/v1. V1 og V2 bruker samme API major når kontrakten bare utv
 
 ### Phase 3 API additions
 
-All routes below use the existing authenticated `/api/v1` group, CSRF filter and owner transaction lock. Level/rank/cap calculations live in the concrete ProgressionRules class; Focus reuses TaskEndpoints.Complete for task completion within the same transaction.
+All routes below use the existing authenticated `/api/v1` group, CSRF filter and owner transaction lock. Level/cap calculations live in ProgressionRules and rank/division calculations in RankRules; Focus reuses TaskEndpoints.Complete for task completion within the same transaction.
 
 | Route | Contract |
 | --- | --- |
