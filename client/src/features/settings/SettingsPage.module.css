@@ -16,6 +16,7 @@
 .identity { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 2fr); gap: var(--space-6); padding-block: var(--space-6); margin-block: var(--space-8); border-block: 1px solid var(--color-border); }
 .identity dt { font-size: var(--text-sm); color: var(--color-text-muted); }
 .identity dd { margin: 0; font-size: var(--text-sm); font-weight: 500; overflow-wrap: anywhere; }
+.deletedLink { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: var(--space-3); font-size: var(--text-sm); }
 .form { display: grid; gap: var(--space-8); max-width: 38rem; min-width: 0; padding: 0; border: 0; margin: var(--space-8) 0 0; }
 .form .form { margin: 0; }
 .form button { justify-self: start; }

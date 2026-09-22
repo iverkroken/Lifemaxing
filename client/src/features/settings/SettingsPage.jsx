@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { useOutletContext, useSearchParams } from 'react-router'
+import { Link, useOutletContext, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
@@ -64,6 +64,7 @@ export function SettingsPage() {
           <div className={styles.panelBody}><h2 id="account-heading">{t('account')}</h2><p>{t('accountHint')}</p>
             <dl className={styles.identity}><dt>{t('email')}</dt><dd>{user.email}</dd></dl>
             <Button variant="secondary" onClick={() => setParams({ section: 'security' })}><Icon name="shield" />{t('security')}</Button>
+            <Link className={styles.deletedLink} to="/settings/recently-deleted"><Icon name="inbox" />{t('Recently Deleted')}</Link>
           </div>
         </section>}
         {section === 'preferences' && <section className={styles.panel} aria-labelledby="preferences-heading"><div className={styles.panelBody}>

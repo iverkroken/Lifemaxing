@@ -33,7 +33,7 @@ function SubscriptionWorkspace({ scoped }) {
   const edit = subscription => { saving.current = false; setEditor(subscription) }
   const close = () => { if (!saving.current) setEditor(null) }
   return <div className={styles.page}>
-    <Link className={styles.back} to="/areas/finance">{t('areaFinanceBack')}</Link>
+    {scoped && <Link className={styles.back} to="/areas/finance">{t('areaFinanceBack')}</Link>}
     {scoped ? <header><div className={shared.sectionHeading}><h2>{t('subscriptionTitle')}</h2><Button onClick={() => edit({})} disabled={!data}>{t('subscriptionCreate')}</Button></div><p className={shared.intro}>{t('subscriptionIntro')}</p></header>
       : <PageHeader editorial title={t('subscriptionTitle')} description={t('subscriptionIntro')}
         action={<Button onClick={() => edit({})} disabled={!data}>{t('subscriptionCreate')}</Button>} />}
