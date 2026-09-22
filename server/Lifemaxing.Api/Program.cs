@@ -50,6 +50,7 @@ builder.Services.AddAntiforgery(options =>
 });
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<Lifemaxing.Api.Features.Focus.FocusRunService>();
 builder.Services.AddScoped<DeletedContentService>();
 builder.Services.AddHostedService<DeletedContentCleanupWorker>();
 
@@ -178,6 +179,7 @@ productivity.MapHabitEndpoints();
 productivity.MapGoalEndpoints();
 productivity.MapProgressionEndpoints();
 productivity.MapFocusEndpoints();
+Lifemaxing.Api.Features.Focus.FocusHubEndpoints.MapFocusHub(productivity);
 productivity.MapDeletedContentEndpoints();
 productivity.MapSubscriptionEndpoints();
 
