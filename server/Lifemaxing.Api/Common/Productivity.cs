@@ -112,6 +112,10 @@ public static class Productivity
     public static int PageSize(int? pageSize) => Math.Clamp(pageSize ?? 30, 1, 100);
     public static Task<bool> OwnsArea(AppDbContext db, Guid userId, Guid? areaId, CancellationToken ct) =>
         areaId is null ? Task.FromResult(true) : db.LifeAreas.AnyAsync(x => x.Id == areaId && x.UserId == userId, ct);
+    public static Task<bool> OwnsAreaOrRetains(AppDbContext db, Guid userId, Guid? areaId, Guid? retainedAreaId, CancellationToken ct) =>
+        areaId == retainedAreaId && areaId is not null
+            ? db.LifeAreas.IgnoreQueryFilters().AnyAsync(x => x.Id == areaId && x.UserId == userId, ct)
+            : OwnsArea(db, userId, areaId, ct);
     public static DateOnly LocalDate(DateTimeOffset instant, string timeZoneId) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, TimeZoneInfo.FindSystemTimeZoneById(timeZoneId)).DateTime);
     public static async Task<OwnerDay> Day(AppDbContext db, Guid userId, TimeProvider clock, CancellationToken ct)

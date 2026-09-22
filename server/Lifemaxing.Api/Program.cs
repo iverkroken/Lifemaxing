@@ -17,6 +17,7 @@ using Lifemaxing.Api.Features.Habits;
 using Lifemaxing.Api.Features.Goals;
 using Lifemaxing.Api.Features.Finance;
 using Lifemaxing.Api.Features.Search;
+using Lifemaxing.Api.Features.DeletedContent;
 
 var builder = WebApplication.CreateBuilder(args);
 AuthDataProtection.Configure(builder);
@@ -49,6 +50,8 @@ builder.Services.AddAntiforgery(options =>
 });
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<DeletedContentService>();
+builder.Services.AddHostedService<DeletedContentCleanupWorker>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -175,6 +178,7 @@ productivity.MapHabitEndpoints();
 productivity.MapGoalEndpoints();
 productivity.MapProgressionEndpoints();
 productivity.MapFocusEndpoints();
+productivity.MapDeletedContentEndpoints();
 productivity.MapSubscriptionEndpoints();
 
 // Reserve API and health paths: even unknown routes must never return the SPA.

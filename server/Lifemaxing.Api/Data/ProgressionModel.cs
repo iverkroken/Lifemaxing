@@ -12,9 +12,10 @@ public static class ProgressionModel
         var xp = model.Entity<XpEntry>();
         xp.HasIndex(x => new { x.UserId, x.Kind, x.SourceKind, x.SourceId }).IsUnique();
         xp.HasIndex(x => new { x.UserId, x.LocalDate, x.Category });
+        xp.HasIndex(x => new { x.UserId, x.LifeAreaId });
         xp.HasIndex(x => new { x.UserId, x.OccurredAtUtc });
         xp.HasOne<XpEntry>().WithMany().HasForeignKey(x => x.RelatedEntryId).OnDelete(DeleteBehavior.Restrict);
-        xp.HasOne<LifeArea>().WithMany().HasForeignKey(x => x.LifeAreaId).OnDelete(DeleteBehavior.Restrict);
+        // LifeAreaId is immutable historical context. It intentionally remains after an area is purged.
         xp.Property(x => x.TimeZoneId).HasMaxLength(100);
         xp.Property(x => x.Kind).HasMaxLength(20); xp.Property(x => x.SourceKind).HasMaxLength(40); xp.Property(x => x.Category).HasMaxLength(30);
         xp.ToTable("XpEntries", t => t.HasCheckConstraint("CK_Xp_Sign", "(\"Kind\" = 'Award' AND \"AmountSigned\" >= 0 AND \"RelatedEntryId\" IS NULL) OR (\"Kind\" = 'Reversal' AND \"AmountSigned\" <= 0 AND \"RelatedEntryId\" IS NOT NULL)"));

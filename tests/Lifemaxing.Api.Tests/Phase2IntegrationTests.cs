@@ -69,7 +69,7 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         Assert.Equal("Edited action", persisted.GetProperty("title").GetString());
         Assert.True(persisted.GetProperty("isCompleted").GetBoolean());
         await Send(afterRestart, HttpMethod.Delete, $"/tasks/{taskId}", new { }, HttpStatusCode.NoContent);
-        Assert.Equal(1, (await Get(afterRestart, "/tasks?status=archived")).GetProperty("total").GetInt32());
+        Assert.Equal(1, (await Get(afterRestart, "/recently-deleted?type=task")).GetProperty("total").GetInt32());
         await using var scope = restarted.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         Assert.Equal(2, await db.TaskCompletions.CountAsync(x => x.TaskId == taskId));
@@ -156,6 +156,8 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         await Send(client, HttpMethod.Post, $"/habits/{id}/logs", new { localDate = "2026-03-30" }, HttpStatusCode.Created);
         await Send(client, HttpMethod.Patch, $"/habits/{id}", new { title = "Read thoughtfully" });
         await Send(client, HttpMethod.Delete, $"/habits/{id}", new { }, HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/habits/{id}")).StatusCode);
+        await Send(client, HttpMethod.Post, $"/recently-deleted/habit/{id}/restore", new { }, HttpStatusCode.NoContent);
         Assert.Equal(2, (await Get(client, $"/habits/{id}")).GetProperty("schedules").GetArrayLength());
         Assert.Equal(4, (await Get(client, $"/habits/{id}/logs")).GetProperty("total").GetInt32());
     }
@@ -174,6 +176,8 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         await Send(client, HttpMethod.Patch, $"/goals/{id}", new { title = "Read chapters", state = "Completed" });
         Assert.NotEqual(JsonValueKind.Null, (await Get(client, $"/goals/{id}")).GetProperty("completedAtUtc").ValueKind);
         await Send(client, HttpMethod.Delete, $"/goals/{id}", new { }, HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/goals/{id}")).StatusCode);
+        await Send(client, HttpMethod.Post, $"/recently-deleted/goal/{id}/restore", new { }, HttpStatusCode.NoContent);
         var progress = await Get(client, $"/goals/{id}/progress?pageSize=1");
         Assert.Equal(2, progress.GetProperty("total").GetInt32());
         Assert.Equal(1, progress.GetProperty("items")[0].GetProperty("value").GetDecimal());
