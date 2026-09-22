@@ -37,7 +37,7 @@ public sealed class ProductivityWriteFilter : IEndpointFilter
             var identifiedGoalProgress = http.Request.Headers.ContainsKey("ClientActionId") &&
                 System.Text.RegularExpressions.Regex.IsMatch(http.Request.Path, @"/goals/[^/]+/progress/?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             var guarded = HttpMethods.IsPost(http.Request.Method) && System.Text.RegularExpressions.Regex.IsMatch(http.Request.Path,
-                @"/(tasks/[^/]+/(complete|reopen)|habits/[^/]+/logs(/[^/]+/revoke)?|rewards/[^/]+/claim|focus-sessions(/[^/]+/(pause|resume|stop))?)/?$",
+                @"/(tasks/[^/]+/(complete|reopen)|habits/[^/]+/logs(/[^/]+/revoke)?|rewards/[^/]+/claim|focus-sessions(/[^/]+/(pause|resume|stop))?|focus-runs(/[^/]+/action)?)/?$",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
             guarded |= HttpMethods.IsPost(http.Request.Method) && identifiedGoalProgress;
             Guid actionId = default;
@@ -112,6 +112,10 @@ public static class Productivity
     public static int PageSize(int? pageSize) => Math.Clamp(pageSize ?? 30, 1, 100);
     public static Task<bool> OwnsArea(AppDbContext db, Guid userId, Guid? areaId, CancellationToken ct) =>
         areaId is null ? Task.FromResult(true) : db.LifeAreas.AnyAsync(x => x.Id == areaId && x.UserId == userId, ct);
+    public static Task<bool> OwnsAreaOrRetains(AppDbContext db, Guid userId, Guid? areaId, Guid? retainedAreaId, CancellationToken ct) =>
+        areaId == retainedAreaId && areaId is not null
+            ? db.LifeAreas.IgnoreQueryFilters().AnyAsync(x => x.Id == areaId && x.UserId == userId, ct)
+            : OwnsArea(db, userId, areaId, ct);
     public static DateOnly LocalDate(DateTimeOffset instant, string timeZoneId) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, TimeZoneInfo.FindSystemTimeZoneById(timeZoneId)).DateTime);
     public static async Task<OwnerDay> Day(AppDbContext db, Guid userId, TimeProvider clock, CancellationToken ct)

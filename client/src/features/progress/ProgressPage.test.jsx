@@ -6,7 +6,7 @@ import { ProgressSummary } from './ProgressPage.jsx'
 
 vi.mock('../../shared/api/productivity.js', () => ({
   useProductivity: () => ({ isSuccess: true, data: { progress: {
-    rank: 'Silver', level: 10, totalXp: 8100, xpIntoLevel: 0, xpForNextLevel: 1400,
+    rankInfo: { name: 'Silver', division: 'IV', image: '/images/ranks/Silver.png', colorToken: 'silver' }, rank: 'Silver', level: 20, totalXp: 8100, xpIntoLevel: 0, xpForNextLevel: 1400,
   } } }),
 }))
 

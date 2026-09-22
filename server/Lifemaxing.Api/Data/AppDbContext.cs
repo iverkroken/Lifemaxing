@@ -13,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Features.Tasks.TaskCompletion> TaskCompletions => Set<Features.Tasks.TaskCompletion>();
     public DbSet<Features.Today.DailyCommitment> DailyCommitments => Set<Features.Today.DailyCommitment>();
     public DbSet<Features.Today.DailyMission> DailyMissions => Set<Features.Today.DailyMission>();
+    public DbSet<Features.Today.DailyGoalSelection> DailyGoalSelections => Set<Features.Today.DailyGoalSelection>();
     public DbSet<Features.Habits.Habit> Habits => Set<Features.Habits.Habit>();
     public DbSet<Features.Habits.HabitSchedulePeriod> HabitSchedulePeriods => Set<Features.Habits.HabitSchedulePeriod>();
     public DbSet<Features.Habits.HabitLog> HabitLogs => Set<Features.Habits.HabitLog>();
@@ -51,6 +52,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         base.OnModelCreating(builder);
         ProductivityModel.Configure(builder);
         ProgressionModel.Configure(builder);
+        Features.Focus.FocusModel.Configure(builder);
+        Features.Finance.SubscriptionModel.Configure(builder);
 
         builder.Entity<UserSettings>(settings =>
         {
@@ -61,6 +64,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             settings.Property(value => value.UiLanguage).HasMaxLength(2).HasDefaultValue("en").IsRequired();
             settings.Property(value => value.Theme).HasMaxLength(6).HasDefaultValue("system").IsRequired();
             settings.Property(value => value.Density).HasMaxLength(7).HasDefaultValue("normal").IsRequired();
+            settings.Property(value => value.PlanningMode).HasMaxLength(20).HasDefaultValue("FocusedDay").IsRequired();
             settings.Property(value => value.CreatedAtUtc).IsRequired();
             settings.HasOne(value => value.User)
                 .WithOne()
@@ -70,12 +74,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<LifeArea>(area =>
         {
-            area.ToTable("LifeAreas");
+            area.ToTable("LifeAreas", table =>
+            {
+                table.HasCheckConstraint("CK_LifeArea_ImageFocal", "\"ImageFocalX\" BETWEEN 0 AND 100 AND \"ImageFocalY\" BETWEEN 0 AND 100");
+                table.HasCheckConstraint("CK_LifeArea_CustomImage", "(\"CustomImage\" IS NULL AND \"CustomImageContentType\" IS NULL AND \"CustomImageUpdatedAtUtc\" IS NULL) OR (\"CustomImage\" IS NOT NULL AND \"CustomImageContentType\" IS NOT NULL AND \"CustomImageUpdatedAtUtc\" IS NOT NULL)");
+            });
             area.HasKey(value => value.Id);
             area.Property(value => value.Key).HasMaxLength(50).IsRequired();
             area.Property(value => value.DisplayName).HasMaxLength(100).IsRequired();
+            area.Property(value => value.CustomImageContentType).HasMaxLength(30);
+            area.Property(value => value.ImageFocalX).HasPrecision(5, 2).HasDefaultValue(50);
+            area.Property(value => value.ImageFocalY).HasPrecision(5, 2).HasDefaultValue(50);
+            area.HasQueryFilter(value => value.DeletedAtUtc == null);
             area.HasIndex(value => new { value.UserId, value.Key }).IsUnique();
             area.HasIndex(value => new { value.UserId, value.SortOrder });
+            area.HasIndex(value => new { value.UserId, value.DeletedAtUtc });
             area.HasOne(value => value.User)
                 .WithMany()
                 .HasForeignKey(value => value.UserId)

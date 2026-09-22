@@ -1,6 +1,6 @@
 import { useLanguage } from '../settings/language.js'
 import { useState } from 'react'
-import { Link, useOutletContext, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router'
 import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Dialog } from '../../shared/ui/Dialog.jsx'
@@ -16,15 +16,16 @@ import { TodayHabits } from './TodayHabits.jsx'
 import { HabitWeek } from './HabitWeek.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
 import pageStyles from './HabitsPage.module.css'
+import { DeleteEntityDialog } from '../../shared/ui/DeleteEntityDialog.jsx'
 
 export function HabitsPage() {
   const { t, areaName, date: formatDate } = useLanguage()
   const [page, setPage] = useState(1)
   const [archived, setArchived] = useState('false')
-  const { openCapture } = useOutletContext()
+  const { openCapture, area: scopedArea } = useOutletContext()
   const [params, setParams] = useSearchParams()
-  const areaId = params.get('areaId') || ''
-  const view = params.get('view') || (areaId ? 'library' : 'today')
+  const areaId = scopedArea?.id || params.get('areaId') || ''
+  const view = scopedArea ? 'library' : params.get('view') || (areaId ? 'library' : 'today')
   const changeView = value => setParams(current => { const next = new URLSearchParams(current); next.set('view', value); return next })
   const habits = useProductivity(`/habits?page=${page}&archived=${archived}&${areaId ? `areaId=${areaId}` : ''}`)
   const today = useProductivity('/today')
@@ -32,9 +33,9 @@ export function HabitsPage() {
   const action = useProductivityAction()
 
   return <div className={styles.stack}>
-    <PageHeader title={t("Habits")} description={t("Complete your daily routines, then review or adjust what comes next.")}
-      action={<Button onClick={() => openCapture({ kind: 'habit' })}>{t("New habit")}</Button>} />
-    <nav className={pageStyles.views} aria-label={t("Habit views")}><button aria-current={view === "today" ? "page" : undefined} onClick={() => changeView("today")}><Icon name="today" />{t("For today")}</button><button aria-current={view === "library" ? "page" : undefined} onClick={() => changeView("library")}><Icon name="habits" />{t("Your routines")}</button></nav>
+    {scopedArea ? <header className={styles.sectionHeading}><h2>{t('Habits')}</h2><Button onClick={() => openCapture({ kind: 'habit' })}>{t('New habit')}</Button></header> : <PageHeader title={t("Habits")} description={t("Complete your daily routines, then review or adjust what comes next.")}
+      action={<Button onClick={() => openCapture({ kind: 'habit' })}>{t("New habit")}</Button>} />}
+    {!scopedArea && <nav className={pageStyles.views} aria-label={t("Habit views")}><button aria-current={view === "today" ? "page" : undefined} onClick={() => changeView("today")}><Icon name="today" />{t("For today")}</button><button aria-current={view === "library" ? "page" : undefined} onClick={() => changeView("library")}><Icon name="habits" />{t("Your routines")}</button></nav>}
     {view !== "library" ? <>
       <section className={pageStyles.today} aria-label={t("Habits today")}><div className={pageStyles.todayHeading}><h2>{t("For today")}</h2><span className={styles.meta}>{areaId && <>{t("All areas")} · </>}{formatDate(today.data?.localDate)}</span></div>
         <div className={pageStyles.todayContent}><QueryFeedback query={today} /><TodayHabits data={today.data} action={action} emptyClassName={pageStyles.embeddedEmpty} onCreate={() => openCapture({ kind: 'habit' })} /><ActionFeedback action={action} /></div>
@@ -42,14 +43,15 @@ export function HabitsPage() {
       <HabitWeek key={areaId} areaId={areaId} />
     </> : <section aria-label={t("Habit library")}><h2 className={styles.sectionTitle}>{t("Your routines")}</h2>
         <div className={pageStyles.toolbar}><Select label={t("Habit list")} value={archived} onChange={e => { setArchived(e.target.value); setPage(1) }}><option value="false">{t("Current habits")}</option><option value="true">{t("Archived habits")}</option></Select>
-          <Select label={t("Life Area filter")} value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value, view: 'library' } : { view: 'library' }); setPage(1) }}><option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select></div>
+          {!scopedArea && <Select label={t("Life Area filter")} value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value, view: 'library' } : { view: 'library' }); setPage(1) }}><option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>}</div>
         <QueryFeedback query={habits} /><QueryFeedback query={areas} />
         {habits.data?.total === 0 && <EmptyState title={t("Start with something small")} action={<Button variant="secondary" onClick={() => openCapture({ kind: 'habit' })}>{t("New habit")}</Button>}>{t("A few minutes of something meaningful is enough to begin.")}</EmptyState>}
         <ul className={styles.list}>{habits.data?.items.map(habit => <li className={styles.row} key={habit.id}><div>
           <Link className={styles.title} to={`/habits/${habit.id}`}>{habit.title}</Link>
-          <p className={styles.meta}>{habit.archivedAtUtc ? t("Archived") : habit.isActive ? t("Active") : t("Inactive")}{habit.lifeAreaId && ` · ${areaName(areas.data?.find(area => area.id === habit.lifeAreaId)) || t("Life Area")}`}</p>
+          <p className={styles.meta}>{habit.archivedAtUtc ? t("Archived") : habit.isActive ? t("Active") : t("Inactive")}{habit.lifeAreaId && ` · ${areas.data?.some(area => area.id === habit.lifeAreaId) ? areaName(areas.data.find(area => area.id === habit.lifeAreaId)) : t('Unassigned')}`}</p>
         </div><Link to={`/habits/${habit.id}`} aria-label={t('historyFor', { title: habit.title })}><Icon name="arrow" /></Link></li>)}</ul><Pagination data={habits.data} setPage={setPage} />
       </section>}
+    {scopedArea && <HabitWeek key={areaId} areaId={areaId} />}
   </div>
 }
 
@@ -59,11 +61,13 @@ export function HabitDetailPage() {
   const [page, setPage] = useState(1)
   const [date, setDate] = useState('')
   const [editing, setEditing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [scheduling, setScheduling] = useState(false)
   const habit = useProductivity(`/habits/${id}`)
   const logs = useProductivity(`/habits/${id}/logs?page=${page}`)
   const today = useProductivity('/today')
   const action = useProductivityAction()
+  const navigate = useNavigate()
   const value = habit.data
   return <div className={styles.stack}>
     <Link to="/habits">{t("← All habits")}</Link>
@@ -71,6 +75,7 @@ export function HabitDetailPage() {
       description={t("Show up, record it, and keep going.")}
       action={value && !value.archivedAtUtc && <Button variant="secondary" onClick={() => setEditing(true)}>{t("Edit habit")}</Button>} />
     <QueryFeedback query={habit} />
+    {value && value.isActive && !value.archivedAtUtc && <Link to={`/focus?habitId=${id}`}>{t('Focus')}</Link>}
     {value && <div className={pageStyles.detail}>
       <section aria-label={t("Completion log")}><div className={styles.sectionHeading}><h2 className={styles.sectionTitle}>{t("Completion log")}</h2><StatusBadge>{t(value.archivedAtUtc ? 'Archived' : value.isActive ? 'Active' : 'Inactive')}</StatusBadge></div>
         {!value.archivedAtUtc && value.isActive && <form className={styles.form} onSubmit={e => { e.preventDefault(); action.mutate({ path: `/habits/${id}/logs`, body: { localDate: date || today.data?.currentLocalDate } }) }}>
@@ -96,7 +101,8 @@ export function HabitDetailPage() {
       </section>
     </div>}
     <Dialog open={editing} onClose={() => setEditing(false)} title={t("Edit habit")}>{value && <><HabitForm key={id} habit={value} />
-      <details className={styles.section}><summary>{t("Archive this habit")}</summary><p>{t("Schedules and completions stay in your history.")}</p><Button variant="danger" loading={action.isPending} onClick={() => action.mutate({ path: `/habits/${id}`, method: 'DELETE' }, { onSuccess: () => setEditing(false) })}>{t("Archive habit")}</Button><ActionFeedback action={action} /></details></>}</Dialog>
+      <Button variant="dangerQuiet" onClick={() => { setEditing(false); setDeleting(true) }}>{t('Delete Habit')}</Button></>}</Dialog>
+    {value && <DeleteEntityDialog open={deleting} onClose={() => setDeleting(false)} onDeleted={() => navigate('/habits')} type="habit" title={value.title} path={`/habits/${id}`} />}
     <Dialog open={scheduling} onClose={() => setScheduling(false)} title={t("Plan a future rhythm")}>{value && <ScheduleForm habit={value} />}</Dialog>
   </div>
 }

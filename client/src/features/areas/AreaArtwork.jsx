@@ -1,5 +1,6 @@
 // Original geometric drawings, kept as small local vectors. Decorative; every card has a visible name.
 const drawings = {
+  generic: <><circle cx="125" cy="56" r="36" /><circle cx="195" cy="56" r="36" /><path d="M160 20v72M92 56h136" /></>,
   fitness: <><ellipse cx="170" cy="64" rx="90" ry="28" /><ellipse cx="170" cy="64" rx="62" ry="16" /><path d="m95 25 28 24m-36-17 17-18m11 38 17-18m102-9-29 24m37-17-17-18m-12 38-17-18" /></>,
   university: <><path d="M160 30c-32-20-69-19-100-11v64c35-9 68-7 100 10 32-17 65-19 100-10V19c-32-8-68-9-100 11Zm0 0v63M76 36c25-3 43 0 65 9M76 51c25-3 43 0 65 9m-65 6c25-3 43 0 65 9m41-30c22-9 41-12 65-9m-65 24c22-9 41-12 65-9" /></>,
   career: <><path d="M58 89h47V68h47V47h47V26h47V8M58 99h208M192 17l55-10-1 54" /><circle cx="90" cy="36" r="12" /><path d="M78 49v16m24-16v16" /></>,
@@ -13,6 +14,6 @@ const drawings = {
 }
 export function AreaArtwork({ areaKey }) {
   return <svg viewBox="0 0 320 112" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-    {drawings[areaKey] || drawings.personal}
+    {drawings[areaKey] || drawings.generic}
   </svg>
 }

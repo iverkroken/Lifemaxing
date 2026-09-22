@@ -1,5 +1,51 @@
 # DATABASE.md
 
+## Focus refinement — 22 September 2026
+
+`20260922213031_FocusHubRefinement` adds `FocusPreferences.DailyGoalMinutes` (integer, default 120, 15–1440 and divisible by 15) and `WorldClockInitialized` (boolean, default false). The server serializes initialization and preference creation through the existing owner lock. Saved cities and all session history are retained; removing all initialized cities does not trigger reseeding. The normal Development upgrade followed a validated private backup; counts and aggregate fingerprints of all 30 existing tables matched, excluding only the two added fields and migration history. The historical upgrade test preserves legacy sound/volume/custom configuration and saved city identity.
+
+## Focus time hub — 22 September 2026
+
+Additive migration `20260922180819_FocusTimeHub` adds nullable `FocusRunId` and `PlannedSeconds` to existing FocusSessions and creates four owned tables:
+
+| Table | Responsibility |
+| --- | --- |
+| FocusRuns | Configuration snapshot, schedule position, phase/state, confirmed remaining time, deadline, controller/revision, interruption and next item reference; at most one unfinished run per owner. |
+| FocusWorkSpans | Confirmed work intervals linked to the existing FocusSession; contiguous spans coalesce; day/week totals clip spans to the account time zone. |
+| FocusPreferences | Custom rhythm, sound/volume, notifications, automatic transitions and wake preference; one row per owner. |
+| WorldClockCities | Saved city name, IANA zone and user order; unique owner/name/zone. |
+
+FocusSession remains the historical work interval and Progress source. Existing rows are preserved without invented spans or retroactive rewards. Managed sessions credit checkpointed seconds only; legacy untimed sessions retain their original behavior. Cancelled work remains in history but is excluded from totals. Deleting a linked item stops matching active runs even during a break and preserves confirmed history. Preference/city writes use the existing owner transaction boundary. Rollback removes the new account/time data and is not lossless after use.
+
+
+## Recoverable deletion and custom Life Areas — 22 September 2026
+
+Migration `20260921231831_SoftDeleteAndCustomLifeAreas` adds `DeletedAtUtc` to Habit, Goal and LifeArea, and separates Task's former archive timestamp into `ArchivedAtUtc`. Existing Task deletion timestamps are migrated to archive timestamps and cleared, so no pre-existing record enters the 30-day recovery window. Active existing records remain active.
+
+LifeArea adds optional private `CustomImage` bytea, `CustomImageContentType`, `CustomImageUpdatedAtUtc`, and numeric focal coordinates from 0 through 100. Its existing owner/key uniqueness continues to cover custom server-generated keys. Deleted Life Areas retain Task/Habit/Goal foreign keys during recovery. Permanent purge nulls those child links. The XpEntry/LifeArea foreign key is removed while an owner/LifeArea index is retained, allowing immutable historical XP attribution to outlive permanent area deletion. Activity already stores raw historical identifiers without subject foreign keys.
+
+Normal EF queries filter Task, Habit, Goal and LifeArea on `DeletedAtUtc IS NULL`. Recovery and cleanup explicitly bypass the filter, always add owner predicates, and use the original identity. The retention boundary is `DeletedAtUtc + 30 days`; expired records cannot be restored even before the hourly cleanup physically removes them. Permanent Task/Habit/Goal cleanup removes their mutable dependent planning/log/progress rows and nulls Focus references, without deleting XP, Activity or command receipts.
+
+## Daily workspace additions — 21 September 2026
+
+`DailyGoalSelections` stores Id, UserId, GoalId, LocalDate, TimeZoneId, SelectedAtUtc and nullable RemovedAtUtc. A unique `(UserId, LocalDate, GoalId)` index makes selection idempotent under the existing per-owner transaction lock. Restrictive owner/goal foreign keys retain references. Removal marks the row rather than deleting Goal data. No Today copies of Tasks, Habits or Goals exist.
+
+`FocusSessions` adds nullable GoalId and HabitId with restrictive foreign keys. `num_nonnulls(TaskId, GoalId, HabitId) <= 1` permits one entity reference or existing unstructured sessions. Existing sessions, elapsed time and task references are unchanged.
+
+`CK_Habit_Xp` now permits 1–75; old zero configurations are normalized to the existing default 10. Historical logs, XP entries, activity and command receipts are untouched. The shared daily habit award cap remains 75. Migrations: `20260921180817_DailyWorkspaceAndHabitXp`, `20260921181454_FocusEntityReferences`. Rollback is not lossless after using new features: it removes selections/references, and restoring the old Habit constraint fails if values exceed 25. Use a reviewed forward correction rather than silently clamping values.
+
+Local application, 21 September 2026: with explicit user authorization, `20260920220222_PlanningModesAndSubscriptions` was applied to the normal Development database. A private backup was validated first; all 24 pre-existing table counts and aggregate row fingerprints matched afterward (ignoring the new PlanningMode field). The column/default, subscription fields/FK/checks/index and migration history were verified. No reset, reseeding or additional migration occurred. Earlier references to disposable-only application describe the initial feature pass.
+
+## Additive selected-feature schema — 20–21 September 2026
+
+Migration `20260920220222_PlanningModesAndSubscriptions` adds `UserSettings.PlanningMode` (varchar20, required, default `FocusedDay`) and `Subscriptions`. Existing users retain the previous mission-centered layout; tasks, commitments, habits and history are unchanged. API validation accepts Simple, ThreeThreeThree, FocusedDay and Custom only.
+
+`Subscriptions` fields: UUID Id, required UserId FK to AppUser, Name varchar200, Category varchar80 (empty allowed), Price numeric(11,2), Currency varchar3, BillingInterval varchar9, NextBillingDate/StartDate date, optional Notes varchar2000, Status varchar9 and UTC CreatedAtUtc/UpdatedAtUtc. Composite index `(UserId, Status, NextBillingDate)` supports owned list/upcoming reads. Checks enforce nonnegative price up to 999999999.99, valid supported interval/status and ordered dates in 1900–9998. Supported currency codes are NOK/SEK/DKK/EUR/GBP/USD/CHF/CAD/AUD/NZD/PLN/CZK/HUF; there is no currency conversion. Cancelled records remain editable/reactivatable; no deletion endpoint exists.
+
+Active-only monthly/yearly estimates use server-side decimal aggregation grouped by currency and category. Weekly: price×52/12 monthly and ×52 yearly; monthly: price and ×12; quarterly: /3 and ×4; yearly: /12 and unchanged. Sum before display rounding. These are cadence estimates, not historical payments. Manual next dates never advance automatically; overdue records remain visible. Subscriptions have stable identifiers for future separately owned transaction links; no bank/import tables are created.
+
+Registration and Google reuse the existing Identity tables, including AspNetUserLogins; there is no second user model or auth-token table. Atomic initialization creates settings/ten Life Areas for each new user. Identity confirmation/reset tokens are time-limited Data Protection values, not database or browser-storage records. The older administrative-only AppUser note below is superseded by this explicit scope. Reversing this migration drops the new subscriptions table and preference: do not run Down after collecting real records without a reviewed backup/export strategy.
+
 Dette er en relasjonell blueprint, ikke en beskjed om å opprette alle tabeller i fase 0. Fasefordelingen følger IMPLEMENTATION_PLAN.md. En delt PostgreSQL database, ett AppDbContext og EF migrasjoner er nok gjennom V2. Bruk IdentityUser<Guid>, UUID primærnøkler for domenedata og UserId på alle private rotdata. Ingen bruker ID kommer fra klienten. LifeAreaId er eksplisitt på delte objekter; spesialiserte moduler har et entydig område og trenger ikke gjentatte AreaId kolonner.
 
 ## Felles regler for lagring
@@ -35,7 +81,7 @@ Phase 2 avklaring: `TaskCompletion` introduseres med Id, UserId, TaskId, Complet
 | TaskCompletion | Id, UserId, TaskId, CompletedAtUtc, AwardedXp, ReversedAtUtc? | Delvis unik aktiv TaskId; hver syklus er identifiserbar; AwardedXp er historisk beløp |
 | XpEntry | Id, UserId, AmountSigned, Kind, SourceKind, SourceId, LifeAreaId?, OccurredAtUtc, RuleVersion, Note? | Append only; unik (UserId, Kind, SourceKind, SourceId); negativ reversal refererer original kilde via RelatedEntryId |
 | ActivityEvent | Id, UserId, Kind, SubjectKind, SubjectId, LifeAreaId?, OccurredAtUtc, Summary, DetailsJson?, SchemaVersion, SourceEventId? | Append only, unik (UserId, Kind, SourceEventId) når SourceEventId finnes; ingen hard FK til slettbart subjekt |
-| FocusSession | Id, UserId, TaskId?, StartedAtUtc, RunningSinceUtc?, AccumulatedSeconds, EndedAtUtc?, Status | Maks én uavsluttet økt per bruker med delvis unik indeks; serveren beregner varighet ved pause og stopp |
+| FocusSession | Id, UserId, TaskId?, GoalId?, HabitId?, StartedAtUtc, RunningSinceUtc?, AccumulatedSeconds, EndedAtUtc?, Status | Maks én uavsluttet økt per bruker med delvis unik indeks; serveren beregner varighet ved pause og stopp |
 | Reward | Id, UserId, Title, RequiredLevel, CreatedAtUtc, ArchivedAtUtc? | Én brukerdefinert belønning knyttet til levelterskel |
 | RewardClaim | Id, UserId, RewardId, ClaimedAtUtc | Unik (UserId, RewardId); tidligere hentet belønning beholdes ved XP korreksjon |
 | CommandReceipt | Id, UserId, ClientActionId, Operation, ResultId?, CreatedAtUtc | Unik (UserId, ClientActionId); idempotens for fullføring, reversering, vanelogg og RewardClaim |
@@ -48,7 +94,7 @@ Ikke bruk full Event Sourcing. Task, Goal, Habit og hver områdemodul beholder v
 
 `ProgressionAndFocus` adds the six new tables above and extends TaskCompletion with AwardedXp and Habit with XpPerLog. Existing Phase 2 completions retain AwardedXp 0; the migration does not invent retroactive awards or activity. Reopening a pre-progression completion therefore has no ledger reversal; a later new completion follows the current rules.
 
-XpEntry also stores LocalDate, TimeZoneId and Category. Tiny/Small awards share the SmallTasks bucket for the owner's completion day. Habit awards use the log's scheduled local date and historical schedule timezone, including backdated logs. Reversals retain the original award's bucket and rule version, while OccurredAtUtc records when the correction happened. Caps use the net amount in that original category/date bucket; travel and corrections never rewrite old dates. Zero/capped awards still get an entry and completion activity. Habit XP is configurable from 1 to 25, initially 10. The product formula and tier/rank rules remain canonical in PROJECT_SPEC.md.
+XpEntry also stores LocalDate, TimeZoneId and Category. Tiny/Small awards share the SmallTasks bucket for the owner's completion day. Habit awards use the log's scheduled local date and historical schedule timezone, including backdated logs. Reversals retain the original award's bucket and rule version, while OccurredAtUtc records when the correction happened. Caps use the net amount in that original category/date bucket; travel and corrections never rewrite old dates. Zero/capped awards still get an entry and completion activity. Habit XP is configurable from 1 to 75, initially 10. The product formula and tier/rank rules remain canonical in PROJECT_SPEC.md.
 
 CommandReceipt stores a bounded operation name, SHA-256 request fingerprint, response status and JSON response snapshot in addition to the documented identity/result fields. This lets a retry return its original result even after a later correction. A reused identity with a different operation or body returns 409. Successful receipt and domain writes share the existing transaction/owner row lock. XP, activity and receipt entities reject update/delete through AppDbContext; no API edits or deletes those histories. Unique source/cycle/claim/session indexes provide additional database guarantees.
 

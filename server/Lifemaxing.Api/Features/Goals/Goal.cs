@@ -16,6 +16,7 @@ public sealed class Goal
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? CompletedAtUtc { get; set; }
     public DateTimeOffset? ArchivedAtUtc { get; set; }
+    public DateTimeOffset? DeletedAtUtc { get; set; }
 }
 
 public sealed class GoalProgressEntry

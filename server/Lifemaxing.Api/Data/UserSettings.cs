@@ -8,6 +8,7 @@ public sealed class UserSettings
     public string UiLanguage { get; set; } = "en";
     public string Theme { get; set; } = "system";
     public string Density { get; set; } = "normal";
+    public string PlanningMode { get; set; } = "FocusedDay";
     public DateTimeOffset CreatedAtUtc { get; set; }
     public AppUser User { get; set; } = null!;
 }

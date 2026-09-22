@@ -15,6 +15,9 @@ using Lifemaxing.Api.Features.Tasks;
 using Lifemaxing.Api.Features.Today;
 using Lifemaxing.Api.Features.Habits;
 using Lifemaxing.Api.Features.Goals;
+using Lifemaxing.Api.Features.Finance;
+using Lifemaxing.Api.Features.Search;
+using Lifemaxing.Api.Features.DeletedContent;
 
 var builder = WebApplication.CreateBuilder(args);
 AuthDataProtection.Configure(builder);
@@ -47,6 +50,9 @@ builder.Services.AddAntiforgery(options =>
 });
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<Lifemaxing.Api.Features.Focus.FocusRunService>();
+builder.Services.AddScoped<DeletedContentService>();
+builder.Services.AddHostedService<DeletedContentCleanupWorker>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -97,6 +103,8 @@ builder.Services.AddIdentity<AppUser, IdentityRole<Guid>>(options =>
     .AddDefaultTokenProviders()
     .AddPasswordValidator<PasswordPolicy>();
 
+builder.AddAccountLifecycle();
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = builder.Environment.IsDevelopment()
@@ -141,6 +149,7 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.Use(async (context, next) =>
 {
+    if (context.Request.Path.StartsWithSegments("/api/v1/auth")) context.Response.Headers.CacheControl = "no-store";
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
@@ -149,6 +158,7 @@ app.Use(async (context, next) =>
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseRateLimiter();
+app.UseAccountPublicOrigin();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
@@ -157,8 +167,11 @@ app.Use(async (context, next) => { if (HttpMethods.IsPost(context.Request.Method
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" }));
 app.MapSystemEndpoints();
 app.MapAuthEndpoints();
+app.MapAccountEndpoints();
+app.MapExternalAccountEndpoints();
 app.MapSettingsEndpoints();
 app.MapAreaEndpoints();
+app.MapSearchEndpoints();
 var productivity = app.MapGroup("/api/v1").RequireAuthorization().AddEndpointFilter<ProductivityWriteFilter>();
 productivity.MapTaskEndpoints();
 productivity.MapTodayEndpoints();
@@ -166,6 +179,9 @@ productivity.MapHabitEndpoints();
 productivity.MapGoalEndpoints();
 productivity.MapProgressionEndpoints();
 productivity.MapFocusEndpoints();
+Lifemaxing.Api.Features.Focus.FocusHubEndpoints.MapFocusHub(productivity);
+productivity.MapDeletedContentEndpoints();
+productivity.MapSubscriptionEndpoints();
 
 // Reserve API and health paths: even unknown routes must never return the SPA.
 app.Map("/api/{**path}", () => Results.Problem(statusCode: 404, title: "Endpoint not found."));

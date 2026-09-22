@@ -5,6 +5,7 @@ using Lifemaxing.Api.Common;
 using Lifemaxing.Api.Data;
 using Lifemaxing.Api.Features.Today;
 using Microsoft.EntityFrameworkCore;
+using Lifemaxing.Api.Features.DeletedContent;
 
 namespace Lifemaxing.Api.Features.Tasks;
 
@@ -15,7 +16,7 @@ public static class TaskEndpoints
         var tasks = api.MapGroup("/tasks");
         tasks.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, bool? inbox, string? status,
             Guid? areaId, Guid? goalId, DateOnly? plannedDate, DateOnly? dueBefore, string? search,
-            int? page, int? pageSize, CancellationToken ct) =>
+            int? page, int? pageSize, string? view, string? priority, TimeProvider clock, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
             if (!Productivity.DateValid(plannedDate) || !Productivity.DateValid(dueBefore))
@@ -23,14 +24,26 @@ public static class TaskEndpoints
             if (status is not (null or "active" or "completed" or "archived" or "all"))
                 return Productivity.Invalid("status", "Choose active, completed, archived or all.");
             var query = db.Tasks.AsNoTracking().Where(x => x.UserId == userId);
-            query = status == "archived" ? query.Where(x => x.DeletedAtUtc != null) : query.Where(x => x.DeletedAtUtc == null);
+            query = status == "archived" ? query.Where(x => x.ArchivedAtUtc != null) : query.Where(x => x.ArchivedAtUtc == null);
             if (status is null or "active") query = query.Where(x => !x.Completions.Any(c => c.ReversedAtUtc == null));
             if (status == "completed") query = query.Where(x => x.Completions.Any(c => c.ReversedAtUtc == null));
-            if (inbox == true) query = query.Where(x => x.PlannedDate == null && x.DeletedAtUtc == null && !x.Completions.Any(c => c.ReversedAtUtc == null));
+            if (inbox == true) query = query.Where(x => x.PlannedDate == null && x.ArchivedAtUtc == null && !x.Completions.Any(c => c.ReversedAtUtc == null));
             if (areaId.HasValue) query = query.Where(x => x.LifeAreaId == areaId);
             if (goalId.HasValue) query = query.Where(x => x.GoalId == goalId);
             if (plannedDate.HasValue) query = query.Where(x => x.PlannedDate == plannedDate);
             if (dueBefore.HasValue) query = query.Where(x => x.DueDate <= dueBefore);
+            if (priority is not (null or "Low" or "Normal" or "High")) return Productivity.Invalid("priority", "Choose Low, Normal or High.");
+            if (priority != null) query = query.Where(x => x.Priority == priority);
+            if (view is not (null or "today" or "overdue" or "upcoming")) return Productivity.Invalid("view", "Choose today, overdue or upcoming.");
+            if (view != null)
+            {
+                var day = await Productivity.Day(db, userId, clock, ct);
+                query = view switch {
+                    "today" => query.Where(x => x.PlannedDate == day.Date),
+                    "overdue" => query.Where(x => x.PlannedDate < day.Date || x.DueDate < day.Date),
+                    _ => query.Where(x => x.PlannedDate > day.Date)
+                };
+            }
             if (!string.IsNullOrWhiteSpace(search)) query = query.Where(x => x.Title.Contains(search.Trim()));
             var total = await query.CountAsync(ct);
             var size = Productivity.PageSize(pageSize);
@@ -63,10 +76,10 @@ public static class TaskEndpoints
             var userId = principal.GetUserId();
             var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
             if (task is null) return Productivity.NotFound();
-            if (task.DeletedAtUtc is not null) return Productivity.Conflict("Archived tasks cannot be edited.");
+            if (task.ArchivedAtUtc is not null) return Productivity.Conflict("Archived tasks cannot be edited.");
             var request = Productivity.Patch(new TaskRequest(task.Title, task.Details, task.LifeAreaId, task.GoalId,
                 task.Tier, task.Priority, task.PlannedDate, task.DueDate, task.EstimateMinutes), patch);
-            var error = await Validate(request, userId, db, ct);
+            var error = await Validate(request, userId, db, ct, task.LifeAreaId, task.GoalId);
             if (error is not null) return error;
             if (request.Tier != task.Tier && await db.TaskCompletions.AnyAsync(x => x.UserId == userId && x.TaskId == id && x.ReversedAtUtc == null, ct))
                 return Productivity.Conflict("Reopen the task before changing its tier.");
@@ -76,16 +89,10 @@ public static class TaskEndpoints
             await db.SaveChangesAsync(ct);
             return Results.Ok(await Response(db, id, userId, ct));
         });
-        tasks.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
+        tasks.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, DeletedContentService deleted, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
-            var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
-            if (task is null) return Productivity.NotFound();
-            task.DeletedAtUtc ??= clock.GetUtcNow();
-            task.UpdatedAtUtc = clock.GetUtcNow();
-            // Plans and completion history remain available after archiving.
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            return await deleted.SoftDeleteAsync("task", id, userId, ct) ? Results.NoContent() : Productivity.NotFound();
         });
         tasks.MapPost("/{id:guid}/complete", (Guid id, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
             Complete(id, false, principal.GetUserId(), db, clock, ct));
@@ -97,7 +104,7 @@ public static class TaskEndpoints
     {
         var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
         if (task is null) return Productivity.NotFound();
-        if (task.DeletedAtUtc is not null) return Productivity.Conflict("Archived tasks cannot be completed or reopened.");
+        if (task.ArchivedAtUtc is not null) return Productivity.Conflict("Archived tasks cannot be completed or reopened.");
         var active = await db.TaskCompletions.SingleOrDefaultAsync(x => x.TaskId == id && x.UserId == userId && x.ReversedAtUtc == null, ct);
         var day = await Productivity.Day(db, userId, clock, ct);
         if (reopen && active is not null)
@@ -122,7 +129,8 @@ public static class TaskEndpoints
     private static Task<TaskResponse> Response(AppDbContext db, Guid id, Guid userId, CancellationToken ct) =>
         db.Tasks.Where(x => x.Id == id && x.UserId == userId).Select(TaskResponse.Projection).SingleAsync(ct);
 
-    private static async Task<IResult?> Validate(TaskRequest request, Guid userId, AppDbContext db, CancellationToken ct)
+    private static async Task<IResult?> Validate(TaskRequest request, Guid userId, AppDbContext db, CancellationToken ct,
+        Guid? retainedAreaId = null, Guid? retainedGoalId = null)
     {
         if (!Productivity.TitleValid(request.Title)) return Productivity.Invalid("title", "Enter a title of 1–200 characters.");
         if (request.Details?.Length > 10000) return Productivity.Invalid("details", "Use at most 10000 characters.");
@@ -130,8 +138,10 @@ public static class TaskEndpoints
         if (request.Priority is not ("Low" or "Normal" or "High")) return Productivity.Invalid("priority", "Choose Low, Normal or High.");
         if (request.EstimateMinutes is < 1 or > 10080) return Productivity.Invalid("estimateMinutes", "Use 1–10080 minutes.");
         if (!Productivity.DateValid(request.PlannedDate) || !Productivity.DateValid(request.DueDate)) return Productivity.Invalid("plannedDate", "Use dates between 1900 and 9998.");
-        if (!await Productivity.OwnsArea(db, userId, request.LifeAreaId, ct)) return Productivity.NotFound();
-        if (request.GoalId is not null && !await db.Goals.AnyAsync(x => x.Id == request.GoalId && x.UserId == userId, ct)) return Productivity.NotFound();
+        if (!await Productivity.OwnsAreaOrRetains(db, userId, request.LifeAreaId, retainedAreaId, ct)) return Productivity.NotFound();
+        if (request.GoalId is not null && (request.GoalId == retainedGoalId
+                ? !await db.Goals.IgnoreQueryFilters().AnyAsync(x => x.Id == request.GoalId && x.UserId == userId, ct)
+                : !await db.Goals.AnyAsync(x => x.Id == request.GoalId && x.UserId == userId, ct))) return Productivity.NotFound();
         return null;
     }
 

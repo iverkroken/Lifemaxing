@@ -44,7 +44,7 @@ export function RewardsPage() {
     { key: 'claimed', title: 'Claimed', items: query.data?.items.filter(reward => reward.claimedAtUtc) || [] },
   ]
   return <div className={`${styles.stack} ${rewardStyles.page}`}><PageHeader editorial title={t("Rewards")} description={t("Personal incentives, chosen by you.")} action={<Button onClick={() => setCreating(true)}>{t("New reward")}</Button>} />
-    <div className={rewardStyles.feature}><div className={rewardStyles.featureCopy}><Icon name="rewards" size={32} /><h2>{t("Make room for something good")}</h2><p>{t("Choose something meaningful to you. Claim it once you reach this level; no XP is spent.")}</p></div><img src="/images/Tiger.png" alt="" decoding="async" /></div>
+    <div className={rewardStyles.feature}><div className={rewardStyles.featureCopy}><Icon name="rewards" size={32} /><h2>{t("Make room for something good")}</h2><p>{t("Choose something meaningful to you. Claim it once you reach this level; no XP is spent.")}</p></div><div className={rewardStyles.artwork}><img src="/images/Tiger.png" alt="" decoding="async" /></div></div>
     <div className={styles.sectionHeading}><Link to="/progress">{t("Your progress →")}</Link><Select label={t("Reward list")} value={archived} onChange={e => { setArchived(e.target.value); setPage(1) }}><option value="false">{t("Current rewards")}</option><option value="true">{t("Archived rewards")}</option></Select></div>
     <QueryFeedback query={query} /><QueryFeedback query={progress} /><ActionFeedback action={action} />
     {query.data?.total === 0 && <EmptyState title={t("Define a reward")}>{t("Define a reward and the level that makes it available.")}</EmptyState>}

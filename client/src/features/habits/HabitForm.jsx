@@ -11,9 +11,9 @@ import { ActionFeedback, QueryFeedback } from '../../shared/ui/ProductivityFeedb
 import styles from '../../shared/ui/Productivity.module.css'
 import pageStyles from './HabitsPage.module.css'
 
-const schema = z.object({ title: z.string().trim().min(1, 'Enter a habit title.').max(200), lifeAreaId: z.string(), isActive: z.boolean(), xpPerLog: z.coerce.number().int().min(1).max(25) })
+const schema = z.object({ title: z.string().trim().min(1, 'Enter a habit title.').max(200), lifeAreaId: z.string(), isActive: z.boolean(), xpPerLog: z.coerce.number().int().min(1).max(75) })
 
-export function HabitForm({ habit, onSaved }) {
+export function HabitForm({ habit, onSaved, initialAreaId = '' }) {
   const { t, areaName } = useLanguage()
   const areas = useProductivity('/areas')
   const today = useProductivity('/today')
@@ -21,7 +21,7 @@ export function HabitForm({ habit, onSaved }) {
   const [days, setDays] = useState([1, 3, 5])
   const [target, setTarget] = useState(3)
   const [from, setFrom] = useState('')
-  const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: habit?.title || '', lifeAreaId: habit?.lifeAreaId || '', isActive: habit?.isActive ?? true, xpPerLog: habit?.xpPerLog ?? 10 } })
+  const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: habit?.title || '', lifeAreaId: habit?.lifeAreaId || initialAreaId, isActive: habit?.isActive ?? true, xpPerLog: habit?.xpPerLog ?? 10 } })
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction(saved => { if (!habit) form.reset(); onSaved?.(saved) })
   return <form className={`${styles.form} ${pageStyles.form}`} noValidate onSubmit={form.handleSubmit(values => action.mutate({ path: habit ? `/habits/${habit.id}` : '/habits', method: habit ? 'PATCH' : 'POST', body: { ...values, lifeAreaId: values.lifeAreaId || null,
@@ -29,8 +29,8 @@ export function HabitForm({ habit, onSaved }) {
   } }))}>
     <fieldset disabled={action.isPending} className={styles.formFields}>
     <Input label={t("Habit title")} required error={form.formState.errors.title} {...form.register('title')} />
-    <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("No area")}</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
-    <Input label={t("XP per completion")} type="number" min="1" max="25" hint={t("Daily habit awards share a 75 XP cap.")} error={form.formState.errors.xpPerLog} {...form.register('xpPerLog')} />
+    <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("Unassigned")}</option>{selectedArea && !areas.data?.some(x => x.id === selectedArea) && <option value={selectedArea}>{t('Unassigned')}</option>}{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
+    <Input label={t("XP per completion")} type="number" min="1" max="75" hint={t("habitXpRules")} error={form.formState.errors.xpPerLog} {...form.register('xpPerLog')} />
     <label className={styles.check}><input type="checkbox" {...form.register('isActive')} />{t("Active habit")}</label>
     {!habit && <ScheduleFields {...{ pattern, setPattern, days, setDays, target, setTarget }} from={from || today.data?.currentLocalDate || ''} setFrom={setFrom}
       hint={t("Start today or later. Future schedule changes preserve this initial plan.")} />}

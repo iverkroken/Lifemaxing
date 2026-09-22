@@ -17,6 +17,7 @@ public static class ProductivityModel
         task.Property(x => x.Tier).HasMaxLength(20);
         task.Property(x => x.Priority).HasMaxLength(20);
         task.HasIndex(x => new { x.UserId, x.PlannedDate, x.DeletedAtUtc });
+        task.HasQueryFilter(x => x.DeletedAtUtc == null);
         task.HasIndex(x => new { x.UserId, x.DueDate });
         task.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         task.HasOne<LifeArea>().WithMany().HasForeignKey(x => x.LifeAreaId).OnDelete(DeleteBehavior.Restrict);
@@ -36,6 +37,11 @@ public static class ProductivityModel
         commitment.HasIndex(x => new { x.UserId, x.LocalDate });
 
         var mission = model.Entity<DailyMission>();
+        var selectedGoal = model.Entity<DailyGoalSelection>();
+        selectedGoal.Property(x => x.TimeZoneId).HasMaxLength(100);
+        selectedGoal.HasIndex(x => new { x.UserId, x.LocalDate, x.GoalId }).IsUnique();
+        selectedGoal.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        selectedGoal.HasOne<Goal>().WithMany().HasForeignKey(x => x.GoalId).OnDelete(DeleteBehavior.Restrict);
         mission.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         mission.HasOne<TaskItem>().WithMany().HasForeignKey(x => x.TaskId).OnDelete(DeleteBehavior.Restrict);
         mission.HasIndex(x => new { x.UserId, x.LocalDate }).IsUnique();
@@ -45,6 +51,8 @@ public static class ProductivityModel
         habit.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         habit.HasOne<LifeArea>().WithMany().HasForeignKey(x => x.LifeAreaId).OnDelete(DeleteBehavior.Restrict);
         habit.HasIndex(x => new { x.UserId, x.ArchivedAtUtc });
+        habit.HasIndex(x => new { x.UserId, x.DeletedAtUtc });
+        habit.HasQueryFilter(x => x.DeletedAtUtc == null);
         habit.HasMany(x => x.Schedules).WithOne().HasForeignKey(x => x.HabitId).OnDelete(DeleteBehavior.Restrict);
 
         var schedule = model.Entity<HabitSchedulePeriod>();
@@ -75,6 +83,8 @@ public static class ProductivityModel
         goal.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         goal.HasOne<LifeArea>().WithMany().HasForeignKey(x => x.LifeAreaId).OnDelete(DeleteBehavior.Restrict);
         goal.HasIndex(x => new { x.UserId, x.ArchivedAtUtc });
+        goal.HasIndex(x => new { x.UserId, x.DeletedAtUtc });
+        goal.HasQueryFilter(x => x.DeletedAtUtc == null);
 
         var progress = model.Entity<GoalProgressEntry>();
         progress.Property(x => x.Value).HasPrecision(18, 4);

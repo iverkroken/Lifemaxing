@@ -1,5 +1,5 @@
 .shell { min-height: 100svh; padding-top: var(--header-height); }
-.content { min-width: 0; width: 100%; max-width: var(--workspace-width); margin-inline: auto; padding: var(--space-10) var(--page-gutter) var(--space-16); }
+.content { min-width: 0; width: 100%; max-width: var(--workspace-width); margin-inline: auto; padding: var(--space-8) var(--page-gutter) var(--space-16); }
 .content:focus { outline: none; }
 .immersive { padding-top: 0; }
 .immersive .content { max-width: none; padding: 0; }

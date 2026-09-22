@@ -17,13 +17,14 @@ test('validates the login form before sending credentials', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
   expect(await screen.findByText('Enter a valid email address.')).toBeInTheDocument()
   expect(screen.getByText('Enter a valid value in this field.')).toBeInTheDocument()
-  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(fetch.mock.calls.some(([url]) => url.endsWith('/login'))).toBe(false)
   expect(fetch).toHaveBeenCalledWith('/api/v1/auth/me', expect.anything())
 })
 
 test('paste, password visibility and remember choice preserve the exact credentials on retry', async () => {
   const submissions = []
   vi.stubGlobal('fetch', vi.fn(async (url, options) => {
+    if (url.endsWith('/providers')) return Response.json({ emailAvailable: false, googleEnabled: false, appleEnabled: false })
     if (url.endsWith('/csrf')) return new Response(JSON.stringify({ requestToken: 'fictional-csrf' }))
     if (url.endsWith('/login')) {
       submissions.push(JSON.parse(options.body))

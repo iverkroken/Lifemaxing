@@ -17,6 +17,7 @@ import { CommandMenu } from './CommandMenu.jsx'
 import { TopNavigation, SectionNavigation } from './Navigation.jsx'
 import { MenuDrawer } from './MenuDrawer.jsx'
 import { destinations } from './navigation.js'
+import { TimeHubProvider } from '../focus/TimeHubProvider.jsx'
 
 const TaskDetailPage = lazy(() => import('../tasks/TaskDetailPage.jsx').then(module => ({ default: module.TaskDetailPage })))
 
@@ -42,20 +43,31 @@ function Shell({ user, panelTaskId }) {
   const focusing = location.pathname === '/focus'
   const immersive = focusing || location.pathname === '/today'
   const [heroState, setHeroState] = useState(null)
-  const overArtwork = focusing || (location.pathname === '/today' && !(heroState?.key === location.key && heroState.past))
+  const overArtwork = immersive && !(heroState?.key === location.key && heroState.past)
   useEffect(() => {
-    if (location.pathname !== '/today') return
+    if (!['/today', '/focus'].includes(location.pathname)) return
     let observer
+    let observedBoundary
+    let headerHeight
+    const header = document.querySelector('header')
     const observeHero = () => {
-      const hero = document.querySelector('[data-app-hero]')
-      if (!hero || observer) return
-      observer = new IntersectionObserver(([entry]) => setHeroState({ key: location.key, past: !entry.isIntersecting }), { rootMargin: `-${document.querySelector('header')?.offsetHeight || 72}px 0px 0px 0px` })
-      observer.observe(hero)
+      const boundary = document.querySelector('[data-hero-boundary]')
+      const nextHeight = header?.offsetHeight || 72
+      if (!boundary || (boundary === observedBoundary && nextHeight === headerHeight)) return
+      observer?.disconnect()
+      observedBoundary = boundary
+      headerHeight = nextHeight
+      // Cover text when it reaches the fixed header, not when the whole hero
+      // leaves. Rebuild the observer margin when the header changes size.
+      observer = new IntersectionObserver(([entry]) => setHeroState({ key: location.key, past: entry.boundingClientRect.top < headerHeight }), { rootMargin: `-${headerHeight}px 0px 0px 0px` })
+      observer.observe(boundary)
     }
+    const resize = new ResizeObserver(observeHero)
+    if (header) resize.observe(header)
     const mounts = new MutationObserver(observeHero)
     mounts.observe(document.getElementById('root'), { childList: true, subtree: true })
     observeHero()
-    return () => { observer?.disconnect(); mounts.disconnect() }
+    return () => { observer?.disconnect(); resize.disconnect(); mounts.disconnect() }
   }, [location.key, location.pathname])
   const today = useProductivity('/today')
   const activeFocus = useProductivity('/focus-sessions/active')
@@ -102,7 +114,7 @@ function Shell({ user, panelTaskId }) {
     }
   }, [location.key, navigationType])
 
-  return <div className={`${styles.shell} ${immersive ? styles.immersive : ''} ${panelTaskId ? styles.withPanel : ''}`}>
+  return <TimeHubProvider key={user.id} user={user}><div className={`${styles.shell} ${immersive ? styles.immersive : ''} ${panelTaskId ? styles.withPanel : ''}`}>
     <a href="#main-content" className={styles.skipLink}>{t("Skip to content")}</a>
     <TopNavigation onSearch={() => setCommandOpen(true)} onMenu={() => setMenuOpen(true)} menuOpen={menuOpen} session={activeFocus.data?.session} overArtwork={overArtwork} />
     <main id="main-content" className={styles.content} tabIndex={-1}>
@@ -118,9 +130,9 @@ function Shell({ user, panelTaskId }) {
       <div className={styles.captureType}><Select label={t("Create")} value={capture.kind} onChange={e => setCapture(value => ({ ...value, kind: e.target.value }))}>
         <option value="task">{t("Task")}</option><option value="habit">{t("Habit")}</option><option value="goal">{t("Goal")}</option>
       </Select></div>
-      {capture.kind === 'task' && <QuickAdd date={capture.date === null ? undefined : capture.date || today.data?.currentLocalDate} autoFocus />}
-      {capture.kind === 'habit' && <HabitForm onSaved={habit => { setCaptureOpen(false); navigate(`/habits/${habit.id}`) }} />}
-      {capture.kind === 'goal' && <GoalForm onSaved={goal => { setCaptureOpen(false); navigate(`/goals/${goal.id}`) }} />}
+      {capture.kind === 'task' && <QuickAdd currentDate={today.data?.currentLocalDate} lifeAreaId={capture.lifeAreaId} date={capture.date === null ? undefined : capture.date || today.data?.currentLocalDate} autoFocus />}
+      {capture.kind === 'habit' && <HabitForm initialAreaId={capture.lifeAreaId} onSaved={habit => { setCaptureOpen(false); navigate(`/habits/${habit.id}`) }} />}
+      {capture.kind === 'goal' && <GoalForm initialAreaId={capture.lifeAreaId} onSaved={goal => { setCaptureOpen(false); navigate(`/goals/${goal.id}`) }} />}
     </Dialog>
     <MenuDrawer onNavigate={() => { setMenuOpen(false); requestAnimationFrame(() => document.getElementById('main-content')?.focus({ preventScroll: true })) }} open={menuOpen} onClose={() => setMenuOpen(false)} user={user} session={activeFocus.data?.session}
       onSearch={() => { setMenuOpen(false); setCommandOpen(true) }}
@@ -128,5 +140,5 @@ function Shell({ user, panelTaskId }) {
     <SignOutDialog mode={signOut} onClose={() => setSignOut(null)} />
     <CommandMenu open={commandOpen} onClose={() => setCommandOpen(false)} openCapture={openCapture} session={activeFocus.data?.session}
       destinations={destinations.map(path => [path])} />
-  </div>
+  </div></TimeHubProvider>
 }

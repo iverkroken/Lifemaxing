@@ -2,6 +2,12 @@
   "version": 1,
   "dependencies": {
     "net10.0": {
+      "Microsoft.AspNetCore.Authentication.Google": {
+        "type": "Direct",
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "CYQYHQaz2FSTu7ShfwOZWqxBUC8ykq2FQNOcm0jBMZ4PGcX0SgLtpIfRNnDz0AfGboZYtDnJkE0ambi34JtsrA=="
+      },
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
         "type": "Direct",
         "requested": "[10.0.12, )",

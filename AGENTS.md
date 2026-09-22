@@ -385,7 +385,7 @@ Frontend:
 
 Phase 0 uses an npm workspace, so the frontend commands above run from the repository root.
 
-Start the API with `dotnet run --project server/Lifemaxing.Api --launch-profile http` and Vite with `npm run dev` in separate terminals.
+Start the normal local stack with `npm run dev`; it ensures PostgreSQL is healthy and runs the API watch process and Vite in one terminal. Use `npm run dev:db`, `npm run dev:api` or `npm run dev:client` when a component must run separately.
 
 Use `dotnet restore --locked-mode` for reproducible restores. The SDK selected by `global.json` must be installed; see README.md for the per-user Windows SDK path and database secret setup.
 

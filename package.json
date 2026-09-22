@@ -9,13 +9,18 @@
     "npm": ">=11 <12"
   },
   "scripts": {
-    "dev": "npm run dev --workspace client",
+    "dev": "npm run dev:db && concurrently --kill-others --names api,client npm:dev:api npm:dev:client",
+    "dev:db": "docker compose up -d --wait db",
+    "dev:api": "node scripts/run-dotnet.mjs watch --no-hot-reload --project server/Lifemaxing.Api --launch-profile http",
+    "dev:client": "npm run dev --workspace client",
     "build": "npm run build --workspace client",
     "lint": "npm run lint --workspace client",
-    "test": "npm run test --workspace client --",
+    "test": "node --test scripts/run-dotnet.test.mjs && npm run test --workspace client --",
     "test:smoke": "playwright test --config tests/browser/playwright.config.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0"
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "concurrently": "10.0.5"
   }
 }

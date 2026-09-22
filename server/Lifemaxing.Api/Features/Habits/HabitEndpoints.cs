@@ -4,6 +4,7 @@ using System.Text.Json;
 using Lifemaxing.Api.Common;
 using Lifemaxing.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using Lifemaxing.Api.Features.DeletedContent;
 
 namespace Lifemaxing.Api.Features.Habits;
 
@@ -13,11 +14,13 @@ public static class HabitEndpoints
     {
         var habits = api.MapGroup("/habits");
         habits.MapHabitWeek();
-        habits.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, Guid? areaId, bool? archived, int? page, int? pageSize, CancellationToken ct) =>
+        habits.MapGet("/", async (ClaimsPrincipal principal, AppDbContext db, Guid? areaId, bool? archived, bool? active, string? search, int? page, int? pageSize, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
             var query = db.Habits.AsNoTracking().Where(x => x.UserId == userId && (archived == true ? x.ArchivedAtUtc != null : x.ArchivedAtUtc == null));
             if (areaId.HasValue) query = query.Where(x => x.LifeAreaId == areaId);
+            if (active.HasValue) query = query.Where(x => x.IsActive == active);
+            if (!string.IsNullOrWhiteSpace(search)) query = query.Where(x => x.Title.Contains(search.Trim()));
             var number = Math.Min(Productivity.Page(page), 1000000); var size = Productivity.PageSize(pageSize);
             var total = await query.CountAsync(ct);
             var items = await query.OrderByDescending(x => x.CreatedAtUtc).ThenBy(x => x.Id).Skip((number - 1) * size).Take(size).Include(x => x.Schedules).ToListAsync(ct);
@@ -32,7 +35,7 @@ public static class HabitEndpoints
         habits.MapPost("/", async (HabitRequest request, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
-            if (request.XpPerLog is < 1 or > 25) return Productivity.Invalid("xpPerLog", "Use 1 to 25 XP per completion.");
+            if (!HabitRules.ValidXp(request.XpPerLog)) return Productivity.Invalid("xpPerLog", "Use 1 to 75 XP per completion.");
             if (!Productivity.TitleValid(request.Title)) return Productivity.Invalid("title", "Enter a title of 1–200 characters.");
             if (!await Productivity.OwnsArea(db, userId, request.LifeAreaId, ct)) return Productivity.NotFound();
             var day = await Productivity.Day(db, userId, clock, ct);
@@ -54,21 +57,17 @@ public static class HabitEndpoints
             if (habit is null) return Productivity.NotFound();
             if (habit.ArchivedAtUtc is not null) return Productivity.Conflict("Archived habits cannot be edited.");
             var request = Productivity.Patch(new HabitEditRequest(habit.Title, habit.LifeAreaId, habit.IsActive, habit.XpPerLog), patch);
-            if (request.XpPerLog is < 1 or > 25) return Productivity.Invalid("xpPerLog", "Use 1 to 25 XP per completion.");
+            if (!HabitRules.ValidXp(request.XpPerLog)) return Productivity.Invalid("xpPerLog", "Use 1 to 75 XP per completion.");
             if (!Productivity.TitleValid(request.Title)) return Productivity.Invalid("title", "Enter a title of 1–200 characters.");
-            if (!await Productivity.OwnsArea(db, userId, request.LifeAreaId, ct)) return Productivity.NotFound();
+            if (!await Productivity.OwnsAreaOrRetains(db, userId, request.LifeAreaId, habit.LifeAreaId, ct)) return Productivity.NotFound();
             habit.Title = request.Title!.Trim(); habit.LifeAreaId = request.LifeAreaId; habit.IsActive = request.IsActive; habit.XpPerLog = request.XpPerLog;
             await db.SaveChangesAsync(ct);
             return Results.Ok(HabitRules.Response(habit));
         });
-        habits.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
+        habits.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, DeletedContentService deleted, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
-            var habit = await db.Habits.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
-            if (habit is null) return Productivity.NotFound();
-            habit.ArchivedAtUtc ??= clock.GetUtcNow(); habit.IsActive = false;
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            return await deleted.SoftDeleteAsync("habit", id, userId, ct) ? Results.NoContent() : Productivity.NotFound();
         });
         habits.MapPut("/{id:guid}/schedule", async (Guid id, ScheduleRequest request, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
@@ -131,12 +130,13 @@ public static class HabitEndpoints
         habits.MapPost("/{id:guid}/logs/{logId:guid}/revoke", async (Guid id, Guid logId, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
+            var habit = await db.Habits.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
+            if (habit is null) return Productivity.NotFound();
             var log = await db.HabitLogs.SingleOrDefaultAsync(x => x.Id == logId && x.HabitId == id && x.UserId == userId, ct);
             if (log is null) return Productivity.NotFound();
             if (log.ReversedAtUtc is null)
             {
                 log.ReversedAtUtc = clock.GetUtcNow();
-                var habit = await db.Habits.SingleAsync(x => x.Id == id && x.UserId == userId, ct);
                 var xp = await ProgressionRules.Reverse(db, userId, "HabitLog", log.Id, log.ReversedAtUtc.Value, ct);
                 ProgressionRules.Record(db, userId, "HabitReversed", "Habit", id, habit.LifeAreaId, log.ReversedAtUtc.Value, $"Removed completion: {habit.Title} on {log.LocalDate} ({xp} XP)", log.Id);
             }

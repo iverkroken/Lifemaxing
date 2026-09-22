@@ -29,7 +29,7 @@ async function capture(page, name, width, browserName) {
   await page.setViewportSize({ width, height: 1000 })
   await ready(page)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), name).toBe(true)
-  await page.screenshot({ path: `${artifactRoot}/${browserName}/${name}-${width}.png`, fullPage: true })
+  await page.screenshot({ path: `${artifactRoot}/${browserName}/${name}-${width}.png`, fullPage: true, animations: 'disabled' })
 }
 
 test('real empty, small and busy data; every surface in light/dark; execution and corrections', async ({ page, browserName }) => {

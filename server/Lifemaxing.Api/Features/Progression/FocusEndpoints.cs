@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Lifemaxing.Api.Features.Progression;
 
-public sealed record FocusStart(Guid? TaskId);
+public sealed record FocusStart(Guid? TaskId = null, Guid? GoalId = null, Guid? HabitId = null);
 public sealed record FocusStop(string Outcome = "Stopped", bool CompleteTask = false);
 public sealed record FocusResponse(Guid Id, Guid? TaskId, string Status, DateTimeOffset StartedAtUtc, DateTimeOffset? RunningSinceUtc,
-    long AccumulatedSeconds, long ElapsedSeconds, DateTimeOffset? EndedAtUtc, DateTimeOffset ServerNow);
+    long AccumulatedSeconds, long ElapsedSeconds, DateTimeOffset? EndedAtUtc, DateTimeOffset ServerNow, Guid? GoalId, Guid? HabitId, Guid? FocusRunId);
 
 public static class FocusEndpoints
 {
@@ -32,15 +32,30 @@ public static class FocusEndpoints
         api.MapPost("/focus-sessions", async (FocusStart request, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
         {
             var owner = principal.GetUserId();
+            if (new[] { request.TaskId, request.GoalId, request.HabitId }.Count(x => x.HasValue) > 1)
+                return Productivity.Invalid("reference", "Choose only one task, goal or habit.");
+            if (request.GoalId.HasValue)
+            {
+                var goal = await db.Goals.SingleOrDefaultAsync(x => x.Id == request.GoalId && x.UserId == owner, ct);
+                if (goal == null) return Productivity.NotFound();
+                if (goal.ArchivedAtUtc != null || goal.State != "Active") return Productivity.Conflict("Choose an active goal.");
+            }
+            if (request.HabitId.HasValue)
+            {
+                var habit = await db.Habits.SingleOrDefaultAsync(x => x.Id == request.HabitId && x.UserId == owner, ct);
+                if (habit == null) return Productivity.NotFound();
+                if (habit.ArchivedAtUtc != null || !habit.IsActive) return Productivity.Conflict("Choose an active habit.");
+            }
             if (request.TaskId.HasValue)
             {
                 var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == request.TaskId && x.UserId == owner, ct);
                 if (task is null) return Productivity.NotFound();
-                if (task.DeletedAtUtc != null || await db.TaskCompletions.AnyAsync(x => x.UserId == owner && x.TaskId == task.Id && x.ReversedAtUtc == null, ct)) return Productivity.Conflict("Choose an unfinished task.");
+                if (task.ArchivedAtUtc != null || await db.TaskCompletions.AnyAsync(x => x.UserId == owner && x.TaskId == task.Id && x.ReversedAtUtc == null, ct)) return Productivity.Conflict("Choose an unfinished task.");
             }
-            if (await db.FocusSessions.AnyAsync(x => x.UserId == owner && x.EndedAtUtc == null, ct)) return Productivity.Conflict("End your current focus session first.");
+            if (await db.FocusSessions.AnyAsync(x => x.UserId == owner && x.EndedAtUtc == null, ct)
+                || await db.Set<Lifemaxing.Api.Features.Focus.FocusRun>().AnyAsync(x => x.UserId == owner && x.EndedAtUtc == null, ct)) return Productivity.Conflict("End your current focus session first.");
             var now = clock.GetUtcNow();
-            var session = new FocusSession { Id = Guid.NewGuid(), UserId = owner, TaskId = request.TaskId, StartedAtUtc = now, RunningSinceUtc = now };
+            var session = new FocusSession { Id = Guid.NewGuid(), UserId = owner, TaskId = request.TaskId, GoalId = request.GoalId, HabitId = request.HabitId, StartedAtUtc = now, RunningSinceUtc = now };
             db.FocusSessions.Add(session); await db.SaveChangesAsync(ct);
             return Results.Created("/api/v1/focus-sessions", Response(session, now));
         });
@@ -54,6 +69,15 @@ public static class FocusEndpoints
         var session = await db.FocusSessions.SingleOrDefaultAsync(x => x.Id == id && x.UserId == owner, ct);
         if (session is null) return Productivity.NotFound();
         if (session.EndedAtUtc != null) return Productivity.Conflict("This session has already ended.");
+        if (session.FocusRunId is { } runId)
+        {
+            var run = await db.Set<Lifemaxing.Api.Features.Focus.FocusRun>().SingleAsync(x => x.Id == runId && x.UserId == owner, ct);
+            var action = operation == "stop" && request?.Outcome == "Cancelled" ? "cancel" : operation;
+            var result = await new Lifemaxing.Api.Features.Focus.FocusRunService(db, clock).Change(owner, runId,
+                new(action, run.ControllerId, run.Revision, CompleteTask: request?.CompleteTask == true), ct);
+            if (result is IStatusCodeHttpResult { StatusCode: >= 400 }) return result;
+            return Results.Ok(Response(session, clock.GetUtcNow()));
+        }
         var now = clock.GetUtcNow();
         if (operation == "pause")
         {
@@ -73,12 +97,14 @@ public static class FocusEndpoints
                 if (result is IStatusCodeHttpResult { StatusCode: >= 400 }) return result;
             }
             Accumulate(session, now); session.EndedAtUtc = now; session.Status = request.Outcome;
-            var title = session.TaskId.HasValue ? await db.Tasks.Where(x => x.Id == session.TaskId && x.UserId == owner).Select(x => x.Title).SingleAsync(ct) : "Unstructured focus";
+            var title = session.TaskId.HasValue ? await db.Tasks.Where(x => x.Id == session.TaskId && x.UserId == owner).Select(x => x.Title).SingleAsync(ct)
+                : session.GoalId.HasValue ? await db.Goals.Where(x => x.Id == session.GoalId && x.UserId == owner).Select(x => x.Title).SingleAsync(ct)
+                : session.HabitId.HasValue ? await db.Habits.Where(x => x.Id == session.HabitId && x.UserId == owner).Select(x => x.Title).SingleAsync(ct) : "Unstructured focus";
             ProgressionRules.Record(db, owner, "Focus" + session.Status, "FocusSession", id, null, now, $"{session.Status} focus: {title} ({session.AccumulatedSeconds / 60} min)", id);
         }
         await db.SaveChangesAsync(ct); return Results.Ok(Response(session, now));
     }
-    public static long Elapsed(FocusSession session, DateTimeOffset now) => session.AccumulatedSeconds + (session.RunningSinceUtc.HasValue ? Math.Max(0, (long)(now - session.RunningSinceUtc.Value).TotalSeconds) : 0);
+    public static long Elapsed(FocusSession session, DateTimeOffset now) => session.AccumulatedSeconds + (session.FocusRunId == null && session.RunningSinceUtc.HasValue ? Math.Max(0, (long)(now - session.RunningSinceUtc.Value).TotalSeconds) : 0);
     private static void Accumulate(FocusSession session, DateTimeOffset now) { session.AccumulatedSeconds = Elapsed(session, now); session.RunningSinceUtc = null; }
-    private static FocusResponse Response(FocusSession x, DateTimeOffset now) => new(x.Id, x.TaskId, x.Status, x.StartedAtUtc, x.RunningSinceUtc, x.AccumulatedSeconds, Elapsed(x, now), x.EndedAtUtc, now);
+    private static FocusResponse Response(FocusSession x, DateTimeOffset now) => new(x.Id, x.TaskId, x.Status, x.StartedAtUtc, x.RunningSinceUtc, x.AccumulatedSeconds, Elapsed(x, now), x.EndedAtUtc, now, x.GoalId, x.HabitId, x.FocusRunId);
 }

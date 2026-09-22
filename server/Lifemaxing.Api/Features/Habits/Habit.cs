@@ -10,6 +10,7 @@ public sealed class Habit
     public bool IsActive { get; set; } = true;
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? ArchivedAtUtc { get; set; }
+    public DateTimeOffset? DeletedAtUtc { get; set; }
     public List<HabitSchedulePeriod> Schedules { get; set; } = [];
 }
 

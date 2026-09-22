@@ -8,10 +8,11 @@ public sealed record TaskRequest(string? Title, string? Details = null, Guid? Li
 
 public sealed record TaskResponse(Guid Id, string Title, string? Details, Guid? LifeAreaId, Guid? GoalId,
     string Tier, string Priority, DateOnly? PlannedDate, DateOnly? DueDate, int? EstimateMinutes,
-    DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc, DateTimeOffset? DeletedAtUtc, bool IsCompleted)
+    DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc, DateTimeOffset? ArchivedAtUtc, bool IsCompleted)
 {
+    public int ExpectedXp => Progression.ProgressionRules.TaskXp(Tier);
     public static readonly Expression<Func<TaskItem, TaskResponse>> Projection = x => new TaskResponse(
         x.Id, x.Title, x.Details, x.LifeAreaId, x.GoalId, x.Tier, x.Priority, x.PlannedDate, x.DueDate,
-        x.EstimateMinutes, x.CreatedAtUtc, x.UpdatedAtUtc, x.DeletedAtUtc,
+        x.EstimateMinutes, x.CreatedAtUtc, x.UpdatedAtUtc, x.ArchivedAtUtc,
         x.Completions.Any(c => c.ReversedAtUtc == null));
 }

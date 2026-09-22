@@ -1,12 +1,35 @@
 # LIFEMAXING design system
 
+## Focus time hub — 22 September 2026
+
+Focus uses the shared 100rem workspace and responsive page gutter below the fixed shell header. A compact four-mode tab strip, six rhythm choices, timer and selection remain the primary composition. Running sessions replace configuration with controls; picker, Smart schedule review, settings and history use existing accessible sheets. Existing buttons, inputs, colors, spacing and Phosphor icons remain authoritative.
+
+`HeroArtwork` extracts Today's rotation-aware cover calculation without changing its artwork, crop or overlay. Focus uses the approved `Background upgrade.png` (1672×941), unchanged, in that same renderer, fixed to the viewport with minimum cover scaling and a restrained horizontal readability treatment on the left. No vertical fade, image filter or additional zoom is applied. Today is unchanged. Focus adds a compact daily-goal progress strip, an offline world map above saved clocks, and side-by-side timer/controls on short desktop viewports. The timer exposes quiet second-by-second values and announces transitions separately. Keyboard tabs, native dialog focus handling, reduced motion and forced colors are supported.
+
+
+## Daily workspace and rank presentation — 21 September 2026
+
+Today keeps its existing hero, followed by one workspace: Planning Mode, Tasks Today, Today's Habits and Today's Goals. Optional priority is a planned-task reference; modes never change storage. Metadata stays secondary to titles and native completion controls. Visible checkboxes use the spacing scale inside full-height click targets. Historical plans and earlier deadlines sit in disclosures below the daily sections.
+
+Focus preserves its quiet dark work surface and uses compact Tasks/Goals/Habits selection, existing controls and readable dark Life Area tokens. Progress gives the current rank emblem room beside numerical Level, XP and two separately labeled progress meters. The Rank System grid uses all ten original PNGs with transparent framing and `object-fit: contain`; no tint, crop or persistent animation. Shared rank color tokens affect only restrained progress/border details. Names/divisions and current/completed/locked text communicate state independently of color. Mobile stacks these compositions while preserving emblem size and control reachability; reduced motion disables the entrance animation.
+
 ## Current authority - artwork product redesign, 15 September 2026
+
+### Selected additions — 20–21 September 2026
+
+Life Area details extend the same visual language: a bounded original image beside the area title, a shared wrapping area-navigation row, lightweight overview actions/counts and the existing scoped lists. Main card surfaces link to their overview; explicit actions and layout editing remain independently operable. Scoped lists suppress competing global title/artwork and the editable all-area filter. Finance Subscriptions stays within the area context with a clear return to overview. The single application top navigation remains authoritative.
+
+Account pages share a split composition using the original `no risk no story.jpg` in its full landscape framing, a bounded form and the existing Joint mark, language/theme controls and tokens. On small screens the form leads and framed artwork follows. Login/signup/recovery/verification transitions are ordinary links; provider buttons are disabled with truthful copy until configured. Security settings owns password change. No new visual identity, floating-card framework or secondary app navbar is introduced.
+
+Today places a persisted planning-mode selector above the daily workspace. Simple prioritizes one list, Focused Day keeps the main mission, 3:3:3 adds a concise explanatory structure and Custom preserves free-form work. All use the same task/habit controls; switching never removes data. Search extends the same top-navigation dialog with immediate pages/actions and ranked owned results, keyboard arrows/Enter/Escape, loading/error/no-match copy.
+
+Finance subscriptions uses open editorial rows, currency-separated monthly/yearly estimates, upcoming dates and category summaries. Shared dialogs/forms handle creation/editing. Cancellation is labelled as manual tracking and never implies cancellation with the vendor. Desktop columns reflow into one mobile reading order; no fictitious bank connection, default browser-style card system or finance-specific palette is added.
 
 The approved full redesign replaces the previous mineral, burgundy and sidebar presentation. This section is current; the Nordic Atelier contract below preserves approval history. Product, API and data rules remain unchanged.
 
 ### Shared system
 
-Inter 400/500/600 provides display (44-72 px), page titles (32-48 px), section titles (24 px), body (16 px) and supporting text (14 px). The shared spacing scale uses 4 px increments. Content uses a 1440 px maximum with responsive 16-40 px gutters.
+Inter 400/500/600 provides display (44-72 px), page titles (32-48 px), section titles (24 px), body (16 px) and supporting text (14 px). The shared spacing scale uses 4 px increments. Content uses a 1600 px maximum with responsive 16-40 px gutters; forms and descriptive text retain narrower measures.
 
 | Role | Light | Dark |
 | --- | --- | --- |
@@ -28,11 +51,15 @@ Plan opens Tasks and exposes Tasks/Goals/Habits/Inbox contextual navigation. Pro
 
 ### Artwork and page composition
 
-Original PNGs in client/public/images are runtime assets and must retain their bytes and names. Backround.png is the supplied filename; CSS rotates it 90 degrees counterclockwise. Today fills its first 100svh with this artwork, then transitions into the daily workspace. Current-day hero data remains independent of the selected planning date.
+Original PNGs in client/public/images are runtime assets and must retain their bytes and names. Backround.png is the supplied filename; CSS rotates it 90 degrees counterclockwise. Today fills its first 100svh with this artwork, then transitions into the daily workspace. Current-day hero data remains independent of the selected planning date. Its task/habit summary, labelled mission and existing Focus entry stay in normal document flow. The fixed header becomes opaque when the start of the hero text reaches it, measured against the actual header height; no scroll scaling or pinned text is used. The document owns anchor clearance so it is not doubled at the workspace.
 
-Goals uses Gods plan.png; Finance and Style use Money.png and Rolex.png; Progress uses Muhammed ali.png; Rewards uses Tiger.png; Focus uses Odessey.png. Tutto passo.png remains available without inventing a feature. Text and controls remain usable if artwork cannot load. No production 3D runtime is introduced.
+Goals gives the existing artwork more of the desktop composition. Progress and Rewards use larger responsive image sections with shared 12-16 px media corners. Full-bleed Today and Focus backgrounds remain immersive. Life Areas groups its counts in one compact row, bringing the unchanged image cards and their controls into the initial viewport.
 
-Tasks and Inbox share integrated filters and paginated rows. Goals and Habits preserve distinct layouts and real history. Life Areas retains a responsive 3/2/1 grid. Progress integrates rank, XP and lifetime totals; Activity presents dated history; Rewards groups only the results returned for the current page. Focus emphasizes the persisted active session. Settings uses contextual navigation and content columns from 768 px, with a mobile category chooser and back action. Its previews depict the actual top-navigation system. Login, forms, empty states and dialogs share the foundation.
+Shared form fields use 16 px text and retain native labels, validation and keyboard behavior. Supporting browsers use CSS `base-select` to give native select pickers the application surface, spacing, selected state and elevation; other browsers retain native pickers. Date calendars and time-zone suggestions remain platform controls. Dialogs and task menus reuse the existing surfaces and focus rules. No custom calendar or JavaScript select framework is added.
+
+Goals uses Gods plan.png; Finance and Style use Money.png and Rolex.png; Progress uses Muhammed ali.png; Rewards uses Tiger.png; Focus uses Background upgrade.png. The September 16 integration assigns Tutto passo.png to Creative (existing PNG explicitly approved). Food uses cooking.jpg, Travel Polo 1.jpg, Career Work.jpg, Personal personal.jpg, Home toscana.jpg and Fitness Ronaldo.jpg. These seven assignments are locked. The subsequent approved visual follow-up assigns Tesla.jpg to University. Life Area media is 16rem tall on desktop/tablet and 14rem below 640px; the 3/2/1 grid and other mappings remain. areaPresentation.js defines image source, position and wide-card metadata by stable area key, independent of display names; portrait focal positions preserve subjects within existing card dimensions. Text and controls remain usable if artwork cannot load. No production 3D runtime is introduced.
+
+Tasks and Inbox share integrated filters and paginated rows. Goals and Habits preserve distinct layouts and real history. Life Areas retains a responsive 3/2/1 grid. From 1200px, Personal spans the full three-column width with equal image/content halves and a 20rem minimum height; below that it retains the standard stacked card. User sorting and image metadata remain unchanged. Three secondary link controls show localized Tasks/Goals/Habits labels above live counts, without arrows, and navigate through existing areaId filters. Precise-pointer hover and visible keyboard focus give cards a 1% scale, 2px lift, soft depth and area-tone glow. Reduced motion retains static feedback; opening an editor disables the parent effect. Progress integrates rank, XP and lifetime totals; Activity presents dated history; Rewards groups only the results returned for the current page. Focus emphasizes the persisted active session. Settings uses contextual navigation and content columns from 768 px, with a mobile category chooser and back action. Its previews depict the actual top-navigation system. Login, forms, empty states and dialogs share the foundation.
 
 ### Identity, accessibility and delivery
 
@@ -113,7 +140,7 @@ These compositions share the foundation while preserving each page's actual data
 | Screen | Composition and real behavior |
 | --- | --- |
 | Today | Compact selected-day status; one strongest Mission surface; planned task rows; due/earlier work; disclosed changed/completed plans; habits immediately after the mission on mobile and beside it on wide layouts, followed by inbox and actual bronze XP. New accounts, existing empty days, working days and completed days are distinct. |
-| Life Areas | Responsive cards sized by available card width, original per-area SVG motifs and icons, conceptual descriptions and grouped task/goal/habit links. Counts come from one owner-scoped aggregate endpoint. Missing counts remain a dash. Editing name, order and activation opens a secondary dialog; colored banner fields and repeated indices are removed. |
+| Life Areas | Responsive cards sized by available card width, original per-area SVG motifs and icons, conceptual descriptions and grouped task/goal/habit links. Counts come from one owner-scoped aggregate endpoint. Missing counts remain a dash. Editing name and activation opens a secondary dialog; Customize layout handles order separately; colored banner fields and repeated indices are removed. |
 | Tasks/Inbox | Open completion/title rows with named area marks, neutral high-priority flags and blue Focus links. Routine commitment metadata is omitted on Today; cancel-plan is disclosed in a keyboard-accessible row menu. Search, status and area controls wrap. Filter reset, true empty states, archival and reopening remain available. |
 | Quick Add | One shared dialog. Title alone can go to Inbox. The contextual date is visible and editable; choosing the day creates a real commitment. Inbox submission always stays undated. Optional detail/size/priority fields are disclosed. Failed input is retained. |
 | Goals | Open editorial rows show state, area, target and latest recorded update. Active/paused badges are neutral; actual completion uses forest. Numeric progress uses the actual baseline, direction and unit. Text may exceed 100% or regress; only the graphical meter is clamped. Qualitative goals use notes. Details put recording and history before configuration. |
@@ -165,3 +192,11 @@ Pass a unique `-ArtifactRoot artifacts/nordic-foundation/<run>` to preserve prio
 The design uses principles observed in the supplied official product presentations: Linear's quieter navigation, Things' action rows, Craft's framed entry points, Sunsama's concentrated focus, Raycast's bounded action search and Discord's settings hierarchy. Superlist, Cosmos and Lovable references informed the distinction between work surfaces and expressive content. No layouts or assets were copied, and no logged-in use of these external products is claimed.
 
 Accessibility behavior is guided by [WCAG 2.2](https://www.w3.org/TR/WCAG22/), [WAI dialog guidance](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/), [target size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html) and [reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html). Formatting follows [Intl](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl); performance reports distinguish local measurements from [Web Vitals field data](https://web.dev/articles/vitals).
+
+### Life Areas layout editing
+
+Customize layout is a secondary PageHeader action. Editing replaces navigation links and metadata editing with drag handles and earlier/later buttons. A shared toolbar explains the draft and offers Save layout/Cancel; errors retain the draft and movement is announced. Controls use existing theme, focus, touch-target and reduced-motion rules. Card hover transforms are suppressed while editing. Personal keeps its wide presentation from shared metadata, and can occupy any complete desktop row boundary (0/3/6/9 regular cards). Ordinary cards can be reordered without changing that boundary; tablet/mobile keep the same sequence in the existing responsive grid. The default order and image crops remain unchanged.
+
+### Life Areas filters and whole-card movement
+
+The Filter disclosure uses shared selects for saved/alphabetical/count order, active state and content presence. Count semantics match existing card totals; missing counts never imply empty. View choices live in the URL and do not persist an order. Automatic sorting presents Personal as a standard card; saved layout retains its wide presentation. Entering Customize layout clears view filters and restores all areas. In edit mode the entire non-interactive card surface initiates dragging; touch requires a hold and quick swipes scroll. Move buttons remain independent keyboard/touch alternatives.

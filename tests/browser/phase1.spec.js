@@ -29,7 +29,7 @@ test('owner signs in, persists settings and areas, refreshes, and signs out', as
     : 'Movement & Fitness'
   await displayName.fill(updatedName)
   await fitness.getByRole('button', { name: 'Save changes' }).click()
-  await expect(fitness.getByText('Changes saved.')).toBeVisible()
+  await expect(fitness.getByRole('heading', { name: updatedName, exact: true })).toBeVisible()
   await page.keyboard.press('Escape')
 
   await navigateTo(page, 'Settings')

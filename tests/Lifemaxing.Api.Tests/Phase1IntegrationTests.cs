@@ -107,7 +107,7 @@ public sealed class TestDatabaseFixture : IAsyncLifetime
 public sealed class Phase1IntegrationTests(TestDatabaseFixture database)
 {
     [Fact]
-    public async Task PrivateRoutesReturnJson401AndRegistrationDoesNotExist()
+    public async Task PrivateRoutesReturnJson401AndRegistrationRequiresCsrf()
     {
         await using var application = database.CreateApplication();
         using var client = application.CreateClient();
@@ -116,7 +116,7 @@ public sealed class Phase1IntegrationTests(TestDatabaseFixture database)
         Assert.Equal("application/problem+json", areas.Content.Headers.ContentType?.MediaType);
         Assert.Contains("authentication_required", await areas.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsJsonAsync("/register", new { })).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsJsonAsync("/api/v1/auth/register", new { })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/v1/auth/register", new { email = "test@example.test", password = "fictional example passphrase" })).StatusCode);
     }
 
     [Fact]

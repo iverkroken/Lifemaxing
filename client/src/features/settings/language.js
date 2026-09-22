@@ -1,11 +1,56 @@
 import { createContext, useContext } from 'react'
 import { catalog } from './catalog.js'
+import { areaDetailCatalog } from '../areas/areaDetailCatalog.js'
+import { accountCatalog } from '../auth/accountCatalog.js'
+import { financeCatalog } from '../finance/financeCatalog.js'
+import { planningSearchCatalog } from '../search/planningSearchCatalog.js'
+import { dailyProgressCatalog } from '../today/dailyProgressCatalog.js'
+import { deletionCatalog } from './deletionCatalog.js'
+import { focusCatalog } from '../focus/focusCatalog.js'
 import { formatDate, localizedArea, errorKey } from './formatting.js'
 
 // UI language is separate from regional formatting and historical time zones.
 export const languages = [['en', 'English'], ['nb', 'Norsk bokmål'], ['sv', 'Svenska'], ['da', 'Dansk']]
 export const messages = {
+  ...focusCatalog,
   ...catalog,
+  ...areaDetailCatalog,
+  ...accountCatalog,
+  ...financeCatalog,
+  ...planningSearchCatalog,
+  ...dailyProgressCatalog,
+  ...deletionCatalog,
+  areaFilters: ['Filter', 'Filter', 'Filter', 'Filter'],
+  areaSort: ['Sort by', 'Sorter etter', 'Sortera efter', 'Sortér efter'],
+  areaStatus: ['Area status', 'Områdestatus', 'Områdesstatus', 'Områdestatus'],
+  areaContent: ['Content', 'Innhold', 'Innehåll', 'Indhold'],
+  areaAll: ['All', 'Alle', 'Alla', 'Alle'],
+  areaFilled: ['With content', 'Med innhold', 'Med innehåll', 'Med indhold'],
+  areaEmpty: ['Without content', 'Uten innhold', 'Utan innehåll', 'Uden indhold'],
+  areaReset: ['Reset', 'Nullstill', 'Återställ', 'Nulstil'],
+  areaNoResults: ['No areas match these filters. Reset to see all areas.', 'Ingen områder matcher filtrene. Nullstill for å se alle.', 'Inga områden matchar filtren. Återställ för att se alla.', 'Ingen områder matcher filtrene. Nulstil for at se alle.'],
+  areaResults: ['{count} of {total} areas', '{count} av {total} områder', '{count} av {total} områden', '{count} af {total} områder'],
+  areaCountHint: ['Counts include open tasks, active goals and active habits.', 'Tallene gjelder åpne oppgaver, aktive mål og aktive vaner.', 'Antal gäller öppna uppgifter, aktiva mål och aktiva vanor.', 'Antal omfatter åbne opgaver, aktive mål og aktive vaner.'],
+  areaCountsUnavailable: ['Counts are unavailable. Count-based views will appear once they load.', 'Tallene er utilgjengelige. Antallsbaserte visninger kommer når de er lastet.', 'Antalen är inte tillgängliga. Antalsbaserade vyer visas när de har laddats.', 'Antal er ikke tilgængelige. Antalsbaserede visninger vises når de er indlæst.'],
+  layoutApiUnavailable: ['Layout saving is unavailable in the running API. Restart the development API with the latest code, then retry.', 'Lagring av oppsett er utilgjengelig i API-et som kjører. Start utviklings-API-et på nytt med siste kode, og prøv igjen.', 'Layoutlagring saknas i det API som körs. Starta om utvecklings-API med senaste koden och försök igen.', 'Layoutlagring er ikke tilgængelig i det kørende API. Genstart udviklings-API med den nyeste kode og prøv igen.'],
+  areaSort_custom: ['My layout', 'Eget oppsett', 'Min layout', 'Mit layout'],
+  areaSort_name: ['Alphabetical A–Z', 'Alfabetisk A–Å', 'Alfabetiskt A–Ö', 'Alfabetisk A–Å'],
+  'areaSort_tasks-desc': ['Most tasks', 'Flest oppgaver', 'Flest uppgifter', 'Flest opgaver'],
+  'areaSort_tasks-asc': ['Fewest tasks', 'Færrest oppgaver', 'Färst uppgifter', 'Færrest opgaver'],
+  'areaSort_goals-desc': ['Most goals', 'Flest mål', 'Flest mål', 'Flest mål'],
+  'areaSort_goals-asc': ['Fewest goals', 'Færrest mål', 'Färst mål', 'Færrest mål'],
+  'areaSort_habits-desc': ['Most habits', 'Flest vaner', 'Flest vanor', 'Flest vaner'],
+  'areaSort_habits-asc': ['Fewest habits', 'Færrest vaner', 'Färst vanor', 'Færrest vaner'],
+  layoutCancel: ["Cancel", "Avbryt", "Avbryt", "Annuller"],
+  customizeLayout: ["Customize layout","Tilpass oppsett","Anpassa layout","Tilpas layout"],
+  saveLayout: ["Save layout","Lagre oppsett","Spara layout","Gem layout"],
+  dragArea: ["Drag to move","Dra for ? flytte","Dra f?r att flytta","Tr?k for at flytte"],
+  moveEarlier: ["Move earlier","Flytt frem","Flytta fram","Flyt frem"],
+  moveLater: ["Move later","Flytt bak","Flytta bak?t","Flyt tilbage"],
+  layoutHint: ["Drag anywhere on a card (hold on touch) or use the move buttons. The wide card moves between complete desktop rows.","Dra hvor som helst p? kortet (hold inne p? ber?ringsskjerm) eller bruk flytteknappene. Det brede kortet flyttes mellom hele rader p? desktop.","Dra var som helst p? kortet (h?ll in p? peksk?rm) eller anv?nd flyttknapparna. Det breda kortet flyttas mellan hela rader p? datorn.","Tr?k hvor som helst p? kortet (hold p? ber?ringssk?rm) eller brug flytteknapperne. Det brede kort flyttes mellem hele r?kker p? computeren."],
+  layoutDraft: ["Preview only until you save.","Forh?ndsvisning til du lagrer.","F?rhandsvisning tills du sparar.","Forh?ndsvisning indtil du gemmer."],
+  layoutSaveFailed: ["Layout not saved. Your preview is kept; try again or cancel.","Oppsettet ble ikke lagret. Utkastet er beholdt; pr?v igjen eller avbryt.","Layouten sparades inte. F?rhandsvisningen finns kvar; f?rs?k igen eller avbryt.","Layout blev ikke gemt. Forh?ndsvisningen er bevaret; pr?v igen eller annuller."],
+  areaMoved: ["{name}: position {position}.","{name}: plass {position}.","{name}: plats {position}.","{name}: plads {position}."],
   weekTitle: ['Your week', 'Uken din', 'Din vecka', 'Din uge'],
   weekHint: ['A record of your rhythm. Flexible weekly goals do not require specific weekdays.', 'En oversikt over rytmen din. Fleksible ukemål krever ikke bestemte ukedager.', 'En översikt över din rytm. Flexibla veckomål kräver inte bestämda veckodagar.', 'En oversigt over din rytme. Fleksible ugemål kræver ikke bestemte ugedage.'],
   weekDate: ['Week containing', 'Uke med dato', 'Vecka med datum', 'Uge med dato'],

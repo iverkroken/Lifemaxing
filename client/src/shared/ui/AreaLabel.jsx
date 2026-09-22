@@ -3,7 +3,7 @@ import { Icon } from './Icon.jsx'
 import styles from './AreaLabel.module.css'
 
 export function AreaLabel({ area }) {
-  const { areaName } = useLanguage()
-  if (!area) return null
+  const { areaName, t } = useLanguage()
+  if (!area) return <span className={styles.label}><Icon name="areas" size={16} /><span>{t('Unassigned')}</span></span>
   return <span className={styles.label} data-area={area.key}><Icon name={area.key} size={16} /><span>{areaName(area)}</span></span>
 }

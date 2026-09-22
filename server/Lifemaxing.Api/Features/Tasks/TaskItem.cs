@@ -16,6 +16,7 @@ public sealed class TaskItem
     public int? EstimateMinutes { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset? ArchivedAtUtc { get; set; }
     public DateTimeOffset? DeletedAtUtc { get; set; }
     public List<TaskCompletion> Completions { get; set; } = [];
 }

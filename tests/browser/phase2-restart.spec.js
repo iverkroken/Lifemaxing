@@ -7,7 +7,7 @@ test('productivity records survive an API process restart', async ({ page }) => 
   await page.getByLabel('Email').fill(process.env.SMOKE_EMAIL)
   await page.getByLabel('Password').fill(process.env.SMOKE_PASSWORD)
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByText('Mission completed.')).toBeVisible({ timeout: 15000 })
+  await expect(page.getByRole('checkbox', { name: 'Reopen Prepare weekly plan carefully' })).toBeChecked({ timeout: 15000 })
   await expect(page.getByRole('link', { name: 'Mobile captured action' })).toBeVisible()
   await navigateTo(page, 'Habits')
   await page.getByRole('navigation', { name: 'Habit views' }).getByRole('button', { name: 'Your routines' }).click()

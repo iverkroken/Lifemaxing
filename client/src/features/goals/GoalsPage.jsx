@@ -1,6 +1,6 @@
 import { useLanguage } from '../settings/language.js'
 import { useState } from 'react'
-import { Link, useOutletContext, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router'
 import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Dialog } from '../../shared/ui/Dialog.jsx'
@@ -15,27 +15,28 @@ import { GoalForm } from './GoalForm.jsx'
 import { GoalProgress } from './GoalProgress.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
 import pageStyles from './GoalsPage.module.css'
+import { DeleteEntityDialog } from '../../shared/ui/DeleteEntityDialog.jsx'
 
 export function GoalsPage() {
   const { t, areaName, date } = useLanguage()
   const [page, setPage] = useState(1)
   const [archived, setArchived] = useState('false')
-  const { openCapture } = useOutletContext()
+  const { openCapture, area: scopedArea } = useOutletContext()
   const [params, setParams] = useSearchParams()
-  const areaId = params.get('areaId') || ''
+  const areaId = scopedArea?.id || params.get('areaId') || ''
   const goals = useProductivity(`/goals?page=${page}&pageSize=12&archived=${archived}&${areaId ? `areaId=${areaId}` : ''}`)
   const areas = useProductivity('/areas')
 
-  return <div className={styles.stack}>
-    <div className={pageStyles.introduction}>
+  return <div className={`${styles.stack} ${pageStyles.page}`}>
+    {scopedArea ? <header className={styles.sectionHeading}><h2>{t('Goals')}</h2><Button onClick={() => openCapture({ kind: 'goal' })}>{t('New goal')}</Button></header> : <div className={pageStyles.introduction}>
     <PageHeader editorial title={t("Goals")} description={t("Track the outcomes you care about and record your next step.")}
       action={<Button onClick={() => openCapture({ kind: 'goal' })}>{t("New goal")}</Button>} />
     <div className={pageStyles.artwork}><img src="/images/Gods%20plan.png" alt="" width="735" height="484" /></div>
-    </div>
+    </div>}
     <section aria-label={t("Goal list")}>
     <div className={pageStyles.toolbar}>
       <Select label={t("Goal list")} value={archived} onChange={e => { setArchived(e.target.value); setPage(1) }}><option value="false">{t("Current goals")}</option><option value="true">{t("Archived goals")}</option></Select>
-      <Select label={t("Life Area filter")} value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value } : {}); setPage(1) }}><option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>
+      {!scopedArea && <Select label={t("Life Area filter")} value={areaId} onChange={e => { setParams(e.target.value ? { areaId: e.target.value } : {}); setPage(1) }}><option value="">{t("All areas")}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>}
     </div>
     <QueryFeedback query={goals} /><QueryFeedback query={areas} />
     {goals.data?.total === 0 && <EmptyState title={t("What would you like to move toward?")} icon="goals" action={<Button variant="secondary" onClick={() => openCapture({ kind: 'goal' })}>{t("Set your first goal")}</Button>}>{t("Choose a meaningful outcome. Track it with numbers or simply record what changed.")}</EmptyState>}
@@ -60,15 +61,24 @@ export function GoalDetailPage() {
   const [note, setNote] = useState('')
   const [editing, setEditing] = useState(false)
   const goal = useProductivity(`/goals/${id}`)
+  const today = useProductivity('/today')
+  const planning = useProductivityAction()
+  const selected = today.data?.goals?.some(row => row.goal.id === id && row.manuallySelected)
   const progress = useProductivity(`/goals/${id}/progress?page=${page}`)
   const action = useProductivityAction(() => { setValue(''); setNote(''); setPage(1) })
-  const archive = useProductivityAction(() => setEditing(false))
+  const navigate = useNavigate()
+  const [deleting, setDeleting] = useState(false)
   const data = goal.data
   return <div className={styles.stack}>
     <Link to="/goals">{t("← All goals")}</Link>
     <PageHeader title={data?.title || t("Goal")} description={data?.description}
       action={data && !data.archivedAtUtc && <Button variant="secondary" onClick={() => setEditing(true)}>{t("Edit goal")}</Button>} />
     <QueryFeedback query={goal} />
+    {data && !data.archivedAtUtc && data.state === 'Active' && <div className={styles.actions}>
+      <Link to={`/focus?goalId=${id}`}>{t('Focus')}</Link>
+      <Button variant="secondary" disabled={!today.data} loading={planning.isPending} onClick={() => planning.mutate({ path: `/today/${today.data.currentLocalDate}/goals/${id}`, method: selected ? 'DELETE' : 'PUT' })}>{t(selected ? 'Remove selection' : 'Add to today')}</Button>
+      <ActionFeedback action={planning} /><QueryFeedback query={today} />
+    </div>}
     {data && <div className={pageStyles.detail}>
       <div>
         <StatusBadge tone={!data.archivedAtUtc && data.state === 'Completed' ? 'success' : 'neutral'}>{t(data.archivedAtUtc ? 'Archived' : data.state)}</StatusBadge>
@@ -95,6 +105,7 @@ export function GoalDetailPage() {
       </section>
     </div>}
     <Dialog open={editing} onClose={() => setEditing(false)} title={t("Edit goal")}>{data && <><GoalForm key={id} goal={data} />
-      <details className={styles.section}><summary>{t("Archive this goal")}</summary><p>{t("Your progress history will be preserved.")}</p><Button variant="danger" loading={archive.isPending} onClick={() => archive.mutate({ path: `/goals/${id}`, method: 'DELETE' })}>{t("Archive goal")}</Button><ActionFeedback action={archive} /></details></>}</Dialog>
+      <Button variant="dangerQuiet" onClick={() => { setEditing(false); setDeleting(true) }}>{t('Delete Goal')}</Button></>}</Dialog>
+    {data && <DeleteEntityDialog open={deleting} onClose={() => setDeleting(false)} onDeleted={() => navigate('/goals')} type="goal" title={data.title} path={`/goals/${id}`} />}
   </div>
 }

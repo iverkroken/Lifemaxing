@@ -48,8 +48,8 @@ test('uses server local day, displays mission and habit state, and sends complet
     <Route index element={<TodayPage />} /></Route></Routes></MemoryRouter></QueryClientProvider>)
   expect(await screen.findByText('29 Mar 2026 · Europe/Oslo')).toBeInTheDocument()
   expect(screen.getByText('2 / 3 this week')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Complete mission' }))
-  expect(await screen.findByText('Mission completed.')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('checkbox', { name: 'Complete Most important action' }))
+  expect(await screen.findByRole('checkbox', { name: 'Reopen Most important action' })).toBeChecked()
   expect(fetchMock).toHaveBeenCalledWith('/api/v1/tasks/task-1/complete', expect.objectContaining({ method: 'POST' }))
 })
 
@@ -62,19 +62,20 @@ test('separates intentional work from earlier tasks and keeps changed plans avai
   ]
   vi.stubGlobal('fetch', vi.fn(async path => Response.json(path.endsWith('/areas') ? [] : {
     localDate: '2026-03-30', currentLocalDate: '2026-03-29', timeZoneId: 'Europe/Oslo', inboxCount: 0,
-    tasks, mission: { taskId: 'mission' }, commitments: [
+    tasks: tasks.slice(0, 2), attentionTasks: [tasks[2]], planHistory: [tasks[3]], mission: { taskId: 'mission' }, commitments: [
       { id: 'p1', taskId: 'mission' }, { id: 'p2', taskId: 'committed' }, { id: 'p3', taskId: 'cancelled', removedAtUtc: '2026-03-29T10:00:00Z' },
     ], habits: [{ id: 'habit', title: 'Read tomorrow', pattern: 'Daily', activeLogId: null }],
   })))
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(<QueryClientProvider client={client}><MemoryRouter><Routes><Route element={<Outlet context={{ user: { id: 'owner' } }} />}>
     <Route index element={<TodayPage />} /></Route></Routes></MemoryRouter></QueryClientProvider>)
-  await screen.findByText('Intentional work')
+  await screen.findByRole('link', { name: 'Intentional work' })
   expect(screen.getAllByRole('link', { name: 'First thing' })).toHaveLength(1)
-  expect(within(screen.getByRole('region', { name: 'Daily commitments' })).getByText('Intentional work')).toBeVisible()
-  expect(within(screen.getByRole('region', { name: 'Needs attention' })).getByText('Earlier deadline')).toBeVisible()
-  expect(screen.getByRole('button', { name: 'Log completion: Read tomorrow' })).toBeDisabled()
-  await userEvent.click(screen.getByText('Completed & changed plans · 1'))
+  expect(within(screen.getByRole('region', { name: 'Tasks Today' })).getByRole('link', { name: 'Intentional work' })).toBeVisible()
+  await userEvent.click(screen.getByText(/Earlier plans & due dates/))
+  expect(screen.getByText('Earlier deadline')).toBeVisible()
+  expect(screen.getByRole('checkbox', { name: 'Log completion: Read tomorrow' })).toBeDisabled()
+  await userEvent.click(screen.getByText(/Planning history/))
   expect(screen.getByText('Changed plan')).toBeVisible()
 })
 

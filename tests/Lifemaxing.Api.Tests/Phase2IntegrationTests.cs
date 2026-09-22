@@ -69,7 +69,7 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         Assert.Equal("Edited action", persisted.GetProperty("title").GetString());
         Assert.True(persisted.GetProperty("isCompleted").GetBoolean());
         await Send(afterRestart, HttpMethod.Delete, $"/tasks/{taskId}", new { }, HttpStatusCode.NoContent);
-        Assert.Equal(1, (await Get(afterRestart, "/tasks?status=archived")).GetProperty("total").GetInt32());
+        Assert.Equal(1, (await Get(afterRestart, "/recently-deleted?type=task")).GetProperty("total").GetInt32());
         await using var scope = restarted.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         Assert.Equal(2, await db.TaskCompletions.CountAsync(x => x.TaskId == taskId));
@@ -114,6 +114,9 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         using var client = app.CreateClient(); await SignIn(client, owner.Email, owner.Password);
         var a = (await Send(client, HttpMethod.Post, "/tasks", new { title = "First" }, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         var b = (await Send(client, HttpMethod.Post, "/tasks", new { title = "Second" }, HttpStatusCode.Created)).GetProperty("id").GetGuid();
+        await Send(client, HttpMethod.Put, "/daily-mission/2026-06-10", new { taskId = a }, HttpStatusCode.Conflict);
+        await Send(client, HttpMethod.Post, "/daily-commitments", new { taskId = a, localDate = "2026-06-10" });
+        await Send(client, HttpMethod.Post, "/daily-commitments", new { taskId = b, localDate = "2026-06-10" });
         await Send(client, HttpMethod.Put, "/daily-mission/2026-06-10", new { taskId = a });
         await Send(client, HttpMethod.Put, "/daily-mission/2026-06-10", new { taskId = b });
         var today = await Get(client, "/today");
@@ -153,6 +156,8 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         await Send(client, HttpMethod.Post, $"/habits/{id}/logs", new { localDate = "2026-03-30" }, HttpStatusCode.Created);
         await Send(client, HttpMethod.Patch, $"/habits/{id}", new { title = "Read thoughtfully" });
         await Send(client, HttpMethod.Delete, $"/habits/{id}", new { }, HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/habits/{id}")).StatusCode);
+        await Send(client, HttpMethod.Post, $"/recently-deleted/habit/{id}/restore", new { }, HttpStatusCode.NoContent);
         Assert.Equal(2, (await Get(client, $"/habits/{id}")).GetProperty("schedules").GetArrayLength());
         Assert.Equal(4, (await Get(client, $"/habits/{id}/logs")).GetProperty("total").GetInt32());
     }
@@ -171,6 +176,8 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         await Send(client, HttpMethod.Patch, $"/goals/{id}", new { title = "Read chapters", state = "Completed" });
         Assert.NotEqual(JsonValueKind.Null, (await Get(client, $"/goals/{id}")).GetProperty("completedAtUtc").ValueKind);
         await Send(client, HttpMethod.Delete, $"/goals/{id}", new { }, HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/goals/{id}")).StatusCode);
+        await Send(client, HttpMethod.Post, $"/recently-deleted/goal/{id}/restore", new { }, HttpStatusCode.NoContent);
         var progress = await Get(client, $"/goals/{id}/progress?pageSize=1");
         Assert.Equal(2, progress.GetProperty("total").GetInt32());
         Assert.Equal(1, progress.GetProperty("items")[0].GetProperty("value").GetDecimal());
@@ -249,6 +256,7 @@ public sealed class Phase2IntegrationTests(TestDatabaseFixture database)
         await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => Send(client, HttpMethod.Post, $"/tasks/{taskId}/complete", new { })));
         await Send(client, HttpMethod.Post, $"/tasks/{taskId}/reopen", new { });
         var date = (await Get(client, "/today")).GetProperty("localDate").GetString();
+        await Send(client, HttpMethod.Post, "/daily-commitments", new { taskId, localDate = date });
         await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => Send(client, HttpMethod.Put, $"/daily-mission/{date}", new { taskId })));
         var habitId = (await Send(client, HttpMethod.Post, "/habits", new { title = "Once per day" }, HttpStatusCode.Created)).GetProperty("id").GetGuid();
         var responses = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => { var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/habits/{habitId}/logs") { Content = JsonContent.Create(new { localDate = date }) }; request.Headers.Add("ClientActionId", Guid.NewGuid().ToString()); return client.SendAsync(request); }));

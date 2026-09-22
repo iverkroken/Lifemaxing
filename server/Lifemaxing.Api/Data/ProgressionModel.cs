@@ -12,9 +12,10 @@ public static class ProgressionModel
         var xp = model.Entity<XpEntry>();
         xp.HasIndex(x => new { x.UserId, x.Kind, x.SourceKind, x.SourceId }).IsUnique();
         xp.HasIndex(x => new { x.UserId, x.LocalDate, x.Category });
+        xp.HasIndex(x => new { x.UserId, x.LifeAreaId });
         xp.HasIndex(x => new { x.UserId, x.OccurredAtUtc });
         xp.HasOne<XpEntry>().WithMany().HasForeignKey(x => x.RelatedEntryId).OnDelete(DeleteBehavior.Restrict);
-        xp.HasOne<LifeArea>().WithMany().HasForeignKey(x => x.LifeAreaId).OnDelete(DeleteBehavior.Restrict);
+        // LifeAreaId is immutable historical context. It intentionally remains after an area is purged.
         xp.Property(x => x.TimeZoneId).HasMaxLength(100);
         xp.Property(x => x.Kind).HasMaxLength(20); xp.Property(x => x.SourceKind).HasMaxLength(40); xp.Property(x => x.Category).HasMaxLength(30);
         xp.ToTable("XpEntries", t => t.HasCheckConstraint("CK_Xp_Sign", "(\"Kind\" = 'Award' AND \"AmountSigned\" >= 0 AND \"RelatedEntryId\" IS NULL) OR (\"Kind\" = 'Reversal' AND \"AmountSigned\" <= 0 AND \"RelatedEntryId\" IS NOT NULL)"));
@@ -37,10 +38,13 @@ public static class ProgressionModel
         focus.HasIndex(x => new { x.UserId, x.StartedAtUtc });
         focus.Property(x => x.Status).HasMaxLength(20);
         focus.HasOne<TaskItem>().WithMany().HasForeignKey(x => x.TaskId).OnDelete(DeleteBehavior.Restrict);
+        focus.HasOne<Features.Goals.Goal>().WithMany().HasForeignKey(x => x.GoalId).OnDelete(DeleteBehavior.Restrict);
+        focus.HasOne<Habit>().WithMany().HasForeignKey(x => x.HabitId).OnDelete(DeleteBehavior.Restrict);
+        focus.ToTable("FocusSessions", t => t.HasCheckConstraint("CK_Focus_Reference", "num_nonnulls(\"TaskId\", \"GoalId\", \"HabitId\") <= 1"));
         focus.ToTable("FocusSessions", t => t.HasCheckConstraint("CK_Focus_State", "\"AccumulatedSeconds\" >= 0 AND (\"EndedAtUtc\" IS NULL OR \"EndedAtUtc\" >= \"StartedAtUtc\") AND ((\"Status\" = 'Running' AND \"RunningSinceUtc\" IS NOT NULL AND \"EndedAtUtc\" IS NULL) OR (\"Status\" = 'Paused' AND \"RunningSinceUtc\" IS NULL AND \"EndedAtUtc\" IS NULL) OR (\"Status\" IN ('Completed', 'Stopped', 'Cancelled') AND \"RunningSinceUtc\" IS NULL AND \"EndedAtUtc\" IS NOT NULL))"));
         foreach (var type in new[] { typeof(XpEntry), typeof(ActivityEvent), typeof(CommandReceipt), typeof(Reward), typeof(RewardClaim), typeof(FocusSession) })
             model.Entity(type).HasOne(typeof(AppUser)).WithMany().HasForeignKey("UserId").OnDelete(DeleteBehavior.Restrict);
         model.Entity<Habit>().Property(x => x.XpPerLog).HasDefaultValue(10);
-        model.Entity<Habit>().ToTable("Habits", t => t.HasCheckConstraint("CK_Habit_Xp", "\"XpPerLog\" BETWEEN 0 AND 25"));
+        model.Entity<Habit>().ToTable("Habits", t => t.HasCheckConstraint("CK_Habit_Xp", "\"XpPerLog\" BETWEEN 1 AND 75"));
     }
 }

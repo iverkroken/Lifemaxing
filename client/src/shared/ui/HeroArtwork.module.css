@@ -1,0 +1,7 @@
+.artwork { position: absolute; inset: 0; z-index: -2; overflow: hidden; container-type: size; }
+.artwork img { position: absolute; left: 50%; top: 50%; height: auto; max-width: none; transform: translate(-50%, -50%); }
+.landscape img { width: max(100cqw, var(--artwork-width)); }
+.quarterTurn img { width: max(100cqh, var(--rotated-width)); transform: translate(-50%, -50%) rotate(-90deg); }
+.viewport { position: fixed; height: 100svh; bottom: auto; }
+@media (max-width: 767px) { .quarterTurn img { left: calc(35cqw + max(25cqw, 44.7094cqh)); } }
+@media (forced-colors: active) { .artwork { display: none; } }

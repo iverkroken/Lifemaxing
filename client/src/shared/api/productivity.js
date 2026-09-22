@@ -3,11 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useOutletContext } from 'react-router'
 import { apiRequest } from './client.js'
 
-export function useProductivity(path) {
+export function useProductivity(path, { enabled = true, refetchInterval } = {}) {
   const { user } = useOutletContext()
-  return useQuery({ queryKey: ['productivity', user.id, path],
+  return useQuery({ queryKey: ['productivity', user.id, path], enabled,
     queryFn: ({ signal }) => apiRequest(path, { signal }),
-    refetchInterval: path === '/focus-sessions/active' ? 15000 : path.startsWith('/today') ? 60000 : false })
+    refetchInterval: refetchInterval ?? (path === '/focus-sessions/active' ? 15000 : path.startsWith('/today') ? 60000 : false) })
 }
 
 export function useProductivityAction(onSuccess) {

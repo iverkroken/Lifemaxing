@@ -24,7 +24,7 @@ async function capture(page, name, browserName) {
   await expect(page.getByText(/^Loading.*|^Checking your workspace/)).toHaveCount(0)
   await page.evaluate(() => document.fonts.ready)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), name).toBe(true)
-  await page.screenshot({ path: `${artifactRoot}/${browserName}/${name}.png`, fullPage: true })
+  await page.screenshot({ path: `${artifactRoot}/${browserName}/${name}.png`, fullPage: true, animations: 'disabled' })
 }
 
 test('production artwork shell, both densities and themes, reflow and contrast', async ({ page, browserName }) => {
@@ -334,7 +334,10 @@ test('task workspace scales through 0, 3, 30 and 300 real filtered tasks', async
     await expect.poll(async () => (await api(page, '/tasks?search=' + encodeURIComponent(prefix))).total).toBe(count)
     const { pageSize } = await api(page, '/tasks?search=' + encodeURIComponent(prefix))
     await expect(page.locator('[data-task-link]')).toHaveCount(Math.min(count, pageSize))
-    for (const width of [390, 1440]) await capture(page, 'tasks-scale-' + count, width, browserName)
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      await capture(page, `tasks-scale-${count}-${width}`, browserName)
+    }
     if (count > pageSize) {
       await page.getByRole('navigation', { name: 'List pages' }).getByRole('button', { name: 'Next', exact: true }).click()
       await expect(page).toHaveURL(/page=2/)

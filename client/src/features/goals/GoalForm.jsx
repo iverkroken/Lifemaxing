@@ -14,12 +14,12 @@ import pageStyles from './GoalsPage.module.css'
 const schema = z.object({ title: z.string().trim().min(1, 'Enter a goal title.').max(200), description: z.string().max(10000),
   lifeAreaId: z.string(), state: z.string(), targetDate: z.string(), targetValue: z.string(), baselineValue: z.string(), unit: z.string(), direction: z.string() })
 
-export function GoalForm({ goal, onSaved }) {
+export function GoalForm({ goal, onSaved, initialAreaId = '' }) {
   const { t, areaName } = useLanguage()
   const [measured, setMeasured] = useState(goal?.targetValue != null)
   const areas = useProductivity('/areas')
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { title: goal?.title || '', description: goal?.description || '',
-    lifeAreaId: goal?.lifeAreaId || '', state: goal?.state || 'Active', targetDate: goal?.targetDate || '',
+    lifeAreaId: goal?.lifeAreaId || initialAreaId, state: goal?.state || 'Active', targetDate: goal?.targetDate || '',
     targetValue: goal?.targetValue?.toString() || '', baselineValue: goal?.baselineValue?.toString() || '', unit: goal?.unit || '', direction: goal?.direction || 'Increase' } })
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction(onSaved)
@@ -35,7 +35,7 @@ export function GoalForm({ goal, onSaved }) {
     <Input label={t("Goal title")} required error={form.formState.errors.title} {...form.register('title')} />
     <Input label={t("Description")} multiline rows={3} error={form.formState.errors.description} {...form.register('description')} />
     <div className={styles.fields}>
-      <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("No area")}</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
+      <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("Unassigned")}</option>{selectedArea && !areas.data?.some(x => x.id === selectedArea) && <option value={selectedArea}>{t('Unassigned')}</option>}{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
       <Select label={t("Goal state")} {...form.register('state')}>{['Active', 'Paused', 'Completed'].map(x => <option key={x} value={x}>{t(x)}</option>)}</Select>
       <Input label={t("Target date")} type="date" {...form.register('targetDate')} />
       <Select label={t("Goal type")} value={measured ? 'measured' : 'qualitative'} onChange={e => setMeasured(e.target.value === 'measured')}>

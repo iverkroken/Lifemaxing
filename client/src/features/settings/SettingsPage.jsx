@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { useOutletContext, useSearchParams } from 'react-router'
+import { Link, useOutletContext, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Input } from '../../shared/ui/Input.jsx'
@@ -10,6 +10,7 @@ import { Select } from '../../shared/ui/Select.jsx'
 import { Icon } from '../../shared/ui/Icon.jsx'
 import { PageHeader } from '../../shared/ui/PageHeader.jsx'
 import { SignOutDialog } from '../auth/SignOutDialog.jsx'
+import { ChangePassword } from '../auth/ChangePassword.jsx'
 import { getSettings, updateSettings } from './settingsApi.js'
 import { languages } from './language.js'
 import { useLanguage } from './language.js'
@@ -63,6 +64,7 @@ export function SettingsPage() {
           <div className={styles.panelBody}><h2 id="account-heading">{t('account')}</h2><p>{t('accountHint')}</p>
             <dl className={styles.identity}><dt>{t('email')}</dt><dd>{user.email}</dd></dl>
             <Button variant="secondary" onClick={() => setParams({ section: 'security' })}><Icon name="shield" />{t('security')}</Button>
+            <Link className={styles.deletedLink} to="/settings/recently-deleted"><Icon name="inbox" />{t('Recently Deleted')}</Link>
           </div>
         </section>}
         {section === 'preferences' && <section className={styles.panel} aria-labelledby="preferences-heading"><div className={styles.panelBody}>
@@ -95,6 +97,7 @@ export function SettingsPage() {
             <span className={styles.securityIcon}><Icon name="shield" size={28} /></span><h2 id="security-heading">{t('sessionTitle')}</h2>
             <p>{t('sessionHint')}</p><p>{t('deviceHint')}</p>
           </div></section>
+          <section className={styles.panel}><div className={styles.panelBody}><ChangePassword /></div></section>
           <section className={`${styles.panel} ${styles.danger}`} aria-labelledby="session-controls"><div className={styles.panelBody}>
             <h2 id="session-controls">{t('danger')}</h2>
             <div className={styles.sessionRow}><div><h3>{t('signOut')}</h3><p>{t('outHint')}</p></div><Button variant="dangerQuiet" onClick={() => setSignOut('device')}>{t('signOut')}</Button></div>
