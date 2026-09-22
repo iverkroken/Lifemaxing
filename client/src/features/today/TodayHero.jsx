@@ -1,6 +1,7 @@
 import { useLanguage } from '../settings/language.js'
 import { Link } from 'react-router'
 import { Icon } from '../../shared/ui/Icon.jsx'
+import { HeroArtwork } from '../../shared/ui/HeroArtwork.jsx'
 import styles from './TodayPage.module.css'
 
 export function TodayHero({ data }) {
@@ -9,9 +10,7 @@ export function TodayHero({ data }) {
   const mission = tasks?.find(task => task.id === data?.mission?.taskId && !task.isCompleted)
 
   return <section className={styles.hero} aria-labelledby="today-title" data-app-hero data-hero-theme="dark">
-    <div className={styles.artwork} aria-hidden="true">
-      <img src="/images/Backround.png" width="671" height="1200" alt="" fetchPriority="high" />
-    </div>
+    <HeroArtwork src="/images/Background%20upgrade.png" width={1672} height={941} />
     <div className={styles.heroContent}>
       <span className={styles.headerBoundary} data-hero-boundary aria-hidden="true" />
       <h1 id="today-title">{t('Today')}</h1>

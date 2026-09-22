@@ -1,6 +1,20 @@
 const { navigateTo, captureTask } = require('./navigation-helpers.cjs')
 const { test, expect } = require('@playwright/test')
 
+async function deleteAndRestore(page, type, title) {
+  const route = page.url()
+  await page.getByRole('button', { name: `Delete ${type}`, exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('30 days')
+  await dialog.getByRole('button', { name: `Delete ${type}`, exact: true }).click()
+  await expect(dialog).not.toBeVisible()
+  await page.goto('/settings/recently-deleted')
+  const row = page.locator('main li').filter({ has: page.getByText(title, { exact: true }) })
+  await row.getByRole('button', { name: 'Restore', exact: true }).click()
+  await expect(row).toHaveCount(0)
+  await page.goto(route)
+}
+
 test('capture, keyboard dialogs, mobile navigation and recoverable failures work', async ({ page }) => {
   test.setTimeout(120000)
   test.skip(!process.env.SMOKE_EMAIL || !process.env.SMOKE_PASSWORD, 'Use the isolated browser runner.')
@@ -67,9 +81,8 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
   await expect(page.getByText('No matching tasks', { exact: true })).toBeVisible()
   await page.getByLabel('Search tasks').fill('')
   await page.getByRole('link', { name: 'Captured from anywhere' }).click()
-  await page.locator('summary').filter({ hasText: /^Archive task$/ }).click()
-  await page.getByRole('button', { name: 'Archive task', exact: true }).click()
-  await expect(page.getByText('This task is archived. Its plans and completions are retained.')).toBeVisible()
+  await deleteAndRestore(page, 'Task', 'Captured from anywhere')
+  await expect(page.getByLabel('Title', { exact: false })).toHaveValue('Captured from anywhere')
 
   await page.goto('/goals')
   await page.getByRole('button', { name: 'New goal', exact: true }).click()
@@ -79,9 +92,7 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
   await page.getByRole('button', { name: 'Record progress' }).click()
   await expect(page.getByRole('region', { name: 'Progress history' }).getByText('A first step, recorded on mobile')).toBeVisible()
   await page.getByRole('button', { name: 'Edit goal', exact: true }).click()
-  await page.getByText('Archive this goal', { exact: true }).click()
-  await page.getByRole('button', { name: 'Archive goal', exact: true }).click()
-  await expect(page.getByText('Archived', { exact: true })).toBeVisible()
+  await deleteAndRestore(page, 'Goal', 'A thoughtful outcome')
   await expect(page.getByRole('region', { name: 'Progress history' }).getByText('A first step, recorded on mobile')).toBeVisible()
 
   await page.goto('/habits')
@@ -91,9 +102,7 @@ test('capture, keyboard dialogs, mobile navigation and recoverable failures work
   await page.getByRole('button', { name: 'Log completion', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Undo completion', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Edit habit', exact: true }).click()
-  await page.getByText('Archive this habit', { exact: true }).click()
-  await page.getByRole('button', { name: 'Archive habit', exact: true }).click()
-  await expect(page.getByRole('region', { name: 'Completion log' }).getByText('Archived', { exact: true })).toBeVisible()
+  await deleteAndRestore(page, 'Habit', 'A short daily pause')
   await expect(page.getByRole('button', { name: 'Undo completion', exact: true })).toBeVisible()
 
   await page.route('**/api/v1/today', route => route.fulfill({ status: 503, contentType: 'application/problem+json', body: JSON.stringify({ title: 'Daily plan unavailable.' }) }))
