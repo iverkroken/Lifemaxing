@@ -51,9 +51,10 @@ export async function apiRequest(path, request = {}) {
 
 async function sendRequest(path, { body, headers, ...options }, canRefreshCsrf, verifySession) {
   const method = options.method?.toUpperCase() || 'GET'
+  const formData = typeof FormData !== 'undefined' && body instanceof FormData
   const requestHeaders = {
     Accept: 'application/json',
-    ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    ...(body === undefined || formData ? {} : { 'Content-Type': 'application/json' }),
     ...headers,
   }
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
@@ -67,7 +68,7 @@ async function sendRequest(path, { body, headers, ...options }, canRefreshCsrf, 
     method,
     credentials: 'same-origin',
     headers: requestHeaders,
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    ...(body === undefined ? {} : { body: formData ? body : JSON.stringify(body) }),
   })
 
   if (!response.ok) {

@@ -1,5 +1,15 @@
 # ARCHITECTURE.md
 
+## Recoverable deletion and custom Life Areas — 22 September 2026
+
+Task, Habit, Goal and LifeArea use an owner-scoped `DeletedAtUtc` lifecycle. EF query filters exclude deleted records from normal reads; the dedicated Recently Deleted service uses `IgnoreQueryFilters` only after resolving the authenticated owner. Restore clears the timestamp on the original row and rejects records at or beyond the exact 30-day boundary. Permanent deletion is explicit and removes dependent operational rows while retaining append-only XP and Activity history. A hosted cleanup service runs at startup and hourly in bounded batches. Deleting a focused entity stops the active session with accumulated server time and retains its reference until permanent deletion.
+
+Life Area deletion retains child foreign keys during recovery, so Tasks, Habits and Goals render as Unassigned while the area is hidden and reconnect when it is restored. Permanent area deletion nulls those links. Custom Life Areas use a server-generated stable key and the same queries, filters and routes as seeded areas. Optional private JPEG/PNG/WebP bytes (maximum 5 MiB), MIME type, version timestamp and focal coordinates are stored on LifeArea; authenticated image URLs take precedence over built-in artwork, then the generic fallback. Finance subscriptions also have canonical `/subscriptions` navigation because they are not owned by the Finance Life Area.
+
+The owner-scoped API is `GET /api/v1/recently-deleted`, `POST /api/v1/recently-deleted/{type}/{id}/restore`, and `DELETE /api/v1/recently-deleted/{type}/{id}`. Life Areas add create, delete-impact, delete, image upload/read/remove and focal-position editing. Soft deletion remains distinct from indefinite archive state.
+
+Cleanup locks the same UserSettings row as interactive mutations, then rechecks the deletion deadline before removing dependencies. Each candidate has its own transaction, avoiding cross-owner lock ordering. Private images use `Cache-Control: private, no-store`; upload checks validate MIME, raster signature and container structure without decoding/re-encoding pixels. Failed post-create image uploads reuse the created Life Area ID on retry.
+
 ## Daily planning and progression — 21 September 2026
 
 Today derives `tasks` strictly from owned, unarchived Tasks with `PlannedDate == localDate`, including completed tasks. Earlier unfinished plans/deadlines are returned separately as `attentionTasks`; off-date or archived historical commitments/priority references are returned as `planHistory`. Modes change settings and guidance only. Daily priority selection reuses DailyMission and requires an already-planned task; it never schedules or copies a task.

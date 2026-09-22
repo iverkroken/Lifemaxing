@@ -23,3 +23,19 @@ test('gets a fresh antiforgery token and retries once when a token expires', asy
   expect(fetch).toHaveBeenNthCalledWith(4, '/api/v1/settings',
     expect.objectContaining({ headers: expect.objectContaining({ 'X-CSRF-TOKEN': 'fresh' }) }))
 })
+
+test('sends FormData without overriding the browser multipart boundary', async () => {
+  const fetch = vi.fn()
+    .mockResolvedValueOnce(Response.json({ requestToken: 'token' }))
+    .mockResolvedValueOnce(Response.json({ saved: true }))
+  vi.stubGlobal('fetch', fetch)
+  const body = new FormData()
+  body.append('image', new Blob(['image'], { type: 'image/png' }), 'area.png')
+
+  await apiRequest('/areas/id/image', { method: 'PUT', body })
+
+  expect(fetch).toHaveBeenNthCalledWith(2, '/api/v1/areas/id/image', expect.objectContaining({
+    body,
+    headers: expect.not.objectContaining({ 'Content-Type': 'application/json' }),
+  }))
+})
