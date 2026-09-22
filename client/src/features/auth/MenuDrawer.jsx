@@ -23,6 +23,7 @@ export function MenuDrawer({ open, onClose, onNavigate, onSearch, onSignOut, use
       </section>)}
       <section><h3>{t('account')}</h3>
         <Link to="/settings" aria-current={location.pathname === '/settings' && !accountActive ? 'page' : undefined} onClick={onNavigate}><Icon name="settings" />{t('settings')}</Link>
+        <Link to="/settings/recently-deleted" aria-current={location.pathname === '/settings/recently-deleted' ? 'page' : undefined} onClick={onNavigate}><Icon name="inbox" />{t('Recently Deleted')}</Link>
         <Link to="/settings?section=account" aria-current={accountActive ? 'page' : undefined} onClick={onNavigate}><Icon name="personal" />{t('account')}</Link>
       </section>
     </nav>

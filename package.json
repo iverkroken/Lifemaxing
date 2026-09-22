@@ -19,6 +19,7 @@
     "test:smoke": "playwright test --config tests/browser/playwright.config.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.63.0",
     "concurrently": "10.0.5"
   }
