@@ -73,12 +73,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<LifeArea>(area =>
         {
-            area.ToTable("LifeAreas");
+            area.ToTable("LifeAreas", table =>
+            {
+                table.HasCheckConstraint("CK_LifeArea_ImageFocal", "\"ImageFocalX\" BETWEEN 0 AND 100 AND \"ImageFocalY\" BETWEEN 0 AND 100");
+                table.HasCheckConstraint("CK_LifeArea_CustomImage", "(\"CustomImage\" IS NULL AND \"CustomImageContentType\" IS NULL AND \"CustomImageUpdatedAtUtc\" IS NULL) OR (\"CustomImage\" IS NOT NULL AND \"CustomImageContentType\" IS NOT NULL AND \"CustomImageUpdatedAtUtc\" IS NOT NULL)");
+            });
             area.HasKey(value => value.Id);
             area.Property(value => value.Key).HasMaxLength(50).IsRequired();
             area.Property(value => value.DisplayName).HasMaxLength(100).IsRequired();
+            area.Property(value => value.CustomImageContentType).HasMaxLength(30);
+            area.Property(value => value.ImageFocalX).HasPrecision(5, 2).HasDefaultValue(50);
+            area.Property(value => value.ImageFocalY).HasPrecision(5, 2).HasDefaultValue(50);
+            area.HasQueryFilter(value => value.DeletedAtUtc == null);
             area.HasIndex(value => new { value.UserId, value.Key }).IsUnique();
             area.HasIndex(value => new { value.UserId, value.SortOrder });
+            area.HasIndex(value => new { value.UserId, value.DeletedAtUtc });
             area.HasOne(value => value.User)
                 .WithMany()
                 .HasForeignKey(value => value.UserId)

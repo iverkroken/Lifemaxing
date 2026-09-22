@@ -93,10 +93,35 @@ namespace Lifemaxing.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<byte[]>("CustomImage")
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("CustomImageContentType")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTimeOffset?>("CustomImageUpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("ImageFocalX")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(50m);
+
+                    b.Property<decimal>("ImageFocalY")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(50m);
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -114,12 +139,19 @@ namespace Lifemaxing.Api.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId", "DeletedAtUtc");
+
                     b.HasIndex("UserId", "Key")
                         .IsUnique();
 
                     b.HasIndex("UserId", "SortOrder");
 
-                    b.ToTable("LifeAreas", (string)null);
+                    b.ToTable("LifeAreas", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_LifeArea_CustomImage", "(\"CustomImage\" IS NULL AND \"CustomImageContentType\" IS NULL AND \"CustomImageUpdatedAtUtc\" IS NULL) OR (\"CustomImage\" IS NOT NULL AND \"CustomImageContentType\" IS NOT NULL AND \"CustomImageUpdatedAtUtc\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_LifeArea_ImageFocal", "\"ImageFocalX\" BETWEEN 0 AND 100 AND \"ImageFocalY\" BETWEEN 0 AND 100");
+                        });
                 });
 
             modelBuilder.Entity("Lifemaxing.Api.Data.UserSettings", b =>
@@ -262,6 +294,9 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Description")
                         .HasMaxLength(10000)
                         .HasColumnType("character varying(10000)");
@@ -302,6 +337,8 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.HasIndex("LifeAreaId");
 
                     b.HasIndex("UserId", "ArchivedAtUtc");
+
+                    b.HasIndex("UserId", "DeletedAtUtc");
 
                     b.ToTable("Goals");
                 });
@@ -350,6 +387,9 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -374,6 +414,8 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.HasIndex("LifeAreaId");
 
                     b.HasIndex("UserId", "ArchivedAtUtc");
+
+                    b.HasIndex("UserId", "DeletedAtUtc");
 
                     b.ToTable("Habits", null, t =>
                         {
@@ -724,9 +766,9 @@ namespace Lifemaxing.Api.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LifeAreaId");
-
                     b.HasIndex("RelatedEntryId");
+
+                    b.HasIndex("UserId", "LifeAreaId");
 
                     b.HasIndex("UserId", "OccurredAtUtc");
 
@@ -778,6 +820,9 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ArchivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -1239,11 +1284,6 @@ namespace Lifemaxing.Api.Data.Migrations
 
             modelBuilder.Entity("Lifemaxing.Api.Features.Progression.XpEntry", b =>
                 {
-                    b.HasOne("Lifemaxing.Api.Data.LifeArea", null)
-                        .WithMany()
-                        .HasForeignKey("LifeAreaId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Lifemaxing.Api.Features.Progression.XpEntry", null)
                         .WithMany()
                         .HasForeignKey("RelatedEntryId")

@@ -21,6 +21,7 @@ const AreaPage = lazy(() => import('../features/areas/AreaPage.jsx').then(module
 const AreaLayout = lazy(() => import('../features/areas/AreaDetail.jsx').then(module => ({ default: module.AreaLayout })))
 const AreaOverview = lazy(() => import('../features/areas/AreaDetail.jsx').then(module => ({ default: module.AreaOverview })))
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage.jsx').then(module => ({ default: module.SettingsPage })))
+const RecentlyDeletedPage = lazy(() => import('../features/settings/RecentlyDeletedPage.jsx').then(module => ({ default: module.RecentlyDeletedPage })))
 const StartPage = lazy(() => import('../features/system/StartPage.jsx').then(module => ({ default: module.StartPage })))
 const TodayPage = lazy(() => import('../features/today/TodayPage.jsx').then(module => ({ default: module.TodayPage })))
 const TasksPage = lazy(() => import('../features/tasks/TasksPage.jsx').then(module => ({ default: module.TasksPage })))
@@ -90,6 +91,8 @@ export function App() {
             <Route path="subscriptions" element={<SubscriptionsPage />} />
           </Route>
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/recently-deleted" element={<RecentlyDeletedPage />} />
+          <Route path="subscriptions" element={<SubscriptionsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
