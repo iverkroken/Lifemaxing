@@ -58,7 +58,7 @@ test.each(['en', 'nb', 'sv', 'da'])('opens the localized Finance subscriptions d
   expect(screen.getByRole('button', { name: label })).toBeVisible()
   fireEvent.change(screen.getByRole('textbox'), { target: { value: translate(language, 'subscriptionTitle') } })
   await userEvent.keyboard('{Enter}')
-  expect(screen.getByTestId('location')).toHaveTextContent('/areas/finance/subscriptions')
+  expect(screen.getByTestId('location')).toHaveTextContent('/subscriptions')
 })
 
 test.each(['/areas/finance', '/areas/finance/subscriptions'])('resolves owned area context from %s and ignores a conflicting filter', async path => {

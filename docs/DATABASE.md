@@ -1,5 +1,13 @@
 # DATABASE.md
 
+## Recoverable deletion and custom Life Areas — 22 September 2026
+
+Migration `20260921231831_SoftDeleteAndCustomLifeAreas` adds `DeletedAtUtc` to Habit, Goal and LifeArea, and separates Task's former archive timestamp into `ArchivedAtUtc`. Existing Task deletion timestamps are migrated to archive timestamps and cleared, so no pre-existing record enters the 30-day recovery window. Active existing records remain active.
+
+LifeArea adds optional private `CustomImage` bytea, `CustomImageContentType`, `CustomImageUpdatedAtUtc`, and numeric focal coordinates from 0 through 100. Its existing owner/key uniqueness continues to cover custom server-generated keys. Deleted Life Areas retain Task/Habit/Goal foreign keys during recovery. Permanent purge nulls those child links. The XpEntry/LifeArea foreign key is removed while an owner/LifeArea index is retained, allowing immutable historical XP attribution to outlive permanent area deletion. Activity already stores raw historical identifiers without subject foreign keys.
+
+Normal EF queries filter Task, Habit, Goal and LifeArea on `DeletedAtUtc IS NULL`. Recovery and cleanup explicitly bypass the filter, always add owner predicates, and use the original identity. The retention boundary is `DeletedAtUtc + 30 days`; expired records cannot be restored even before the hourly cleanup physically removes them. Permanent Task/Habit/Goal cleanup removes their mutable dependent planning/log/progress rows and nulls Focus references, without deleting XP, Activity or command receipts.
+
 ## Daily workspace additions — 21 September 2026
 
 `DailyGoalSelections` stores Id, UserId, GoalId, LocalDate, TimeZoneId, SelectedAtUtc and nullable RemovedAtUtc. A unique `(UserId, LocalDate, GoalId)` index makes selection idempotent under the existing per-owner transaction lock. Restrictive owner/goal foreign keys retain references. Removal marks the row rather than deleting Goal data. No Today copies of Tasks, Habits or Goals exist.

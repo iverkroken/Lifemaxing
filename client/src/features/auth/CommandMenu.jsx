@@ -34,7 +34,8 @@ function Commands({ onClose, destinations, openCapture, session }) {
   const actions = [
     ...destinations.map(([path]) => ({ key: path, name: t(path), icon: path, run: () => navigate('/' + path) })),
     { key: 'rank-system', name: t('Rank System'), icon: 'progress', run: () => navigate('/progress/ranks') },
-    { key: 'finance-subscriptions', name: `${t('area_finance')} · ${t('subscriptionTitle')}`, icon: 'areas', run: () => navigate('/areas/finance/subscriptions') },
+    { key: 'finance-subscriptions', name: `${t('area_finance')} · ${t('subscriptionTitle')}`, icon: 'areas', run: () => navigate('/subscriptions') },
+    { key: 'recently-deleted', name: t('Recently Deleted'), icon: 'inbox', run: () => navigate('/settings/recently-deleted') },
     ...(session ? [{ key: 'continue', name: t('continueFocus'), icon: 'focus', run: () => navigate('/focus') }] : []),
     ...['task', 'habit', 'goal'].map(kind => ({ key: 'create-' + kind, name: t('create_' + kind), icon: 'plus', run: () => openCapture({ kind }) })),
   ].map(action => {

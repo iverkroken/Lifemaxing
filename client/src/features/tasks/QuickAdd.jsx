@@ -25,7 +25,7 @@ export function QuickAdd({ date, currentDate = date, lifeAreaId = '', autoFocus 
     <form className={styles.form} onSubmit={form.handleSubmit(values => submit(values))} noValidate>
       <fieldset disabled={action.isPending} className={styles.formFields}>
         <Input label={t('Task title')} placeholder={t('What needs doing?')} autoFocus={autoFocus} required error={form.formState.errors.title} {...form.register('title')} />
-        <Select label={t('Life Area')} {...form.register('lifeAreaId')}><option value="">{t('No area')}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>
+        <Select label={t('Life Area')} {...form.register('lifeAreaId')}><option value="">{t('Unassigned')}</option>{areas.data?.map(area => <option key={area.id} value={area.id}>{areaName(area)}</option>)}</Select>
         <QueryFeedback query={areas} />
         <div className={styles.fields}>
           <Select label={t('Priority')} {...form.register('priority')}>{['Low', 'Normal', 'High'].map(value => <option key={value} value={value}>{t(value)}</option>)}</Select>
