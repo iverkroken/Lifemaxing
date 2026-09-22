@@ -1,5 +1,23 @@
 # DATABASE.md
 
+## Focus refinement — 22 September 2026
+
+`20260922213031_FocusHubRefinement` adds `FocusPreferences.DailyGoalMinutes` (integer, default 120, 15–1440 and divisible by 15) and `WorldClockInitialized` (boolean, default false). The server serializes initialization and preference creation through the existing owner lock. Saved cities and all session history are retained; removing all initialized cities does not trigger reseeding. The normal Development upgrade followed a validated private backup; counts and aggregate fingerprints of all 30 existing tables matched, excluding only the two added fields and migration history. The historical upgrade test preserves legacy sound/volume/custom configuration and saved city identity.
+
+## Focus time hub — 22 September 2026
+
+Additive migration `20260922180819_FocusTimeHub` adds nullable `FocusRunId` and `PlannedSeconds` to existing FocusSessions and creates four owned tables:
+
+| Table | Responsibility |
+| --- | --- |
+| FocusRuns | Configuration snapshot, schedule position, phase/state, confirmed remaining time, deadline, controller/revision, interruption and next item reference; at most one unfinished run per owner. |
+| FocusWorkSpans | Confirmed work intervals linked to the existing FocusSession; contiguous spans coalesce; day/week totals clip spans to the account time zone. |
+| FocusPreferences | Custom rhythm, sound/volume, notifications, automatic transitions and wake preference; one row per owner. |
+| WorldClockCities | Saved city name, IANA zone and user order; unique owner/name/zone. |
+
+FocusSession remains the historical work interval and Progress source. Existing rows are preserved without invented spans or retroactive rewards. Managed sessions credit checkpointed seconds only; legacy untimed sessions retain their original behavior. Cancelled work remains in history but is excluded from totals. Deleting a linked item stops matching active runs even during a break and preserves confirmed history. Preference/city writes use the existing owner transaction boundary. Rollback removes the new account/time data and is not lossless after use.
+
+
 ## Recoverable deletion and custom Life Areas — 22 September 2026
 
 Migration `20260921231831_SoftDeleteAndCustomLifeAreas` adds `DeletedAtUtc` to Habit, Goal and LifeArea, and separates Task's former archive timestamp into `ArchivedAtUtc`. Existing Task deletion timestamps are migrated to archive timestamps and cleared, so no pre-existing record enters the 30-day recovery window. Active existing records remain active.

@@ -155,6 +155,13 @@ public sealed class DeletedContentService(AppDbContext db, TimeProvider clock)
     {
         var session = await db.FocusSessions.SingleOrDefaultAsync(x => x.UserId == userId && x.EndedAtUtc == null &&
             (type == "task" && x.TaskId == id || type == "habit" && x.HabitId == id || type == "goal" && x.GoalId == id), ct);
+        var run = await db.Set<Lifemaxing.Api.Features.Focus.FocusRun>().SingleOrDefaultAsync(x => x.UserId == userId && x.EndedAtUtc == null &&
+            (type == "task" && x.TaskId == id || type == "habit" && x.HabitId == id || type == "goal" && x.GoalId == id || x.Id == (session == null ? null : session.FocusRunId)), ct);
+        if (run != null)
+        {
+            session ??= await db.FocusSessions.SingleOrDefaultAsync(x => x.UserId == userId && x.EndedAtUtc == null && x.FocusRunId == run.Id, ct);
+            run.State = "Ended"; run.EndedAtUtc = now; run.EndsAtUtc = null; run.Revision++;
+        }
         if (session is null) return;
         session.AccumulatedSeconds = FocusEndpoints.Elapsed(session, now);
         session.RunningSinceUtc = null;

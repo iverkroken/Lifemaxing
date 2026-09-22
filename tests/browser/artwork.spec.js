@@ -330,7 +330,7 @@ test('artwork system: every route, both themes, desktop and mobile, original ass
     await expect(page.locator('header[data-artwork]')).toHaveAttribute('data-artwork', String(stillOverArtwork))
     await page.screenshot({ path: `${root}/${browserName}/workspace-${width}.png` })
   }
-  for (const filename of ['Backround.png', 'Gods plan.png', 'Money.png', 'Muhammed ali.png', 'Odessey.png', 'Rolex.png', 'Tiger.png', 'Tutto passo.png']) {
+  for (const filename of ['Backround.png', 'Gods plan.png', 'Money.png', 'Muhammed ali.png', 'Background upgrade.png', 'Rolex.png', 'Tiger.png', 'Tutto passo.png']) {
     const response = await page.request.get('/images/' + encodeURIComponent(filename))
     expect(response.status()).toBe(200)
     expect(response.headers()['content-type']).toContain('image/png')

@@ -17,6 +17,7 @@ import { CommandMenu } from './CommandMenu.jsx'
 import { TopNavigation, SectionNavigation } from './Navigation.jsx'
 import { MenuDrawer } from './MenuDrawer.jsx'
 import { destinations } from './navigation.js'
+import { TimeHubProvider } from '../focus/TimeHubProvider.jsx'
 
 const TaskDetailPage = lazy(() => import('../tasks/TaskDetailPage.jsx').then(module => ({ default: module.TaskDetailPage })))
 
@@ -42,9 +43,9 @@ function Shell({ user, panelTaskId }) {
   const focusing = location.pathname === '/focus'
   const immersive = focusing || location.pathname === '/today'
   const [heroState, setHeroState] = useState(null)
-  const overArtwork = focusing || (location.pathname === '/today' && !(heroState?.key === location.key && heroState.past))
+  const overArtwork = immersive && !(heroState?.key === location.key && heroState.past)
   useEffect(() => {
-    if (location.pathname !== '/today') return
+    if (!['/today', '/focus'].includes(location.pathname)) return
     let observer
     let observedBoundary
     let headerHeight
@@ -113,7 +114,7 @@ function Shell({ user, panelTaskId }) {
     }
   }, [location.key, navigationType])
 
-  return <div className={`${styles.shell} ${immersive ? styles.immersive : ''} ${panelTaskId ? styles.withPanel : ''}`}>
+  return <TimeHubProvider key={user.id} user={user}><div className={`${styles.shell} ${immersive ? styles.immersive : ''} ${panelTaskId ? styles.withPanel : ''}`}>
     <a href="#main-content" className={styles.skipLink}>{t("Skip to content")}</a>
     <TopNavigation onSearch={() => setCommandOpen(true)} onMenu={() => setMenuOpen(true)} menuOpen={menuOpen} session={activeFocus.data?.session} overArtwork={overArtwork} />
     <main id="main-content" className={styles.content} tabIndex={-1}>
@@ -139,5 +140,5 @@ function Shell({ user, panelTaskId }) {
     <SignOutDialog mode={signOut} onClose={() => setSignOut(null)} />
     <CommandMenu open={commandOpen} onClose={() => setCommandOpen(false)} openCapture={openCapture} session={activeFocus.data?.session}
       destinations={destinations.map(path => [path])} />
-  </div>
+  </div></TimeHubProvider>
 }
