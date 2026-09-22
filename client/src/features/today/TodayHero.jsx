@@ -5,7 +5,7 @@ import styles from './TodayPage.module.css'
 
 export function TodayHero({ data }) {
   const { t, date } = useLanguage()
-  const tasks = data?.tasks.filter(task => !task.deletedAtUtc)
+  const tasks = data?.tasks.filter(task => !task.archivedAtUtc)
   const mission = tasks?.find(task => task.id === data?.mission?.taskId && !task.isCompleted)
 
   return <section className={styles.hero} aria-labelledby="today-title" data-app-hero data-hero-theme="dark">

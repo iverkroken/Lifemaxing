@@ -33,15 +33,17 @@ public static class TodayEndpoints
             var day = await Productivity.Day(db, userId, clock, ct);
             var localDate = date ?? day.Date;
             if (!Productivity.DateValid(localDate)) return Productivity.Invalid("date", "Use dates between 1900 and 9998.");
-            var plans = await db.DailyCommitments.AsNoTracking().Where(x => x.UserId == userId && x.LocalDate == localDate).ToListAsync(ct);
-            var mission = await db.DailyMissions.Where(x => x.UserId == userId && x.LocalDate == localDate)
+            var plans = await db.DailyCommitments.AsNoTracking().Where(x => x.UserId == userId && x.LocalDate == localDate &&
+                db.Tasks.Any(task => task.Id == x.TaskId && task.UserId == userId && task.ArchivedAtUtc == null)).ToListAsync(ct);
+            var mission = await db.DailyMissions.Where(x => x.UserId == userId && x.LocalDate == localDate &&
+                    db.Tasks.Any(task => task.Id == x.TaskId && task.UserId == userId && task.ArchivedAtUtc == null))
                 .Select(x => new MissionResponse(x.Id, x.TaskId, x.LocalDate, x.SelectedAtUtc)).SingleOrDefaultAsync(ct);
             var plannedIds = plans.Select(x => x.TaskId).ToArray();
             var missionId = mission?.TaskId;
-            var tasks = await db.Tasks.Where(x => x.UserId == userId && x.DeletedAtUtc == null && x.PlannedDate == localDate)
+            var tasks = await db.Tasks.Where(x => x.UserId == userId && x.ArchivedAtUtc == null && x.PlannedDate == localDate)
                 .OrderBy(x => x.Priority == "High" ? 0 : x.Priority == "Normal" ? 1 : 2).ThenBy(x => x.DueDate).ThenBy(x => x.Id)
                 .Select(TaskResponse.Projection).ToListAsync(ct);
-            var attention = await db.Tasks.Where(x => x.UserId == userId && x.DeletedAtUtc == null && x.PlannedDate != localDate &&
+            var attention = await db.Tasks.Where(x => x.UserId == userId && x.ArchivedAtUtc == null && x.PlannedDate != localDate &&
                     (x.PlannedDate < localDate || x.DueDate <= localDate) && !x.Completions.Any(c => c.ReversedAtUtc == null))
                 .OrderBy(x => x.DueDate).ThenBy(x => x.Id).Select(TaskResponse.Projection).ToListAsync(ct);
             var taskIds = tasks.Select(x => x.Id).ToArray();
@@ -78,7 +80,7 @@ public static class TodayEndpoints
                     count, active?.Id, schedule.Pattern == "WeeklyCount" && count >= schedule.WeeklyTarget,
                     habit.LifeAreaId, habit.XpPerLog, active == null ? null : awards.GetValueOrDefault(active.Id)));
             }
-            var inbox = await db.Tasks.CountAsync(x => x.UserId == userId && x.DeletedAtUtc == null && x.PlannedDate == null && !x.Completions.Any(c => c.ReversedAtUtc == null), ct);
+            var inbox = await db.Tasks.CountAsync(x => x.UserId == userId && x.ArchivedAtUtc == null && x.PlannedDate == null && !x.Completions.Any(c => c.ReversedAtUtc == null), ct);
             return Results.Ok(new TodayResponse(localDate, day.Date, day.TimeZoneId, tasks, plans.Select(Response).ToList(), mission, habitRows, inbox, attention, history, goalRows));
         });
 
@@ -88,7 +90,7 @@ public static class TodayEndpoints
             if (!Productivity.DateValid(request.LocalDate)) return Productivity.Invalid("localDate", "Use dates between 1900 and 9998.");
             var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == request.TaskId && x.UserId == userId, ct);
             if (task is null) return Productivity.NotFound();
-            if (task.DeletedAtUtc is not null || await db.TaskCompletions.AnyAsync(x => x.UserId == userId && x.TaskId == task.Id && x.ReversedAtUtc == null, ct))
+            if (task.ArchivedAtUtc is not null || await db.TaskCompletions.AnyAsync(x => x.UserId == userId && x.TaskId == task.Id && x.ReversedAtUtc == null, ct))
                 return Productivity.Conflict("Choose an active, unfinished task.");
             var day = await Productivity.Day(db, userId, clock, ct);
             await Planning.Move(db, userId, task.Id, task.PlannedDate, request.LocalDate, day, ct);
@@ -102,8 +104,9 @@ public static class TodayEndpoints
             var userId = principal.GetUserId();
             var commitment = await db.DailyCommitments.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
             if (commitment is null) return Productivity.NotFound();
+            var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == commitment.TaskId && x.UserId == userId, ct);
+            if (task is null) return Productivity.NotFound();
             commitment.RemovedAtUtc ??= clock.GetUtcNow();
-            var task = await db.Tasks.SingleAsync(x => x.Id == commitment.TaskId && x.UserId == userId, ct);
             if (task.PlannedDate == commitment.LocalDate) { task.PlannedDate = null; task.UpdatedAtUtc = clock.GetUtcNow(); }
             await db.DailyMissions.Where(x => x.UserId == userId && x.TaskId == task.Id && x.LocalDate == commitment.LocalDate).ExecuteDeleteAsync(ct);
             await db.SaveChangesAsync(ct);
@@ -115,7 +118,7 @@ public static class TodayEndpoints
             if (!Productivity.DateValid(date)) return Productivity.Invalid("date", "Use dates between 1900 and 9998.");
             var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == request.TaskId && x.UserId == userId, ct);
             if (task is null) return Productivity.NotFound();
-            if (task.DeletedAtUtc is not null || await db.TaskCompletions.AnyAsync(x => x.UserId == userId && x.TaskId == task.Id && x.ReversedAtUtc == null, ct))
+            if (task.ArchivedAtUtc is not null || await db.TaskCompletions.AnyAsync(x => x.UserId == userId && x.TaskId == task.Id && x.ReversedAtUtc == null, ct))
                 return Productivity.Conflict("Choose an active, unfinished task as your mission.");
             if (task.PlannedDate != date) return Productivity.Conflict("Plan this task for the selected date before choosing it as your daily priority.");
             var day = await Productivity.Day(db, userId, clock, ct);
