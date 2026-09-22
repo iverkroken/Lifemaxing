@@ -29,7 +29,7 @@ export function HabitForm({ habit, onSaved, initialAreaId = '' }) {
   } }))}>
     <fieldset disabled={action.isPending} className={styles.formFields}>
     <Input label={t("Habit title")} required error={form.formState.errors.title} {...form.register('title')} />
-    <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("No area")}</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
+    <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("Unassigned")}</option>{selectedArea && !areas.data?.some(x => x.id === selectedArea) && <option value={selectedArea}>{t('Unassigned')}</option>}{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
     <Input label={t("XP per completion")} type="number" min="1" max="75" hint={t("habitXpRules")} error={form.formState.errors.xpPerLog} {...form.register('xpPerLog')} />
     <label className={styles.check}><input type="checkbox" {...form.register('isActive')} />{t("Active habit")}</label>
     {!habit && <ScheduleFields {...{ pattern, setPattern, days, setDays, target, setTarget }} from={from || today.data?.currentLocalDate || ''} setFrom={setFrom}
