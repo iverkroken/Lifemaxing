@@ -50,7 +50,7 @@ public static class FocusEndpoints
             {
                 var task = await db.Tasks.SingleOrDefaultAsync(x => x.Id == request.TaskId && x.UserId == owner, ct);
                 if (task is null) return Productivity.NotFound();
-                if (task.DeletedAtUtc != null || await db.TaskCompletions.AnyAsync(x => x.UserId == owner && x.TaskId == task.Id && x.ReversedAtUtc == null, ct)) return Productivity.Conflict("Choose an unfinished task.");
+                if (task.ArchivedAtUtc != null || await db.TaskCompletions.AnyAsync(x => x.UserId == owner && x.TaskId == task.Id && x.ReversedAtUtc == null, ct)) return Productivity.Conflict("Choose an unfinished task.");
             }
             if (await db.FocusSessions.AnyAsync(x => x.UserId == owner && x.EndedAtUtc == null, ct)) return Productivity.Conflict("End your current focus session first.");
             var now = clock.GetUtcNow();
