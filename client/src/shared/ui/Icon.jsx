@@ -14,6 +14,8 @@ const names = {
   "areas": "squares-four",
   "inbox": "tray",
   "focus": "crosshair",
+  "timer": "hourglass",
+  "stopwatch": "timer",
   "progress": "chart-bar",
   "activity": "clock-counter-clockwise",
   "rewards": "gift",
