@@ -6,6 +6,8 @@ Pinned commit: 2b75f3ad12b420c9504ef05df8d2564a28f8500e. Retrieved 2026-09-15. M
 
 User approved Bold replacing Regular. Exact filled path data is retained, without stroke simulation or runtime fetching. Existing Icon API and semantic mappings are preserved, with list added for Menu. Original study assets remain unchanged.
 
+Focus hub adds `timer-bold.svg` (Stopwatch) and `hourglass-bold.svg` (Timer) from the same pinned commit and MIT license, retrieved 2026-09-22. No icon package or runtime fetch is added.
+
 | Asset | Original SVG SHA-256 |
 | --- | --- |
 | arrow-left | 7588792d7824e7c5337bca7b5de96ad0685ddea0a5732dfb62701d163a076563 |
