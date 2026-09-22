@@ -12,7 +12,7 @@ export function TaskRow({ task, action, date, commitment, area }) {
   const location = useLocation()
   const overdue = date && task.dueDate && task.dueDate < date && !task.isCompleted
   return <li className={row.row}>
-    {!task.deletedAtUtc ? <label className={styles.completionControl}><input type="checkbox" checked={Boolean(task.isCompleted)} className={styles.completionCheck} disabled={action.isPending}
+    {!task.archivedAtUtc ? <label className={styles.completionControl}><input type="checkbox" checked={Boolean(task.isCompleted)} className={styles.completionCheck} disabled={action.isPending}
       aria-label={`${task.isCompleted ? t("Reopen") : t("Complete")} ${task.title}`} aria-busy={action.isPending}
       onChange={() => action.mutate({ path: `/tasks/${task.id}/${task.isCompleted ? 'reopen' : 'complete'}` })}
     /></label> : <span className={row.archived}><Icon name="inbox" size={16} /></span>}
@@ -28,11 +28,11 @@ export function TaskRow({ task, action, date, commitment, area }) {
         {task.dueDate && <span className={overdue ? styles.warning : ''}>{overdue ? t("Overdue") : t("Due")} {formatDate(task.dueDate)}</span>}
         {task.plannedDate && task.plannedDate !== date && <span>{t('plannedOn', { date: formatDate(task.plannedDate) })}</span>}
         {task.estimateMinutes && <span>{t('minutesCount', { count: number(task.estimateMinutes) })}</span>}
-        {task.deletedAtUtc && <span>{t("Archived")}</span>}{task.isCompleted && <span>{t("Completed")}</span>}
+        {task.archivedAtUtc && <span>{t("Archived")}</span>}{task.isCompleted && <span>{t("Completed")}</span>}
         {commitment?.removedAtUtc && <span>{t("Cancelled · historical plan retained")}</span>}
       </div>
     </div>
-    {!task.deletedAtUtc && !task.isCompleted && <div className={row.actions}>
+    {!task.archivedAtUtc && !task.isCompleted && <div className={row.actions}>
       <Link to={`/focus?taskId=${task.id}`}>{t("Focus")}</Link>
       {date && task.plannedDate !== date && <Button variant="quiet" size="small" loading={action.isPending}
         onClick={() => action.mutate({ path: '/daily-commitments', body: { taskId: task.id, localDate: date } })}>{t('Plan for this day')}</Button>}

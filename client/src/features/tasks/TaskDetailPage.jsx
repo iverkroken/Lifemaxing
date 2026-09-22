@@ -12,6 +12,7 @@ import { PageHeader } from '../../shared/ui/PageHeader.jsx'
 import { ActionFeedback, Pagination, QueryFeedback } from '../../shared/ui/ProductivityFeedback.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
 import pageStyles from './TasksPage.module.css'
+import { DeleteEntityDialog } from '../../shared/ui/DeleteEntityDialog.jsx'
 
 
 function TaskForm({ task, initialAreaId = '' }) {
@@ -28,19 +29,20 @@ function TaskForm({ task, initialAreaId = '' }) {
   })
   const selectedArea = useWatch({ control: form.control, name: 'lifeAreaId' })
   const action = useProductivityAction()
+  const [deleting, setDeleting] = useState(false)
   return <form className={`${styles.form} ${pageStyles.taskForm}`} noValidate onSubmit={form.handleSubmit(values => save.mutate({
     path: task ? `/tasks/${task.id}` : '/tasks', method: task ? 'PATCH' : 'POST', body: taskPayload(values),
   }))}>
-    <fieldset disabled={save.isPending || action.isPending || Boolean(task?.deletedAtUtc)} className={styles.formFields}>
+    <fieldset disabled={save.isPending || action.isPending || Boolean(task?.archivedAtUtc)} className={styles.formFields}>
     <div className={pageStyles.formLayout}>
     <div>
-    <h2 className={styles.sectionTitle}>{task?.deletedAtUtc ? t("Archived") : task?.isCompleted ? t("Completed") : t("Define the action")}</h2>
+    <h2 className={styles.sectionTitle}>{task?.archivedAtUtc ? t("Archived") : task?.isCompleted ? t("Completed") : t("Define the action")}</h2>
     <fieldset className={styles.formSection}>
     <Input label={t("Title")} required error={form.formState.errors.title} {...form.register('title')} />
     <Input label={t("Details")} multiline rows={6} placeholder={t("A little context, a clear next step…")} error={form.formState.errors.details} {...form.register('details')} />
     </fieldset>
     <fieldset className={styles.formSection}><legend>{t("Connect it to your life")}</legend>
-      <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("No area")}</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
+      <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("Unassigned")}</option>{selectedArea && !areas.data?.some(x => x.id === selectedArea) && <option value={selectedArea}>{t('Unassigned')}</option>}{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
       <div className={styles.form}>
         <Select label={t("Goal")} {...form.register('goalId')} value={selectedGoal}><option value="">{t("No goal")}</option>
           {selectedGoal && !goals.data?.items.some(x => x.id === selectedGoal) && <option value={selectedGoal}>{t("Linked goal (outside this page)")}</option>}
@@ -59,7 +61,7 @@ function TaskForm({ task, initialAreaId = '' }) {
     </fieldset>
     </div>
     <QueryFeedback query={areas} /><QueryFeedback query={goals} />
-    {task?.deletedAtUtc ? <p>{t("This task is archived. Its plans and completions are retained.")}</p> : <div className={styles.formFooter}>
+    {task?.archivedAtUtc ? <p>{t("This task is archived. Its plans and completions are retained.")}</p> : <div className={styles.formFooter}>
       <div className={styles.actions}>
       <Button type="submit" loading={save.isPending} disabled={action.isPending}>{task ? t("Save task") : t("Create task")}</Button>
       {task && <>
@@ -67,10 +69,11 @@ function TaskForm({ task, initialAreaId = '' }) {
         <Button variant="secondary" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}/${task.isCompleted ? 'reopen' : 'complete'}` })}>{task.isCompleted ? t("Reopen task") : t("Complete task")}</Button>
       </>}
       </div>
-      {task && <details><summary>{t("Archive task")}</summary><p>{t("Plans and completion history are preserved.")}</p><Button variant="danger" loading={action.isPending} onClick={() => action.mutate({ path: `/tasks/${task.id}`, method: 'DELETE' })}>{t("Archive task")}</Button></details>}
+      {task && <Button variant="dangerQuiet" onClick={() => setDeleting(true)}>{t('Delete Task')}</Button>}
     </div>}
     <ActionFeedback action={save} success={t("Task saved.")} /><ActionFeedback action={action} />
     </fieldset>
+    {task && <DeleteEntityDialog open={deleting} onClose={() => setDeleting(false)} onDeleted={() => navigate('/tasks')} type="task" title={task.title} path={`/tasks/${task.id}`} />}
   </form>
 }
 
