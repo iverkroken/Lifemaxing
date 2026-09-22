@@ -5,16 +5,23 @@ import { MemoryRouter, Outlet, Route, Routes } from 'react-router'
 import { afterEach, expect, test, vi } from 'vitest'
 import { clearCsrfToken } from '../../shared/api/client.js'
 import { FocusPage } from './FocusPage.jsx'
+import { TimeHubProvider } from './TimeHubProvider.jsx'
+import { defaultPreferences } from './timeTools.js'
 
 afterEach(() => { clearCsrfToken(); vi.unstubAllGlobals() })
 
 function show(fetcher, path = '/focus') {
-  const fetchMock = vi.fn(fetcher)
+  const fetchMock = vi.fn((path, options) => {
+    if (path.endsWith('/focus-runs/active')) return Promise.resolve(Response.json({ run: null }))
+    if (path.endsWith('/focus-preferences')) return Promise.resolve(Response.json(defaultPreferences))
+    if (path === '/api/v1/focus-runs') return Promise.resolve(Response.json({ id: 'test-run', endedAtUtc: new Date().toISOString() }))
+    return fetcher(path, options)
+  })
   vi.stubGlobal('fetch', fetchMock)
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}><Routes>
     <Route element={<Outlet context={{ user: { id: 'fictional-focus-owner' } }} />}>
-      <Route path="/focus" element={<FocusPage />} />
+      <Route path="/focus" element={<TimeHubProvider user={{ id: 'fictional-focus-owner' }}><FocusPage /></TimeHubProvider>} />
     </Route>
   </Routes></MemoryRouter></QueryClientProvider>)
   return fetchMock
@@ -29,11 +36,12 @@ test('makes task and unstructured focus explicit and clears a task when choosing
     if (path.includes('/tasks?')) return Response.json({ items: [{ id: 'task-1', title: 'One real task' }], page: 1, pageSize: 30, total: 1 })
     return Response.json({})
   }, '/focus?taskId=task-1')
-  expect(await screen.findByRole('radio', { name: 'Tasks' })).toBeChecked()
-  await userEvent.click(screen.getByRole('radio', { name: 'Focus without an item' }))
+  expect(await screen.findByText('One real task')).toBeVisible()
+  await userEvent.click(screen.getByRole('button', { name: 'Remove', exact: true }))
   expect(screen.queryByLabelText('Focus task')).not.toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Start focus' }))
-  expect(fetchMock).toHaveBeenCalledWith('/api/v1/focus-sessions', expect.objectContaining({ method: 'POST', body: JSON.stringify({ taskId: null }) }))
+  const start = fetchMock.mock.calls.find(([path]) => path === '/api/v1/focus-runs')
+  expect(JSON.parse(start[1].body)).toMatchObject({ configuration: { method: 'Pomodoro' }, reference: {} })
 })
 
 test('keeps the server timer, pause/resume and distinct session-only finishing behavior', async () => {

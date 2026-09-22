@@ -24,12 +24,12 @@ export function FocusEntityContext({ kind, id }) {
   </>}</>
 }
 
-export function FocusPicker({ action }) {
+export function FocusPicker({ action, onChoose, initialReference }) {
   const { t, areaName } = useLanguage()
   const [params] = useSearchParams()
-  const initial = types.find(([, , key]) => params.get(key))
+  const initial = types.find(([, , key]) => initialReference?.[key] || params.get(key))
   const [kind, setKind] = useState(initial?.[0] || 'tasks')
-  const [id, setId] = useState(initial ? params.get(initial[2]) : '')
+  const [id, setId] = useState(initial ? initialReference?.[initial[2]] || params.get(initial[2]) : '')
   const [view, setView] = useState('today')
   const [search, setSearch] = useState('')
   const [areaId, setAreaId] = useState('')
@@ -42,7 +42,7 @@ export function FocusPicker({ action }) {
   const items = (daily ? kind === 'goals' ? query.data?.goals?.map(row => row.goal).filter(goal => goal.state === 'Active') : query.data?.habits : query.data?.items) || []
   const shown = daily ? items.filter(item => (!areaId || item.lifeAreaId === areaId) && item.title.toLocaleLowerCase().includes(search.toLocaleLowerCase())) : items
   const chooseKind = value => { setKind(value); setId(''); setView('today'); setPage(1); setSearch(''); setPriority('') }
-  return <form className={styles.form} onSubmit={event => { event.preventDefault(); action.mutate({ path: '/focus-sessions', body: kind === 'none' ? { taskId: null } : { [types.find(([type]) => type === kind)[2]]: id } }) }}>
+  return <form className={styles.form} onSubmit={event => { event.preventDefault(); const reference = kind === 'none' ? {} : { [types.find(([type]) => type === kind)[2]]: id }; if (onChoose) onChoose(reference); else action.mutate({ path: '/focus-sessions', body: reference }) }}>
     <fieldset className={focusStyles.choice}><legend>{t('Choose your focus')}</legend>
       {types.map(([value, label]) => <label key={value}><input type="radio" name="focus-kind" value={value} checked={kind === value} onChange={() => chooseKind(value)} />{t(label)}</label>)}
     </fieldset>
@@ -64,7 +64,7 @@ export function FocusPicker({ action }) {
       {!daily && <Pagination data={query.data} setPage={setPage} />}
       {id && <FocusEntityContext key={`${kind}-${id}`} kind={kind} id={id} />}
     </>}
-    <Button type="submit" loading={action.isPending} disabled={kind !== 'none' && !id}>{t('Start focus')}</Button>
+    <Button type="submit" loading={action?.isPending} disabled={kind !== 'none' && !id}>{t(onChoose ? 'Choose item' : 'Start focus')}</Button>
     <label className={styles.check}><input type="radio" name="focus-kind" checked={kind === 'none'} onChange={() => chooseKind('none')} />{t('Focus without an item')}</label>
     <p className={styles.meta}>{t('One session at a time. Pause whenever you need to. Focus minutes are recorded, but do not earn XP.')}</p>
   </form>
