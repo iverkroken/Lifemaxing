@@ -1,5 +1,20 @@
 # ARCHITECTURE.md
 
+## Focus refinement — 22 September 2026
+
+Focus adds a bundled offline SVG map with public-domain geographic metadata; clocks still use Intl/IANA, with no runtime external requests or new dependency. The existing owner-serialized productivity API initializes saved cities once and updates the account daily focus goal independently of sound settings. `/focus-summary` adds yesterday's seconds and streak days using confirmed spans and bounded historical windows. Existing timer/session/XP behavior is unchanged. See [refinement record](FOCUS_REFINEMENT_IMPLEMENTATION.md).
+
+## Focus and time hub — 22 September 2026
+
+The authenticated shell owns `TimeHubProvider`, so timers survive client route changes. Focus/Pomodoro is the entry default; mode and open-panel state are local. Timer and Stopwatch use timestamp-based, account-keyed sessionStorage state and never write focus minutes or XP. Account preferences and saved IANA world-clock cities use the shared API/query layer and PostgreSQL.
+
+`FocusRunService` owns normalized preset/custom/Smart schedules and checkpoint transitions. `/focus-runs/active`, `/focus-runs`, `/focus-runs/{id}/action`, and `/focus-runs/preview` complement the existing FocusSession history. Existing owner locks, CSRF, command receipts and atomic task completion are reused. A controller identity plus revision prevents competing devices from advancing the same run. Commands persist their receipt identity before transport and retry it after uncertain responses, including terminal commands and reloads.
+
+Focus clients checkpoint while the shell is alive. A gap over three minutes or an explicit browser freeze marks interruption at the last confirmed observation, excludes uncertain time, and blocks automatic transitions. Recovery explicitly resumes remaining time, confirms inactive work capped at that interval's original boundary, or ends at interruption. This is a conservative continuity heuristic, not proof of human attention. Blur/ordinary visibility changes alone do not interrupt. Absolute deadlines and server clock offset drive presentation; the database credits only bounded work spans. Breaks/pauses earn no focus time; focus alone earns no XP. The next interval reference and actual current completion reference are separate DTO fields.
+
+Web Audio creates seven local, calm completion motifs without external audio services. Permission is requested only from the notification settings action. Optional Screen Wake Lock is progressive enhancement. Frozen/discarded/closed browsers cannot guarantee timely sound, notifications or automatic transitions; resuming reconciles persisted state. Existing untimed sessions retain their labelled compatibility controls and history.
+
+
 ## Recoverable deletion and custom Life Areas — 22 September 2026
 
 Task, Habit, Goal and LifeArea use an owner-scoped `DeletedAtUtc` lifecycle. EF query filters exclude deleted records from normal reads; the dedicated Recently Deleted service uses `IgnoreQueryFilters` only after resolving the authenticated owner. Restore clears the timestamp on the original row and rejects records at or beyond the exact 30-day boundary. Permanent deletion is explicit and removes dependent operational rows while retaining append-only XP and Activity history. A hosted cleanup service runs at startup and hourly in bounded batches. Deleting a focused entity stops the active session with accumulated server time and retains its reference until permanent deletion.
