@@ -1,6 +1,6 @@
 param([ValidateSet('', 'before', 'after')][string] $ReferenceStage = '', [switch] $UxRefresh, [switch] $Redesign, [switch] $SignatureShell, [switch] $Artwork, [switch] $Quality, [switch] $SelectedFeatures, [switch] $AreaDetails,
   [ValidateSet('chromium', 'firefox')][string] $BrowserEngine = 'chromium',
-  [string] $ArtifactRoot = '', [switch] $Headed, [string] $TestFilter = '', [switch] $DailyProgression,
+  [string] $ArtifactRoot = '', [switch] $Headed, [string] $TestFilter = '', [switch] $DailyProgression, [switch] $DeletionRestore,
   [ValidateSet('', 'before', 'after')][string] $PerformanceStage = '')
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
@@ -91,10 +91,19 @@ try {
   New-Item -ItemType Directory -Path artifacts -Force | Out-Null
   $apiProcess = Start-Process $dotnetExecutable -ArgumentList 'server/Lifemaxing.Api/bin/Release/net10.0/Lifemaxing.Api.dll' -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-api.log') -RedirectStandardError (Join-Path $logRoot 'browser-api-error.log')
   $viteArguments = 'node_modules/vite/bin/vite.js client --config client/vite.config.js --port 5174'
-  if ($PerformanceStage -or $Redesign -or $SignatureShell -or $Artwork -or $Quality -or $SelectedFeatures -or $AreaDetails -or $DailyProgression) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
+  if ($PerformanceStage -or $Redesign -or $SignatureShell -or $Artwork -or $Quality -or $SelectedFeatures -or $AreaDetails -or $DailyProgression -or $DeletionRestore) { $viteArguments = 'node_modules/vite/bin/vite.js preview client --config client/vite.config.js --port 5174 --strictPort' }
   $viteProcess = Start-Process node -ArgumentList $viteArguments -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logRoot 'browser-vite.log') -RedirectStandardError (Join-Path $logRoot 'browser-vite-error.log')
   Wait-Ready 'http://127.0.0.1:5082/health/live'
   Wait-Ready 'http://127.0.0.1:5174/start'
+  if ($DeletionRestore) {
+    $env:SMOKE_BROWSER = $BrowserEngine
+    $browserArguments = @('run', 'test:smoke', '--', 'deletion-restore.spec.js')
+    if ($TestFilter) { $browserArguments += @('--grep', $TestFilter) }
+    if ($Headed) { $browserArguments += '--headed' }
+    & npm @browserArguments
+    if ($LASTEXITCODE -ne 0) { throw 'Deletion, restore and custom Life Area checks failed.' }
+    return
+  }
   if ($DailyProgression) {
     $env:SMOKE_BROWSER = $BrowserEngine
     $browserArguments = @('run', 'test:smoke', '--', 'daily-progression.spec.js')

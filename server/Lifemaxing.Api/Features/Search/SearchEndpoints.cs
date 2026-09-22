@@ -24,7 +24,7 @@ public static class SearchEndpoints
             var userId = principal.GetUserId();
             var candidates = new List<Candidate>();
             // Project only searchable metadata. Every source is owner scoped before either bounded read.
-            await AddCandidates(db.Tasks.AsNoTracking().Where(item => item.UserId == userId && item.DeletedAtUtc == null)
+            await AddCandidates(db.Tasks.AsNoTracking().Where(item => item.UserId == userId && item.ArchivedAtUtc == null)
                 .Select(item => new Candidate { Id = item.Id, Kind = "task", Title = item.Title, LifeAreaId = item.LifeAreaId,
                     IsActive = !item.Completions.Any(completion => completion.UserId == userId && completion.ReversedAtUtc == null),
                     Importance = item.Priority == "High" ? 1 : 0, RecentAtUtc = item.UpdatedAtUtc }), query, areaId, candidates, cancellationToken);
