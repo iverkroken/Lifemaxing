@@ -52,6 +52,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         base.OnModelCreating(builder);
         ProductivityModel.Configure(builder);
         ProgressionModel.Configure(builder);
+        Features.Focus.FocusModel.Configure(builder);
         Features.Finance.SubscriptionModel.Configure(builder);
 
         builder.Entity<UserSettings>(settings =>

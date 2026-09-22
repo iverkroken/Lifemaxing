@@ -275,6 +275,191 @@ namespace Lifemaxing.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Lifemaxing.Api.Features.Focus.FocusPreferences", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("AutoBreak")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("AutoFocus")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("BreakSound")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("DailyGoalMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(120);
+
+                    b.Property<bool>("FocusSound")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("KeepAwake")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("Notifications")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Sound")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<bool>("SoundEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Volume")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("WorldClockInitialized")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("FocusPreferences", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FocusPreferences_DailyGoal", "\"DailyGoalMinutes\" BETWEEN 15 AND 1440 AND \"DailyGoalMinutes\" % 15 = 0");
+
+                            t.HasCheckConstraint("CK_FocusPreferences_Volume", "\"Volume\" BETWEEN 0 AND 100");
+                        });
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Focus.FocusRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("BlockAutoStart")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ControllerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("EndedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("EndsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("GoalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("HabitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("InterruptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("LastObservedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PeriodIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<int>("RemainingSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("Revision")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("RuleVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid?>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasFilter("\"EndedAtUtc\" IS NULL");
+
+                    b.ToTable("FocusRuns", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FocusRun_State", "\"RemainingSeconds\" >= 0 AND \"PeriodIndex\" >= 0 AND \"State\" IN ('Running','Paused','Interrupted','Ready','Ended') AND \"Phase\" IN ('Focus','Break')");
+                        });
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Focus.FocusWorkSpan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("EndedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FocusSessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FocusSessionId");
+
+                    b.HasIndex("UserId", "StartedAtUtc");
+
+                    b.ToTable("FocusWorkSpans", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FocusSpan_Time", "\"EndedAtUtc\" >= \"StartedAtUtc\"");
+                        });
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Focus.WorldClockCity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name", "TimeZoneId")
+                        .IsUnique();
+
+                    b.ToTable("WorldClockCities", (string)null);
+                });
+
             modelBuilder.Entity("Lifemaxing.Api.Features.Goals.Goal", b =>
                 {
                     b.Property<Guid>("Id")
@@ -609,11 +794,17 @@ namespace Lifemaxing.Api.Data.Migrations
                     b.Property<DateTimeOffset?>("EndedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("FocusRunId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("GoalId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("HabitId")
                         .HasColumnType("uuid");
+
+                    b.Property<int?>("PlannedSeconds")
+                        .HasColumnType("integer");
 
                     b.Property<DateTimeOffset?>("RunningSinceUtc")
                         .HasColumnType("timestamp with time zone");
@@ -633,6 +824,8 @@ namespace Lifemaxing.Api.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FocusRunId");
 
                     b.HasIndex("GoalId");
 
@@ -1149,6 +1342,124 @@ namespace Lifemaxing.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Lifemaxing.Api.Features.Focus.FocusPreferences", b =>
+                {
+                    b.HasOne("Lifemaxing.Api.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsOne("Lifemaxing.Api.Features.Focus.FocusConfiguration", "Custom", b1 =>
+                        {
+                            b1.Property<Guid>("FocusPreferencesUserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("BreakMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("FocusMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("LongBreakMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("Method")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<int>("SessionsBeforeLongBreak")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("SmartMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("TotalSessions")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("FocusPreferencesUserId");
+
+                            b1.ToTable("FocusPreferences");
+
+                            b1.WithOwner()
+                                .HasForeignKey("FocusPreferencesUserId");
+                        });
+
+                    b.Navigation("Custom")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Focus.FocusRun", b =>
+                {
+                    b.HasOne("Lifemaxing.Api.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsOne("Lifemaxing.Api.Features.Focus.FocusConfiguration", "Configuration", b1 =>
+                        {
+                            b1.Property<Guid>("FocusRunId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("BreakMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("FocusMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("LongBreakMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<string>("Method")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<int>("SessionsBeforeLongBreak")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("SmartMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("TotalSessions")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("FocusRunId");
+
+                            b1.ToTable("FocusRuns");
+
+                            b1.WithOwner()
+                                .HasForeignKey("FocusRunId");
+                        });
+
+                    b.Navigation("Configuration")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Focus.FocusWorkSpan", b =>
+                {
+                    b.HasOne("Lifemaxing.Api.Features.Progression.FocusSession", null)
+                        .WithMany()
+                        .HasForeignKey("FocusSessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Lifemaxing.Api.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Lifemaxing.Api.Features.Focus.WorldClockCity", b =>
+                {
+                    b.HasOne("Lifemaxing.Api.Data.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Lifemaxing.Api.Features.Goals.Goal", b =>
                 {
                     b.HasOne("Lifemaxing.Api.Data.LifeArea", null)
@@ -1236,6 +1547,11 @@ namespace Lifemaxing.Api.Data.Migrations
 
             modelBuilder.Entity("Lifemaxing.Api.Features.Progression.FocusSession", b =>
                 {
+                    b.HasOne("Lifemaxing.Api.Features.Focus.FocusRun", null)
+                        .WithMany()
+                        .HasForeignKey("FocusRunId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Lifemaxing.Api.Features.Goals.Goal", null)
                         .WithMany()
                         .HasForeignKey("GoalId")
