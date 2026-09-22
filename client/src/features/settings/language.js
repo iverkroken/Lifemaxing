@@ -6,11 +6,13 @@ import { financeCatalog } from '../finance/financeCatalog.js'
 import { planningSearchCatalog } from '../search/planningSearchCatalog.js'
 import { dailyProgressCatalog } from '../today/dailyProgressCatalog.js'
 import { deletionCatalog } from './deletionCatalog.js'
+import { focusCatalog } from '../focus/focusCatalog.js'
 import { formatDate, localizedArea, errorKey } from './formatting.js'
 
 // UI language is separate from regional formatting and historical time zones.
 export const languages = [['en', 'English'], ['nb', 'Norsk bokmål'], ['sv', 'Svenska'], ['da', 'Dansk']]
 export const messages = {
+  ...focusCatalog,
   ...catalog,
   ...areaDetailCatalog,
   ...accountCatalog,
