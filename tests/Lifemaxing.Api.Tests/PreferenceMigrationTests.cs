@@ -44,7 +44,18 @@ public sealed class PreferenceMigrationTests(TestDatabaseFixture database)
             await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"FocusSessions\" (\"Id\", \"UserId\", \"TaskId\", \"StartedAtUtc\", \"RunningSinceUtc\", \"AccumulatedSeconds\", \"Status\") VALUES ({focusId}, {ids[0]}, {taskId}, {now}, {now}, 30, 'Running')");
             await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"XpEntries\" (\"Id\", \"UserId\", \"AmountSigned\", \"Kind\", \"SourceKind\", \"SourceId\", \"OccurredAtUtc\", \"LocalDate\", \"TimeZoneId\", \"Category\", \"RuleVersion\") VALUES ({xpId}, {ids[0]}, 0, 'Award', 'HabitLog', {Guid.NewGuid()}, {now}, {DateOnly.FromDateTime(now.UtcDateTime)}, 'Europe/Oslo', 'Habit', 1)");
             await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"CommandReceipts\" (\"Id\", \"UserId\", \"ClientActionId\", \"Operation\", \"RequestHash\", \"CreatedAtUtc\", \"ResponseJson\", \"StatusCode\") VALUES ({receiptId}, {ids[0]}, {Guid.NewGuid()}, 'POST /historical', 'fixture', {now}, CAST({legacyReceipt} AS jsonb), 200)");
+            await db.GetService<IMigrator>().MigrateAsync("20260922180819_FocusTimeHub");
+            await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"FocusPreferences\" (\"UserId\", \"Custom_Method\", \"Custom_FocusMinutes\", \"Custom_BreakMinutes\", \"Custom_LongBreakMinutes\", \"Custom_SessionsBeforeLongBreak\", \"Custom_SmartMinutes\", \"SoundEnabled\", \"Sound\", \"Volume\", \"FocusSound\", \"BreakSound\", \"Notifications\", \"AutoBreak\", \"AutoFocus\", \"KeepAwake\") VALUES ({ids[0]}, 'Custom', 42, 7, 20, 4, 120, true, 'Bell', 17, true, false, false, false, false, false)");
+            var cityId = Guid.NewGuid();
+            await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"WorldClockCities\" (\"Id\", \"UserId\", \"Name\", \"TimeZoneId\", \"Position\") VALUES ({cityId}, {ids[0]}, 'Tokyo', 'Asia/Tokyo', 0)");
             await db.Database.MigrateAsync();
+            var focusPreferences = await db.Set<Lifemaxing.Api.Features.Focus.FocusPreferences>().SingleAsync();
+            Assert.Equal(120, focusPreferences.DailyGoalMinutes);
+            Assert.False(focusPreferences.WorldClockInitialized);
+            Assert.Equal("Bell", focusPreferences.Sound);
+            Assert.Equal(17, focusPreferences.Volume);
+            Assert.Equal(42, focusPreferences.Custom.FocusMinutes);
+            Assert.Equal(cityId, (await db.Set<Lifemaxing.Api.Features.Focus.WorldClockCity>().SingleAsync()).Id);
             for (var index = 0; index < cases.Length; index++)
             {
                 var saved = await db.UserSettings.AsNoTracking().SingleAsync(row => row.UserId == ids[index]);

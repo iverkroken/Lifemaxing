@@ -37,7 +37,7 @@ public sealed class ProductivityWriteFilter : IEndpointFilter
             var identifiedGoalProgress = http.Request.Headers.ContainsKey("ClientActionId") &&
                 System.Text.RegularExpressions.Regex.IsMatch(http.Request.Path, @"/goals/[^/]+/progress/?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             var guarded = HttpMethods.IsPost(http.Request.Method) && System.Text.RegularExpressions.Regex.IsMatch(http.Request.Path,
-                @"/(tasks/[^/]+/(complete|reopen)|habits/[^/]+/logs(/[^/]+/revoke)?|rewards/[^/]+/claim|focus-sessions(/[^/]+/(pause|resume|stop))?)/?$",
+                @"/(tasks/[^/]+/(complete|reopen)|habits/[^/]+/logs(/[^/]+/revoke)?|rewards/[^/]+/claim|focus-sessions(/[^/]+/(pause|resume|stop))?|focus-runs(/[^/]+/action)?)/?$",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
             guarded |= HttpMethods.IsPost(http.Request.Method) && identifiedGoalProgress;
             Guid actionId = default;
