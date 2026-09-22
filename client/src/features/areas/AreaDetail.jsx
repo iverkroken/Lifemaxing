@@ -19,7 +19,7 @@ export function AreaLayout() {
   if (!areas.isSuccess) return <div><Link to="/areas">{t('areaBack')}</Link><QueryFeedback query={areas} /></div>
   if (!area) return <section><h1>{t('areaNotFound')}</h1><p>{t('areaNotFoundHint')}</p><Link to="/areas">{t('areaBack')}</Link></section>
   const base = `/areas/${encodeURIComponent(area.key)}`
-  const image = artwork[area.key]
+  const image = area.customImageUrl ? { src: area.customImageUrl, position: `${area.imageFocalX}% ${area.imageFocalY}%` } : artwork[area.key]
   const openCapture = options => context.openCapture({ ...options, lifeAreaId: area.id })
   return <div className={styles.page}>
     <Link className={styles.back} to="/areas"><Icon name="back" />{t('areaBack')}</Link>

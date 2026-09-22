@@ -6,7 +6,7 @@ import styles from './AreaPage.module.css'
 
 export function AreaCard({ area, counts, editing = false, layoutEditing = false, compact = false, action, controls, children, ...props }) {
   const { t, areaName } = useLanguage()
-  const image = artwork[area.key]
+  const image = area.customImageUrl ? { src: area.customImageUrl, position: `${area.imageFocalX}% ${area.imageFocalY}%` } : artwork[area.key]
   return <section className={styles.area} data-area={area.key} data-layout={compact ? undefined : image?.layout} data-active={area.isActive} data-editing={editing || layoutEditing} aria-label={areaName(area)} {...props}>
     <div className={styles.artwork}>{image ? <img src={image.src} style={{ objectPosition: image.position }} alt="" loading="lazy" draggable={layoutEditing ? false : undefined} /> : <AreaArtwork areaKey={area.key} />}</div>
     <div className={styles.areaTop}>{!area.isActive && <span>{t('Inactive')}</span>}{action}</div>

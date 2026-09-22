@@ -87,3 +87,11 @@ test('card main link opens its overview while shortcuts remain separate', () => 
   expect(screen.getByRole('link', { name: 'My renamed finances' })).toHaveAttribute('href', '/areas/finance')
   expect(screen.getByRole('link', { name: /Tasks/ })).toHaveAttribute('href', '/areas/finance/tasks')
 })
+
+test('custom area artwork takes priority and keeps its focal position', () => {
+  const { container } = render(<MemoryRouter><AreaCard area={{ id: 'custom', key: 'custom-id', displayName: 'Writing', isActive: true,
+    customImageUrl: '/api/v1/areas/custom/image?v=1', imageFocalX: 28, imageFocalY: 73 }} /></MemoryRouter>)
+  const image = container.querySelector('img')
+  expect(image).toHaveAttribute('src', '/api/v1/areas/custom/image?v=1')
+  expect(image).toHaveStyle({ objectPosition: '28% 73%' })
+})
