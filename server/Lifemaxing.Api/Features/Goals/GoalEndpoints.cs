@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using Lifemaxing.Api.Common;
 using Lifemaxing.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using Lifemaxing.Api.Features.DeletedContent;
 
 namespace Lifemaxing.Api.Features.Goals;
 
@@ -69,7 +70,7 @@ public static class GoalEndpoints
             if (goal.ArchivedAtUtc is not null) return Productivity.Conflict("Archived goals cannot be edited.");
             var request = Productivity.Patch(new GoalRequest(goal.Title, goal.Description, goal.LifeAreaId, goal.State,
                 goal.TargetValue, goal.BaselineValue, goal.Unit, goal.Direction, goal.TargetDate), patch);
-            var error = await Validate(request, userId, db, ct);
+            var error = await Validate(request, userId, db, ct, goal.LifeAreaId);
             if (error is not null) return error;
             if ((request.Unit?.Trim() != goal.Unit || request.Direction != goal.Direction || request.BaselineValue != goal.BaselineValue ||
                  request.TargetValue.HasValue != goal.TargetValue.HasValue) &&
@@ -81,14 +82,10 @@ public static class GoalEndpoints
             await db.SaveChangesAsync(ct);
             return Results.Ok(await Response(db, id, userId, ct));
         });
-        goals.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, AppDbContext db, TimeProvider clock, CancellationToken ct) =>
+        goals.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal principal, DeletedContentService deleted, CancellationToken ct) =>
         {
             var userId = principal.GetUserId();
-            var goal = await db.Goals.SingleOrDefaultAsync(x => x.Id == id && x.UserId == userId, ct);
-            if (goal is null) return Productivity.NotFound();
-            goal.ArchivedAtUtc ??= clock.GetUtcNow();
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            return await deleted.SoftDeleteAsync("goal", id, userId, ct) ? Results.NoContent() : Productivity.NotFound();
         });
         goals.MapGet("/{id:guid}/progress", async (Guid id, ClaimsPrincipal principal, AppDbContext db, int? page, int? pageSize, CancellationToken ct) =>
         {
@@ -126,7 +123,8 @@ public static class GoalEndpoints
 
     private static Task<GoalResponse> Response(AppDbContext db, Guid id, Guid userId, CancellationToken ct) =>
         db.Goals.Where(x => x.Id == id && x.UserId == userId).Select(GoalResponse.Projection).SingleAsync(ct);
-    private static async Task<IResult?> Validate(GoalRequest request, Guid userId, AppDbContext db, CancellationToken ct)
+    private static async Task<IResult?> Validate(GoalRequest request, Guid userId, AppDbContext db, CancellationToken ct,
+        Guid? retainedAreaId = null)
     {
         if (!Productivity.TitleValid(request.Title)) return Productivity.Invalid("title", "Enter a title of 1–200 characters.");
         if (request.Description?.Length > 10000) return Productivity.Invalid("description", "Use at most 10000 characters.");
@@ -143,7 +141,7 @@ public static class GoalEndpoints
         }
         else if (request.BaselineValue is not null || request.Unit is not null || request.Direction is not null)
             return Productivity.Invalid("targetValue", "Qualitative goals have no baseline, unit or direction.");
-        return await Productivity.OwnsArea(db, userId, request.LifeAreaId, ct) ? null : Productivity.NotFound();
+        return await Productivity.OwnsAreaOrRetains(db, userId, request.LifeAreaId, retainedAreaId, ct) ? null : Productivity.NotFound();
     }
     private static void Apply(Goal goal, GoalRequest request, DateTimeOffset now)
     {

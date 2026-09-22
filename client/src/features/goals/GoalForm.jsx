@@ -35,7 +35,7 @@ export function GoalForm({ goal, onSaved, initialAreaId = '' }) {
     <Input label={t("Goal title")} required error={form.formState.errors.title} {...form.register('title')} />
     <Input label={t("Description")} multiline rows={3} error={form.formState.errors.description} {...form.register('description')} />
     <div className={styles.fields}>
-      <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("No area")}</option>{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
+      <Select label={t("Life Area")} {...form.register('lifeAreaId')} value={selectedArea}><option value="">{t("Unassigned")}</option>{selectedArea && !areas.data?.some(x => x.id === selectedArea) && <option value={selectedArea}>{t('Unassigned')}</option>}{areas.data?.map(x => <option key={x.id} value={x.id}>{areaName(x)}</option>)}</Select>
       <Select label={t("Goal state")} {...form.register('state')}>{['Active', 'Paused', 'Completed'].map(x => <option key={x} value={x}>{t(x)}</option>)}</Select>
       <Input label={t("Target date")} type="date" {...form.register('targetDate')} />
       <Select label={t("Goal type")} value={measured ? 'measured' : 'qualitative'} onChange={e => setMeasured(e.target.value === 'measured')}>

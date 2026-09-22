@@ -1,6 +1,6 @@
 import { useLanguage } from '../settings/language.js'
 import { useState } from 'react'
-import { Link, useOutletContext, useParams, useSearchParams } from 'react-router'
+import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router'
 import { useProductivity, useProductivityAction } from '../../shared/api/productivity.js'
 import { Button } from '../../shared/ui/Button.jsx'
 import { Dialog } from '../../shared/ui/Dialog.jsx'
@@ -15,6 +15,7 @@ import { GoalForm } from './GoalForm.jsx'
 import { GoalProgress } from './GoalProgress.jsx'
 import styles from '../../shared/ui/Productivity.module.css'
 import pageStyles from './GoalsPage.module.css'
+import { DeleteEntityDialog } from '../../shared/ui/DeleteEntityDialog.jsx'
 
 export function GoalsPage() {
   const { t, areaName, date } = useLanguage()
@@ -65,7 +66,8 @@ export function GoalDetailPage() {
   const selected = today.data?.goals?.some(row => row.goal.id === id && row.manuallySelected)
   const progress = useProductivity(`/goals/${id}/progress?page=${page}`)
   const action = useProductivityAction(() => { setValue(''); setNote(''); setPage(1) })
-  const archive = useProductivityAction(() => setEditing(false))
+  const navigate = useNavigate()
+  const [deleting, setDeleting] = useState(false)
   const data = goal.data
   return <div className={styles.stack}>
     <Link to="/goals">{t("← All goals")}</Link>
@@ -103,6 +105,7 @@ export function GoalDetailPage() {
       </section>
     </div>}
     <Dialog open={editing} onClose={() => setEditing(false)} title={t("Edit goal")}>{data && <><GoalForm key={id} goal={data} />
-      <details className={styles.section}><summary>{t("Archive this goal")}</summary><p>{t("Your progress history will be preserved.")}</p><Button variant="danger" loading={archive.isPending} onClick={() => archive.mutate({ path: `/goals/${id}`, method: 'DELETE' })}>{t("Archive goal")}</Button><ActionFeedback action={archive} /></details></>}</Dialog>
+      <Button variant="dangerQuiet" onClick={() => { setEditing(false); setDeleting(true) }}>{t('Delete Goal')}</Button></>}</Dialog>
+    {data && <DeleteEntityDialog open={deleting} onClose={() => setDeleting(false)} onDeleted={() => navigate('/goals')} type="goal" title={data.title} path={`/goals/${id}`} />}
   </div>
 }
